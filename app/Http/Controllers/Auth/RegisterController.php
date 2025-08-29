@@ -26,12 +26,14 @@ class RegisterController extends Controller
         ]);
 
         $user = User::create([
+            'name' => $request->display_name, // Set name sama dengan display_name untuk requirement Laravel
             'display_name' => $request->display_name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'uid' => Str::upper(Str::random(8)), // Random 8-character UID
-            'coin_balance' => 0,
+            'coins' => 0, // Changed from coin_balance to coins
             'role' => 'user',
+            'is_banned' => false,
         ]);
 
         Auth::login($user);

@@ -56,7 +56,7 @@ Route::get('/explore', [ExploreController::class, 'index'])->name('explore');
 
 // Buy Coins route
 Route::get('/buy-coins', function () {
-    $coinPackages = \App\Models\CoinPackage::orderBy('coins')->get();
+    $coinPackages = \App\Models\CoinPackage::orderBy('coin_amount')->get();
     return Inertia::render('BuyCoins', [
         'coinPackages' => $coinPackages
     ]);
@@ -111,3 +111,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/coin-packages/{coinPackage}', [PaymentController::class, 'updateCoinPackage'])->name('coin-packages.update');
     Route::put('/payment-settings', [PaymentController::class, 'updatePaymentSettings'])->name('payment.settings');
 });
+
+// Test route for debugging
+require_once 'test.php';

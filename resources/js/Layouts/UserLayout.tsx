@@ -5,7 +5,7 @@ interface User {
   id: number;
   display_name: string;
   email: string;
-  coin_balance: number;
+  coins: number; // Changed from coin_balance to coins
   avatar?: string;
 }
 
@@ -130,7 +130,7 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
                   {showAccountMenu && (
                     <div className="absolute right-0 mt-2 w-48 backdrop-blur-[20px] bg-white/90 rounded-md shadow-lg border border-gray-200/20 py-1">
                       <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-200/20">
-                        Coins: {auth.user.coin_balance?.toLocaleString() || '0'}
+                        Coins: {auth.user.coins?.toLocaleString() || '0'}
                       </div>
                       <Link href="/account/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/50">
                         Settings

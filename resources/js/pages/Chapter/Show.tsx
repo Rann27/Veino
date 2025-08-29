@@ -32,6 +32,8 @@ interface Props {
     series: Series;
     chapter: Chapter;
     canAccess: boolean;
+    hasPurchased: boolean;
+    userCoins: number;
     prevChapter: NavigationChapter | null;
     nextChapter: NavigationChapter | null;
     allChapters: ChapterOption[];
@@ -41,6 +43,8 @@ export default function ChapterShow({
     series, 
     chapter, 
     canAccess, 
+    hasPurchased,
+    userCoins,
     prevChapter, 
     nextChapter, 
     allChapters 
@@ -86,7 +90,7 @@ export default function ChapterShow({
         setShowChapterList(false);
     };
 
-    if (!canAccess) {
+    if (!canAccess && chapter.is_premium) {
         return (
             <UserLayout>
                 <Head title={`${chapter.title} - ${series.title}`} />
@@ -99,18 +103,35 @@ export default function ChapterShow({
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Premium Chapter</h1>
-                                <p className="text-gray-600 mb-4">
+                                <p className="text-gray-600 mb-2">
                                     This chapter requires {chapter.coin_price} coins to unlock
+                                </p>
+                                <p className="text-sm text-gray-500">
+                                    Your balance: {userCoins} coins
                                 </p>
                             </div>
                             
                             <div className="space-y-4">
-                                <button
-                                    onClick={handlePurchase}
-                                    className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors"
-                                >
-                                    Unlock for {chapter.coin_price} Coins
-                                </button>
+                                {userCoins >= chapter.coin_price ? (
+                                    <button
+                                        onClick={handlePurchase}
+                                        className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors"
+                                    >
+                                        Unlock for {chapter.coin_price} Coins
+                                    </button>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <p className="text-red-600 font-medium">
+                                            Insufficient coins! You need {chapter.coin_price - userCoins} more coins.
+                                        </p>
+                                        <Link
+                                            href="/buy-coins"
+                                            className="inline-block px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-colors"
+                                        >
+                                            Buy More Coins
+                                        </Link>
+                                    </div>
+                                )}
                                 
                                 <div className="text-sm text-gray-500">
                                     <Link href="/buy-coins" className="text-blue-600 hover:text-blue-800">

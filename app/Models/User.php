@@ -18,14 +18,15 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'display_name',
-        'uid',
+        'name', // Keep for Laravel compatibility
+        'display_name', // This is what we actually use
+        'uid', // Unique user identifier  
         'email',
         'password',
         'role',
-        'coins',
+        'coins', // User's coin balance
         'is_banned',
+        // Removed email_verified_at since we don't use email verification
     ];
 
     /**

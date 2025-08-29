@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Chapter;
 use App\Models\Series;
 use App\Models\User;
+use App\Models\ChapterPurchase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -22,13 +23,20 @@ class UserChapterController extends Controller
         // Check if user can access this chapter
         $canAccess = true;
         $user = Auth::user();
+        $hasPurchased = false;
         
-        if ($chapter->is_premium && $user) {
-            // Check if user has enough coins or has already purchased
-            $canAccess = $user->coin_balance >= $chapter->coin_price;
-            // TODO: Add logic to check if user has already purchased this chapter
-        } elseif ($chapter->is_premium && !$user) {
-            $canAccess = false;
+        if ($chapter->is_premium) {
+            if (!$user) {
+                $canAccess = false;
+            } else {
+                // Check if user has already purchased this chapter
+                $hasPurchased = ChapterPurchase::where('user_id', $user->id)
+                    ->where('chapter_id', $chapter->id)
+                    ->exists();
+                
+                // User can access if they have purchased the chapter
+                $canAccess = $hasPurchased;
+            }
         }
 
         // Get navigation chapters
@@ -51,6 +59,8 @@ class UserChapterController extends Controller
             'series' => $series,
             'chapter' => $chapter,
             'canAccess' => $canAccess,
+            'hasPurchased' => $hasPurchased,
+            'userCoins' => $user ? $user->coins : 0,
             'prevChapter' => $prevChapter,
             'nextChapter' => $nextChapter,
             'allChapters' => $allChapters,
@@ -73,14 +83,31 @@ class UserChapterController extends Controller
             return back()->with('error', 'This chapter is free to read.');
         }
 
-        if ($user->coin_balance < $chapter->coin_price) {
+        // Check if already purchased
+        $hasPurchased = ChapterPurchase::where('user_id', $user->id)
+            ->where('chapter_id', $chapter->id)
+            ->exists();
+            
+        if ($hasPurchased) {
+            return back()->with('info', 'You have already purchased this chapter.');
+        }
+
+        if ($user->coins < $chapter->coin_price) {
             return back()->with('error', 'Insufficient coins. Please purchase more coins.');
         }
 
-        // Deduct coins
-        $user->decrement('coin_balance', $chapter->coin_price);
-
-        // TODO: Record the purchase in a user_chapter_purchases table
+        // Start transaction
+        \DB::transaction(function () use ($user, $chapter) {
+            // Deduct coins
+            $user->decrement('coins', $chapter->coin_price);
+            
+            // Record the purchase
+            ChapterPurchase::create([
+                'user_id' => $user->id,
+                'chapter_id' => $chapter->id,
+                'coin_price' => $chapter->coin_price,
+            ]);
+        });
 
         return back()->with('success', 'Chapter purchased successfully!');
     }

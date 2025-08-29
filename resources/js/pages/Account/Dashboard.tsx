@@ -7,7 +7,7 @@ interface User {
     display_name: string;
     email: string;
     uid: string;
-    coin_balance: number;
+    coins: number; // Changed from coin_balance to coins
     created_at: string;
 }
 
@@ -105,7 +105,7 @@ export default function Dashboard({ user, recentReadings = [], readingStats }: P
                                         </div>
                                         <div className="ml-4">
                                             <p className="text-sm font-medium text-gray-600">Coins Balance</p>
-                                            <p className="text-2xl font-bold text-gray-900">{user.coin_balance?.toLocaleString() || '0'}</p>
+                                            <p className="text-2xl font-bold text-gray-900">{user.coins?.toLocaleString() || '0'}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -272,7 +272,7 @@ export default function Dashboard({ user, recentReadings = [], readingStats }: P
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h3 className="text-lg font-semibold mb-1">Coin Balance</h3>
-                                        <p className="text-3xl font-bold">{user.coin_balance?.toLocaleString() || '0'}</p>
+                                        <p className="text-3xl font-bold">{user.coins?.toLocaleString() || '0'}</p>
                                         <p className="text-yellow-100 text-sm">Available coins</p>
                                     </div>
                                     <div className="text-right">

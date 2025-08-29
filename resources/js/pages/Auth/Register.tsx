@@ -14,15 +14,21 @@ export default function Register() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setProcessing(true);
+        setErrors({}); // Clear previous errors
 
         router.post(route('register'), formData, {
             onError: (errors) => {
+                console.error('Registration errors:', errors);
                 setErrors(errors);
                 setProcessing(false);
             },
             onSuccess: () => {
                 setProcessing(false);
+                // Don't need to do anything here as redirect is handled by controller
             },
+            onFinish: () => {
+                setProcessing(false);
+            }
         });
     };
 

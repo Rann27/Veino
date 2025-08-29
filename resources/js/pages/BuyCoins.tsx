@@ -3,10 +3,10 @@ import UserLayout from '@/Layouts/UserLayout';
 
 interface CoinPackage {
     id: number;
-    coins: number;
-    price: number;
-    bonus: number;
-    is_popular: boolean;
+    name: string;
+    coin_amount: number;
+    price_usd: number;
+    is_active: boolean;
 }
 
 interface Props {
@@ -25,16 +25,16 @@ export default function BuyCoins({ coinPackages }: Props) {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {coinPackages && coinPackages.map((pkg) => (
+                        {coinPackages && coinPackages.filter(pkg => pkg.is_active).map((pkg, index) => (
                             <div 
                                 key={pkg.id} 
                                 className={`bg-black/30 backdrop-blur-md rounded-xl p-6 border ${
-                                    pkg.is_popular 
+                                    index === 1 // Make middle package popular for demo
                                         ? 'border-yellow-400 ring-2 ring-yellow-400/50' 
                                         : 'border-white/10'
                                 } relative`}
                             >
-                                {pkg.is_popular && (
+                                {index === 1 && (
                                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                                         <span className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-4 py-1 rounded-full text-sm font-bold">
                                             MOST POPULAR
@@ -44,19 +44,17 @@ export default function BuyCoins({ coinPackages }: Props) {
                                 
                                 <div className="text-center">
                                     <div className="text-4xl mb-2">💰</div>
-                                    <h3 className="text-2xl font-bold text-white mb-2">
-                                        {pkg.coins.toLocaleString()} Coins
+                                    <h3 className="text-xl font-bold text-white mb-2">
+                                        {pkg.name}
                                     </h3>
-                                    {pkg.bonus > 0 && (
-                                        <p className="text-green-400 text-sm mb-2">
-                                            +{pkg.bonus} Bonus Coins
-                                        </p>
-                                    )}
+                                    <h3 className="text-2xl font-bold text-white mb-2">
+                                        {pkg.coin_amount.toLocaleString()} Coins
+                                    </h3>
                                     <div className="text-3xl font-bold text-blue-400 mb-4">
-                                        ${pkg.price}
+                                        ${pkg.price_usd}
                                     </div>
                                     <button className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                                        pkg.is_popular
+                                        index === 1
                                             ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black hover:from-yellow-500 hover:to-orange-600'
                                             : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700'
                                     }`}>
