@@ -54,6 +54,19 @@ Route::post('/logout', function (Illuminate\Http\Request $request) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore');
 
+// Buy Coins route
+Route::get('/buy-coins', function () {
+    $coinPackages = \App\Models\CoinPackage::orderBy('coins')->get();
+    return Inertia::render('BuyCoins', [
+        'coinPackages' => $coinPackages
+    ]);
+})->name('buy-coins');
+
+// Discord redirect
+Route::get('/discord', function () {
+    return redirect('https://discord.gg/your-discord-server');
+})->name('discord');
+
 Route::get('/series/{slug}', [UserSeriesController::class, 'show'])->name('series.show');
 Route::get('/series/{slug}/chapter/{chapter}', [UserChapterController::class, 'show'])->name('chapters.show');
 Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController::class, 'purchase'])
@@ -64,6 +77,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'dashboard'])->name('account.dashboard');
     Route::get('/account/library', [AccountController::class, 'library'])->name('account.library');
     Route::get('/account/bookmarks', [AccountController::class, 'bookmarks'])->name('account.bookmarks');
+    Route::get('/account/history', [AccountController::class, 'history'])->name('account.history');
     Route::get('/account/coins', [AccountController::class, 'coins'])->name('account.coins');
     Route::get('/account/settings', [AccountController::class, 'settings'])->name('account.settings');
 });

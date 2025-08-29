@@ -14,7 +14,7 @@ interface Chapter {
     chapter_number: number;
     content: string;
     is_premium: boolean;
-    coin_cost: number;
+    coin_price: number;
 }
 
 interface NavigationChapter {
@@ -69,7 +69,16 @@ export default function ChapterShow({
     }, [lastScrollY]);
 
     const handlePurchase = () => {
-        router.post(route('chapters.purchase', [series.slug, chapter.chapter_number]));
+        router.post(route('chapters.purchase', [series.slug, chapter.chapter_number]), {}, {
+            onSuccess: () => {
+                // Reload the page to update the access status
+                router.reload();
+            },
+            onError: (errors) => {
+                console.error('Purchase failed:', errors);
+                alert('Purchase failed. Please try again.');
+            }
+        });
     };
 
     const jumpToChapter = (chapterNumber: number) => {
@@ -91,7 +100,7 @@ export default function ChapterShow({
                                 </svg>
                                 <h1 className="text-2xl font-bold text-gray-900 mb-2">Premium Chapter</h1>
                                 <p className="text-gray-600 mb-4">
-                                    This chapter requires {chapter.coin_cost} coins to unlock
+                                    This chapter requires {chapter.coin_price} coins to unlock
                                 </p>
                             </div>
                             
@@ -100,11 +109,11 @@ export default function ChapterShow({
                                     onClick={handlePurchase}
                                     className="px-6 py-3 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 transition-colors"
                                 >
-                                    Unlock for {chapter.coin_cost} Coins
+                                    Unlock for {chapter.coin_price} Coins
                                 </button>
                                 
                                 <div className="text-sm text-gray-500">
-                                    <Link href="#" className="text-blue-600 hover:text-blue-800">
+                                    <Link href="/buy-coins" className="text-blue-600 hover:text-blue-800">
                                         Get more coins
                                     </Link>
                                 </div>

@@ -36,6 +36,16 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
     setShowAccountMenu(!showAccountMenu);
   };
 
+  // Helper function to get user initials
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {title && <Head title={title} />}
@@ -88,11 +98,29 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
                     onClick={toggleAccountMenu}
                     className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 transition-colors"
                   >
-                    <img
-                      src={auth.user.avatar || '/images/default-avatar.png'}
-                      alt={auth.user.display_name}
-                      className="w-8 h-8 rounded-full"
-                    />
+                    {auth.user.avatar ? (
+                      <img
+                        src={auth.user.avatar}
+                        alt={auth.user.display_name}
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                          // Fallback to initials if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent && !parent.querySelector('.avatar-initials') && auth.user) {
+                            const initialsDiv = document.createElement('div');
+                            initialsDiv.className = 'avatar-initials w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium';
+                            initialsDiv.textContent = getUserInitials(auth.user.display_name);
+                            parent.appendChild(initialsDiv);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">
+                        {getUserInitials(auth.user.display_name)}
+                      </div>
+                    )}
                     <span className="hidden md:block text-sm font-medium text-gray-700">
                       {auth.user.display_name}
                     </span>
@@ -102,15 +130,15 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
                   {showAccountMenu && (
                     <div className="absolute right-0 mt-2 w-48 backdrop-blur-[20px] bg-white/90 rounded-md shadow-lg border border-gray-200/20 py-1">
                       <div className="px-4 py-2 text-xs text-gray-500 border-b border-gray-200/20">
-                        Coins: {auth.user.coin_balance}
+                        Coins: {auth.user.coin_balance?.toLocaleString() || '0'}
                       </div>
-                      <Link href="/account" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/50">
+                      <Link href="/account/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/50">
                         Settings
                       </Link>
-                      <Link href="/bookmark" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/50">
+                      <Link href="/account/bookmarks" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/50">
                         Bookmark
                       </Link>
-                      <Link href="/bookmark?tab=history" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/50">
+                      <Link href="/account/history" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100/50">
                         History
                       </Link>
                       <div className="border-t border-gray-200/20 mt-1">

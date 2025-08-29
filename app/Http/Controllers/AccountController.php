@@ -63,6 +63,18 @@ class AccountController extends Controller
         ]);
     }
     
+    public function history()
+    {
+        $user = Auth::user();
+        
+        // TODO: Fetch user's reading history
+        $readingHistory = [];
+        
+        return Inertia::render('Account/History', [
+            'readingHistory' => $readingHistory,
+        ]);
+    }
+    
     public function coins()
     {
         $user = Auth::user();

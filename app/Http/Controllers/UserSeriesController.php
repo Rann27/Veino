@@ -18,7 +18,7 @@ class UserSeriesController extends Controller
 
         $chapters = Chapter::where('series_id', $series->id)
             ->orderBy('chapter_number')
-            ->get(['id', 'title', 'chapter_number', 'is_premium', 'coin_cost', 'created_at']);
+            ->get(['id', 'title', 'chapter_number', 'is_premium', 'coin_price', 'created_at']);
 
         // Get related series (same genres)
         $relatedSeries = Series::whereHas('genres', function ($query) use ($series) {

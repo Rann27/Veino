@@ -25,7 +25,7 @@ class UserChapterController extends Controller
         
         if ($chapter->is_premium && $user) {
             // Check if user has enough coins or has already purchased
-            $canAccess = $user->coin_balance >= $chapter->coin_cost;
+            $canAccess = $user->coin_balance >= $chapter->coin_price;
             // TODO: Add logic to check if user has already purchased this chapter
         } elseif ($chapter->is_premium && !$user) {
             $canAccess = false;
@@ -73,12 +73,12 @@ class UserChapterController extends Controller
             return back()->with('error', 'This chapter is free to read.');
         }
 
-        if ($user->coin_balance < $chapter->coin_cost) {
+        if ($user->coin_balance < $chapter->coin_price) {
             return back()->with('error', 'Insufficient coins. Please purchase more coins.');
         }
 
         // Deduct coins
-        $user->decrement('coin_balance', $chapter->coin_cost);
+        $user->decrement('coin_balance', $chapter->coin_price);
 
         // TODO: Record the purchase in a user_chapter_purchases table
 

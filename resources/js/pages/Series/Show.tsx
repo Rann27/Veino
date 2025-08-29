@@ -17,7 +17,7 @@ interface Chapter {
     title: string;
     chapter_number: number;
     is_premium: boolean;
-    coin_cost: number;
+    coin_price: number;
     created_at: string;
 }
 
@@ -196,7 +196,7 @@ export default function SeriesShow({ series, chapters, relatedSeries }: Props) {
                                                         </span>
                                                         {chapter.is_premium && (
                                                             <span className="text-sm text-yellow-600 font-medium">
-                                                                {chapter.coin_cost} coins
+                                                                {chapter.coin_price} coins
                                                             </span>
                                                         )}
                                                     </div>
