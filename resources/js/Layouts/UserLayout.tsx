@@ -67,15 +67,15 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
                 <Link href="/" className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">
                   Home
                 </Link>
-                <Link href="/series" className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                <Link href="/explore" className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">
                   Explore
                 </Link>
-                <Link href="/shop" className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                <Link href="/buy-coins" className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">
                   Buy Coins
                 </Link>
-                <a href="#" className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">
+                <Link href="/discord" className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium">
                   Discord
-                </a>
+                </Link>
               </div>
             </div>
 

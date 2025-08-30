@@ -29,11 +29,6 @@ export default function PaymentIndex({ coinPackages, paymentSettings }: PaymentI
     price_usd: '',
     is_active: true,
   });
-  const [settingsFormData, setSettingsFormData] = useState({
-    paypal_client_id: paymentSettings.paypal_client_id || '',
-    paypal_secret: paymentSettings.paypal_secret || '',
-    paypal_mode: paymentSettings.paypal_mode || 'sandbox',
-  });
 
   const openEditPackage = (pkg: CoinPackage) => {
     setEditingPackage(pkg);
@@ -59,11 +54,6 @@ export default function PaymentIndex({ coinPackages, paymentSettings }: PaymentI
         }
       });
     }
-  };
-
-  const handleSettingsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.put('/admin/payment-settings', settingsFormData);
   };
 
   return (
@@ -121,58 +111,135 @@ export default function PaymentIndex({ coinPackages, paymentSettings }: PaymentI
         <div className="bg-white shadow rounded-lg p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">PayPal Settings</h2>
           
-          <form onSubmit={handleSettingsSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-6">
+            {/* Status Badge */}
+            <div className="flex items-center space-x-3">
+              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                paymentSettings.paypal_client_id 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                <div className={`w-2 h-2 rounded-full mr-2 ${
+                  paymentSettings.paypal_client_id ? 'bg-green-400' : 'bg-red-400'
+                }`}></div>
+                {paymentSettings.paypal_client_id ? 'PayPal Configured' : 'PayPal Not Configured'}
+              </div>
+              <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                paymentSettings.paypal_mode === 'live' 
+                  ? 'bg-red-100 text-red-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                {paymentSettings.paypal_mode === 'live' ? 'LIVE MODE' : 'SANDBOX MODE'}
+              </div>
+            </div>
+
+            {/* PayPal Client ID */}
+            <div className="grid grid-cols-1 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   PayPal Client ID
                 </label>
-                <input
-                  type="text"
-                  value={settingsFormData.paypal_client_id}
-                  onChange={(e) => setSettingsFormData(prev => ({ ...prev, paypal_client_id: e.target.value }))}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Enter PayPal Client ID"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={paymentSettings.paypal_client_id || 'Not configured'}
+                    readOnly
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-mono text-sm cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </div>
+                </div>
+                {paymentSettings.paypal_client_id && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Length: {paymentSettings.paypal_client_id.length} characters • Last updated via database
+                  </p>
+                )}
               </div>
 
+              {/* PayPal Secret */}
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   PayPal Secret
                 </label>
-                <input
-                  type="password"
-                  value={settingsFormData.paypal_secret}
-                  onChange={(e) => setSettingsFormData(prev => ({ ...prev, paypal_secret: e.target.value }))}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  placeholder="Enter PayPal Secret"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={
+                      paymentSettings.paypal_secret 
+                        ? `${'*'.repeat(paymentSettings.paypal_secret.length - 5)}${paymentSettings.paypal_secret.slice(-5)}`
+                        : 'Not configured'
+                    }
+                    readOnly
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-mono text-sm cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L17 17" />
+                    </svg>
+                  </div>
+                </div>
+                {paymentSettings.paypal_secret && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Length: {paymentSettings.paypal_secret.length} characters • Showing last 5 digits only
+                  </p>
+                )}
+              </div>
+
+              {/* PayPal Mode */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  PayPal Environment
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={`${paymentSettings.paypal_mode?.toUpperCase() || 'NOT SET'} Environment`}
+                    readOnly
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700 font-medium text-sm cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9V3m9 9l-3-3m3 3l-3 3" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  {paymentSettings.paypal_mode === 'live' 
+                    ? 'Production environment - Real transactions will be processed'
+                    : 'Testing environment - Safe for development and testing'
+                  }
+                </p>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                PayPal Mode
-              </label>
-              <select
-                value={settingsFormData.paypal_mode}
-                onChange={(e) => setSettingsFormData(prev => ({ ...prev, paypal_mode: e.target.value }))}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              >
-                <option value="sandbox">Sandbox (Testing)</option>
-                <option value="live">Live (Production)</option>
-              </select>
+            {/* Configuration Instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-blue-400 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h3 className="text-sm font-medium text-blue-900 mb-1">
+                    PayPal Configuration Instructions
+                  </h3>
+                  <div className="text-sm text-blue-800">
+                    <p className="mb-2">PayPal credentials are configured directly in the database for security reasons.</p>
+                    <p className="mb-1"><strong>To update PayPal settings:</strong></p>
+                    <ol className="list-decimal list-inside space-y-1 text-xs">
+                      <li>Access the server via SSH or terminal</li>
+                      <li>Run: <code className="bg-blue-100 px-1 rounded">php artisan tinker</code></li>
+                      <li>Execute: <code className="bg-blue-100 px-1 rounded">\App\Models\PaymentSetting::set('paypal_client_id', 'YOUR_CLIENT_ID');</code></li>
+                      <li>Execute: <code className="bg-blue-100 px-1 rounded">\App\Models\PaymentSetting::set('paypal_secret', 'YOUR_SECRET');</code></li>
+                      <li>Execute: <code className="bg-blue-100 px-1 rounded">\App\Models\PaymentSetting::set('paypal_mode', 'sandbox|live');</code></li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Save PayPal Settings
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
 
         {/* Additional Financial Settings */}

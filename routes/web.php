@@ -9,9 +9,10 @@ use App\Http\Controllers\UserSeriesController;
 use App\Http\Controllers\UserChapterController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\ChapterController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\PaymentController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\SeriesController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Auth;
@@ -72,6 +73,19 @@ Route::get('/series/{slug}/chapter/{chapter}', [UserChapterController::class, 's
 Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController::class, 'purchase'])
     ->name('chapters.purchase')->middleware('auth');
 
+// Payment routes
+Route::middleware('auth')->group(function () {
+    Route::post('/payment/initiate/{coinPackage}', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
+    Route::get('/payment/success', [PaymentController::class, 'handleSuccess'])->name('payment.success');
+    Route::get('/payment/cancel', [PaymentController::class, 'handleCancel'])->name('payment.cancel');
+});
+
+// PayPal configuration (can be accessed without auth for frontend detection)
+Route::get('/payment/paypal-config', [PaymentController::class, 'getPayPalConfig'])->name('payment.paypal-config');
+
+// PayPal IPN (can be accessed without auth)
+Route::post('/payment/paypal-ipn', [PaymentController::class, 'handleIPN'])->name('payment.paypal-ipn');
+
 // Account routes (requires authentication)
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'dashboard'])->name('account.dashboard');
@@ -107,9 +121,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/users/{user}/add-coins', [UserController::class, 'addCoins'])->name('users.add-coins');
     
     // Payment & Shop Management
-    Route::get('/payment-management', [PaymentController::class, 'index'])->name('payment.index');
-    Route::put('/coin-packages/{coinPackage}', [PaymentController::class, 'updateCoinPackage'])->name('coin-packages.update');
-    Route::put('/payment-settings', [PaymentController::class, 'updatePaymentSettings'])->name('payment.settings');
+    Route::get('/payment-management', [AdminPaymentController::class, 'index'])->name('payment.index');
+    Route::put('/coin-packages/{coinPackage}', [AdminPaymentController::class, 'updateCoinPackage'])->name('coin-packages.update');
+    Route::put('/payment-settings', [AdminPaymentController::class, 'updatePaymentSettings'])->name('payment.settings');
 });
 
 // Test route for debugging
