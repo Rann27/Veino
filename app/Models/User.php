@@ -52,4 +52,28 @@ class User extends Authenticatable
             'is_banned' => 'boolean',
         ];
     }
+
+    /**
+     * Get the user's theme preference.
+     */
+    public function themePreference()
+    {
+        return $this->hasOne(UserThemePreference::class);
+    }
+
+    /**
+     * Get or create user's theme preference with defaults
+     */
+    public function getThemePreference()
+    {
+        if (!$this->themePreference) {
+            return $this->themePreference()->create([
+                'theme_name' => 'Light',
+                'auto_theme' => false,
+                'reader_settings' => UserThemePreference::getDefaultReaderSettings(),
+            ]);
+        }
+        
+        return $this->themePreference;
+    }
 }

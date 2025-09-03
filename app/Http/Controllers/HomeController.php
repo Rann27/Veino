@@ -12,6 +12,7 @@ class HomeController extends Controller
     {
         // Hero slider - featured series
         $heroSeries = Series::with(['nativeLanguage', 'genres'])
+            ->withCount('chapters')
             ->where('status', 'ongoing')
             ->orderBy('created_at', 'desc')
             ->take(5)
@@ -29,6 +30,7 @@ class HomeController extends Controller
         $latestUpdates = Series::with(['nativeLanguage', 'genres', 'chapters' => function ($query) {
                 $query->latest()->first();
             }])
+            ->withCount('chapters')
             ->whereHas('chapters', function ($query) {
                 $query->where('created_at', '>=', now()->subDays(30));
             })

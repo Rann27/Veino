@@ -27,7 +27,12 @@ class PayPalService
     private function getAccessToken()
     {
         try {
-            $response = Http::withBasicAuth($this->clientId, $this->clientSecret)
+            $response = Http::timeout(30)
+                ->withBasicAuth($this->clientId, $this->clientSecret)
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                    'Accept-Language' => 'en_US',
+                ])
                 ->asForm()
                 ->post($this->baseUrl . '/v1/oauth2/token', [
                     'grant_type' => 'client_credentials'
@@ -37,7 +42,10 @@ class PayPalService
                 return $response->json()['access_token'];
             }
 
-            Log::error('PayPal access token failed: ' . $response->body());
+            Log::error('PayPal access token failed', [
+                'status' => $response->status(),
+                'response' => $response->json()
+            ]);
             return null;
         } catch (\Exception $e) {
             Log::error('PayPal access token exception: ' . $e->getMessage());
@@ -64,21 +72,33 @@ class PayPalService
                             'currency_code' => $currency,
                             'value' => number_format($amount, 2, '.', '')
                         ],
-                        'description' => $description
+                        'description' => $description,
+                        'custom_id' => 'VN_' . time() . '_' . rand(1000, 9999)
                     ]
                 ],
                 'application_context' => [
                     'brand_name' => 'VeiNovel',
                     'locale' => 'en-US',
-                    'landing_page' => 'BILLING',
+                    'landing_page' => 'LOGIN',
                     'shipping_preference' => 'NO_SHIPPING',
                     'user_action' => 'PAY_NOW',
+                    'payment_method' => [
+                        'payee_preferred' => 'UNRESTRICTED',
+                        'payer_selected' => 'PAYPAL'
+                    ],
                     'return_url' => $returnUrl ?: url('/payment/success'),
                     'cancel_url' => $cancelUrl ?: url('/payment/cancel')
                 ]
             ];
 
-            $response = Http::withToken($accessToken)
+            $response = Http::timeout(30)
+                ->withToken($accessToken)
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                    'PayPal-Request-Id' => uniqid('VN_', true),
+                    'Prefer' => 'return=representation'
+                ])
                 ->post($this->baseUrl . '/v2/checkout/orders', $orderData);
 
             if ($response->successful()) {

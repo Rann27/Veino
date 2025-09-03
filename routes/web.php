@@ -126,5 +126,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/payment-settings', [AdminPaymentController::class, 'updatePaymentSettings'])->name('payment.settings');
 });
 
+// API Routes for Theme Management
+Route::prefix('api')->group(function () {
+    Route::get('/themes', [App\Http\Controllers\Api\ThemeController::class, 'themes']);
+    Route::middleware('auth')->group(function () {
+        Route::get('/theme-preferences', [App\Http\Controllers\Api\ThemeController::class, 'index']);
+        Route::put('/theme-preferences', [App\Http\Controllers\Api\ThemeController::class, 'update']);
+    });
+});
+
 // Test route for debugging
 require_once 'test.php';

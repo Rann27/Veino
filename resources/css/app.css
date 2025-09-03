@@ -7,3 +7,104 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Theme Variables */
+:root {
+    --theme-bg: #ffffff;
+    --theme-fg: #000000;
+    --theme-bg-inverted: #000000;
+    --theme-fg-inverted: #ffffff;
+}
+
+/* Global theme classes */
+.theme-bg {
+    background-color: var(--theme-bg) !important;
+}
+
+.theme-fg {
+    color: var(--theme-fg) !important;
+}
+
+.theme-bg-inverted {
+    background-color: var(--theme-bg-inverted) !important;
+}
+
+.theme-fg-inverted {
+    color: var(--theme-fg-inverted) !important;
+}
+
+.theme-border {
+    border-color: var(--theme-fg) !important;
+    opacity: 0.2;
+}
+
+.theme-hover:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+/* Button variants using theme colors */
+.btn-theme-primary {
+    background-color: var(--theme-fg);
+    color: var(--theme-bg);
+    border: 1px solid var(--theme-fg);
+}
+
+.btn-theme-primary:hover {
+    background-color: var(--theme-bg);
+    color: var(--theme-fg);
+}
+
+.btn-theme-secondary {
+    background-color: transparent;
+    color: var(--theme-fg);
+    border: 1px solid var(--theme-fg);
+}
+
+.btn-theme-secondary:hover {
+    background-color: var(--theme-fg);
+    color: var(--theme-bg);
+}
+
+/* Form elements using theme colors */
+.input-theme {
+    background-color: var(--theme-bg);
+    color: var(--theme-fg);
+    border: 1px solid var(--theme-fg);
+    opacity: 0.7;
+}
+
+.input-theme:focus {
+    border-color: var(--theme-fg);
+    opacity: 1;
+}
+
+/* Smooth transitions for theme changes */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Animation utilities */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes zoom-in {
+    from { transform: scale(0.95); }
+    to { transform: scale(1); }
+}
+
+.animate-in {
+    animation-duration: 200ms;
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+}
+
+.fade-in-0 {
+    animation-name: fade-in;
+}
+
+.zoom-in-95 {
+    animation-name: zoom-in;
+}

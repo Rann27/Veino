@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
+import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
+import { useTheme } from '@/Contexts/ThemeContext';
 
 interface User {
     id: number;
@@ -14,9 +16,11 @@ interface Props {
     user: User;
 }
 
-export default function Settings({ user }: Props) {
+function SettingsContent({ user }: Props) {
+    const { currentTheme } = useTheme();
     const [activeTab, setActiveTab] = useState<'profile' | 'account' | 'preferences' | 'privacy'>('profile');
     const [isLoading, setIsLoading] = useState(false);
+    const [showThemeModal, setShowThemeModal] = useState(false);
     
     // Profile form
     const [profileData, setProfileData] = useState({
@@ -116,15 +120,25 @@ export default function Settings({ user }: Props) {
     ];
 
     return (
-        <UserLayout>
+        <>
             <Head title="Account Settings - Veinovel" />
             
-            <div className="min-h-screen bg-gray-50 pt-20">
+            <div 
+                className="min-h-screen pt-20"
+                style={{ backgroundColor: currentTheme.background }}
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Header */}
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">Account Settings</h1>
-                        <p className="text-gray-600">Manage your account preferences and security settings</p>
+                        <h1 
+                            className="text-3xl font-bold mb-2"
+                            style={{ color: currentTheme.foreground }}
+                        >
+                            Account Settings
+                        </h1>
+                        <p style={{ color: `${currentTheme.foreground}80` }}>
+                            Manage your account preferences and security settings
+                        </p>
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -340,31 +354,36 @@ export default function Settings({ user }: Props) {
                                             {/* Reading Settings */}
                                             <div>
                                                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Reading Settings</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="space-y-4">
+                                                    {/* Theme Selector */}
                                                     <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Reading Mode</label>
-                                                        <select
-                                                            value={preferences.reading_mode}
-                                                            onChange={(e) => setPreferences({...preferences, reading_mode: e.target.value})}
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+                                                        <button
+                                                            onClick={() => setShowThemeModal(true)}
+                                                            className="w-full px-4 py-3 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-between text-left"
                                                         >
-                                                            <option value="light">Light Mode</option>
-                                                            <option value="dark">Dark Mode</option>
-                                                            <option value="sepia">Sepia Mode</option>
-                                                        </select>
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="w-6 h-6 rounded-full border border-gray-300 bg-gradient-to-r from-white to-gray-100"></div>
+                                                                <span className="text-gray-700">Choose theme and colors</span>
+                                                            </div>
+                                                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                            </svg>
+                                                        </button>
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            Customize your reading experience with different color themes
+                                                        </p>
                                                     </div>
+                                                    
+                                                    {/* Font Size - Note about reader settings */}
                                                     <div>
-                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Font Size</label>
-                                                        <select
-                                                            value={preferences.font_size}
-                                                            onChange={(e) => setPreferences({...preferences, font_size: e.target.value})}
-                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                        >
-                                                            <option value="small">Small</option>
-                                                            <option value="medium">Medium</option>
-                                                            <option value="large">Large</option>
-                                                            <option value="extra-large">Extra Large</option>
-                                                        </select>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-2">Reading Preferences</label>
+                                                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                                            <p className="text-sm text-blue-800">
+                                                                📖 Advanced reading settings (font size, spacing, width) are available in the reader. 
+                                                                Look for the ⚙️ settings button when reading any chapter.
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -434,6 +453,20 @@ export default function Settings({ user }: Props) {
                     </div>
                 </div>
             </div>
+
+            {/* Theme Selector Modal */}
+            <ThemeSelectorModal 
+                isOpen={showThemeModal} 
+                onClose={() => setShowThemeModal(false)} 
+            />
+        </>
+    );
+}
+
+export default function Settings(props: Props) {
+    return (
+        <UserLayout>
+            <SettingsContent {...props} />
         </UserLayout>
     );
 }
