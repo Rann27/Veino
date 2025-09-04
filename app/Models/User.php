@@ -26,6 +26,8 @@ class User extends Authenticatable
         'role',
         'coins', // User's coin balance
         'is_banned',
+        'avatar', // User's avatar image path
+        'bio', // User's biography
         // Removed email_verified_at since we don't use email verification
     ];
 
@@ -75,5 +77,18 @@ class User extends Authenticatable
         }
         
         return $this->themePreference;
+    }
+
+    /**
+     * Get the user's avatar URL.
+     */
+    public function getAvatarUrlAttribute()
+    {
+        if ($this->avatar) {
+            return asset('storage/' . $this->avatar);
+        }
+        
+        // Default avatar URL - you can use a placeholder service or default image
+        return asset('images/default-avatar.svg');
     }
 }

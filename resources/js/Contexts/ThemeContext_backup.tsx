@@ -51,50 +51,32 @@ export const defaultThemes: ThemePreset[] = [
     },
     {
         name: 'Dark',
-        background: '#1a1a1a',
+        background: '#000000',
         foreground: '#ffffff',
         description: 'Easy on the eyes for night reading'
     },
     {
         name: 'Sepia',
-        background: '#f4f1ea',
-        foreground: '#5c4b37',
-        description: 'Warm tones reminiscent of old books'
+        background: '#f4ecd8',
+        foreground: '#4b3621',
+        description: 'Warm paper-like experience'
     },
     {
-        name: 'Navy',
-        background: '#0f1419',
-        foreground: '#bfbdb6',
-        description: 'Deep blue for focused reading'
+        name: 'Cool Dark',
+        background: '#1e1e2e',
+        foreground: '#cdd6f4',
+        description: 'Cool toned dark theme'
     },
     {
-        name: 'Forest',
-        background: '#232D1C',
-        foreground: '#E8F5E8',
-        description: 'Natural green tones for relaxed reading'
+        name: 'Frost',
+        background: '#cddced',
+        foreground: '#021a36',
+        description: 'Cool and refreshing blue tones'
     },
     {
-        name: 'Rose',
-        background: '#1a1a1a',
-        foreground: '#e6b3ba',
-        description: 'Subtle rose accent for a softer feel'
-    },
-    {
-        name: 'Ocean',
-        background: '#0D1B2A',
-        foreground: '#7DD3FC',
-        description: 'Deep ocean blues for calm reading'
-    },
-    {
-        name: 'Sunset',
-        background: '#2D1B1B',
-        foreground: '#FFCCCB',
-        description: 'Warm sunset hues for evening reading'
-    },
-    {
-        name: 'Minimal',
-        background: '#fafafa',
-        foreground: '#333333',
+        name: 'Solarized',
+        background: '#fdf6e3',
+        foreground: '#657b83',
         description: 'Gentle contrast for comfortable reading'
     }
 ];
@@ -196,7 +178,49 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         };
 
         loadThemePreferences();
-    }, []); // Empty dependency array to prevent reloading
+    }, []); // Remove auth?.user dependency to prevent reloading
+            // Check for cached data first
+            const cachedData = localStorage.getItem('veinovel-theme-cache');
+            if (cachedData) {
+                try {
+                    const data = JSON.parse(cachedData);
+                    setCurrentTheme(data.theme);
+                    setIsSystemTheme(data.auto_theme);
+                    setReaderSettings(data.reader_settings);
+                    return;
+                } catch (e) {
+                    // Invalid cache, continue with legacy loading
+                }
+            }
+
+            // Legacy localStorage loading
+            const savedTheme = localStorage.getItem('veinovel-theme');
+            const savedSystemTheme = localStorage.getItem('veinovel-system-theme');
+            const savedReaderSettings = localStorage.getItem('veinovel-reader-settings');
+            
+            if (savedSystemTheme === 'true') {
+                setIsSystemTheme(true);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                setCurrentTheme(prefersDark ? defaultThemes[1] : defaultThemes[0]);
+            } else if (savedTheme) {
+                const theme = defaultThemes.find(t => t.name === savedTheme);
+                if (theme) {
+                    setCurrentTheme(theme);
+                }
+            }
+
+            if (savedReaderSettings) {
+                try {
+                    const parsed = JSON.parse(savedReaderSettings);
+                    setReaderSettings(parsed);
+                } catch (e) {
+                    // Invalid JSON, use defaults
+                }
+            }
+        };
+
+        loadThemePreferences();
+    }, []); // Remove auth?.user dependency to prevent reloading
 
     // Apply theme to document
     useEffect(() => {
@@ -217,14 +241,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
             const handleChange = (e: MediaQueryListEvent) => {
                 const newTheme = e.matches ? defaultThemes[1] : defaultThemes[0];
                 setCurrentTheme(newTheme);
+                syncWithBackend(newTheme);
             };
-
-            mediaQuery.addListener(handleChange);
-            return () => mediaQuery.removeListener(handleChange);
+            
+            mediaQuery.addEventListener('change', handleChange);
+            return () => mediaQuery.removeEventListener('change', handleChange);
         }
     }, [isSystemTheme]);
 
-    // Sync preferences with backend
     const syncWithBackend = async (theme?: ThemePreset, reader?: ReaderSettings) => {
         if (!auth?.user) return; // Only sync for logged-in users
 
@@ -232,7 +256,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         const readerToSave = reader || readerSettings;
 
         try {
-            const response = await fetch('/api/theme-preferences', {
+            await fetch('/api/theme-preferences', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -248,16 +272,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
                 }),
             });
 
-            if (response.ok) {
-                // Update cache
-                localStorage.setItem('veinovel-theme-cache', JSON.stringify({
-                    theme: themeToSave,
-                    auto_theme: isSystemTheme,
-                    reader_settings: readerToSave,
-                }));
-            }
+            // Update cache
+            localStorage.setItem('veinovel-theme-cache', JSON.stringify({
+                theme: themeToSave,
+                auto_theme: isSystemTheme,
+                reader_settings: readerToSave,
+            }));
         } catch (error) {
-            console.error('Failed to sync with backend:', error);
+            console.error('Failed to sync theme with backend:', error);
         }
     };
 
@@ -265,11 +287,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         setCurrentTheme(theme);
         setIsSystemTheme(false);
         
-        // Save to localStorage immediately
+        // Update localStorage immediately
         localStorage.setItem('veinovel-theme', theme.name);
-        localStorage.setItem('veinovel-system-theme', 'false');
+        localStorage.removeItem('veinovel-system-theme');
         
-        // Sync with backend for logged-in users
+        // Sync with backend
         syncWithBackend(theme);
     };
 
@@ -278,35 +300,41 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         setIsSystemTheme(newSystemTheme);
         
         if (newSystemTheme) {
+            localStorage.setItem('veinovel-system-theme', 'true');
+            localStorage.removeItem('veinovel-theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setCurrentTheme(prefersDark ? defaultThemes[1] : defaultThemes[0]);
+            const newTheme = prefersDark ? defaultThemes[1] : defaultThemes[0];
+            setCurrentTheme(newTheme);
+            syncWithBackend(newTheme);
+        } else {
+            localStorage.removeItem('veinovel-system-theme');
+            localStorage.setItem('veinovel-theme', currentTheme.name);
+            syncWithBackend();
         }
-        
-        localStorage.setItem('veinovel-system-theme', newSystemTheme.toString());
-        syncWithBackend();
     };
 
-    const updateReaderSettings = (settings: Partial<ReaderSettings>) => {
-        const newSettings = { ...readerSettings, ...settings };
-        setReaderSettings(newSettings);
+    const updateReaderSettings = (newSettings: Partial<ReaderSettings>) => {
+        const updated = { ...readerSettings, ...newSettings };
+        setReaderSettings(updated);
         
-        localStorage.setItem('veinovel-reader-settings', JSON.stringify(newSettings));
-        syncWithBackend(undefined, newSettings);
-    };
-
-    const value: ThemeContextType = {
-        currentTheme,
-        setTheme,
-        isSystemTheme,
-        toggleSystemTheme,
-        readerSettings,
-        updateReaderSettings,
-        isLoading,
-        syncWithBackend,
+        // Update localStorage immediately
+        localStorage.setItem('veinovel-reader-settings', JSON.stringify(updated));
+        
+        // Sync with backend
+        syncWithBackend(undefined, updated);
     };
 
     return (
-        <ThemeContext.Provider value={value}>
+        <ThemeContext.Provider value={{
+            currentTheme,
+            setTheme,
+            isSystemTheme,
+            toggleSystemTheme,
+            readerSettings,
+            updateReaderSettings,
+            isLoading,
+            syncWithBackend
+        }}>
             {children}
         </ThemeContext.Provider>
     );

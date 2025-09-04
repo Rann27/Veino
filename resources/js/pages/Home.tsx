@@ -403,11 +403,13 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                   {/* Latest Chapters */}
                   <div className="mb-3 flex-1 space-y-1">
                     {/* Chapter 1 (Latest) */}
-                    <Link 
-                      href={`/series/${series.slug}/chapter/${series.chapters_count || 1}`}
-                      className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all"
+                    <div 
+                      className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
                       style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/series/${series.slug}/chapter/${series.chapters_count || 1}`;
+                      }}
                     >
                       <span 
                         className="text-sm font-medium"
@@ -421,7 +423,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                           <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
                         </svg>
                       )}
-                    </Link>
+                    </div>
                     {/* Chapter 2 (Previous) */}
                     {(series.chapters_count || 1) > 1 && (
                       <Link 
@@ -549,11 +551,13 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                     </Link>
                     {/* Chapter 2 (Previous) */}
                     {(series.chapters_count || 1) > 1 && (
-                      <Link 
-                        href={`/series/${series.slug}/chapter/${(series.chapters_count || 1) - 1}`}
-                        className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all"
+                      <div 
+                        className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
                         style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `/series/${series.slug}/chapter/${(series.chapters_count || 1) - 1}`;
+                        }}
                       >
                         <span 
                           className="text-sm opacity-80"
@@ -567,7 +571,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
                           </svg>
                         )}
-                      </Link>
+                      </div>
                     )}
                   </div>
 

@@ -15,8 +15,15 @@ export interface SharedData {
 export interface User {
     id: number;
     name: string;
+    display_name: string;
+    uid: string;
     email: string;
+    role: string;
+    coins: number;
+    is_banned: boolean;
     avatar?: string;
+    avatar_url?: string;
+    bio?: string;
     email_verified_at: string | null;
     created_at: string;
     updated_at: string;

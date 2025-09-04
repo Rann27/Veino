@@ -8,6 +8,7 @@ use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\UserSeriesController;
 use App\Http\Controllers\UserChapterController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\Admin\ChapterController;
@@ -43,6 +44,19 @@ Route::get('/register', [RegisterController::class, 'showRegistrationForm'])
 
 Route::post('/register', [RegisterController::class, 'register'])
     ->middleware('guest');
+
+// Forgot Password Routes
+Route::get('/password/forgot', [ForgotPasswordController::class, 'showForgotForm'])
+    ->name('password.forgot')->middleware('guest');
+
+Route::post('/password/verify', [ForgotPasswordController::class, 'verifyUser'])
+    ->name('password.verify')->middleware('guest');
+
+Route::get('/password/reset', [ForgotPasswordController::class, 'showResetForm'])
+    ->name('password.reset.form')->middleware('guest');
+
+Route::post('/password/reset', [ForgotPasswordController::class, 'resetPassword'])
+    ->name('password.reset')->middleware('guest');
 
 Route::post('/logout', function (Illuminate\Http\Request $request) {
     Auth::logout();
@@ -94,6 +108,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/account/history', [AccountController::class, 'history'])->name('account.history');
     Route::get('/account/coins', [AccountController::class, 'coins'])->name('account.coins');
     Route::get('/account/settings', [AccountController::class, 'settings'])->name('account.settings');
+    
+    // Profile update routes
+    Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
+    Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
+    Route::delete('/account', [AccountController::class, 'deleteAccount'])->name('account.delete');
 });
 
 // Admin Routes
