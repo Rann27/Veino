@@ -234,12 +234,13 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             Synopsis
                                         </h3>
                                         <div className="prose max-w-none">
-                                            <p 
+                                            <div 
                                                 className="leading-relaxed"
                                                 style={{ color: `${currentTheme.foreground}90` }}
-                                            >
-                                                {series.synopsis || 'No synopsis available.'}
-                                            </p>
+                                                dangerouslySetInnerHTML={{ 
+                                                    __html: series.synopsis || 'No synopsis available.' 
+                                                }}
+                                            />
                                         </div>
                                     </div>
 
@@ -329,7 +330,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                 className="text-sm font-medium"
                                                                 style={{ color: `${currentTheme.foreground}70` }}
                                                             >
-                                                                Ch. {chapter.chapter_number}
+                                                                {chapter.chapter_number}
                                                             </span>
                                                             <h3 
                                                                 className="font-medium"

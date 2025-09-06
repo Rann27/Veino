@@ -146,6 +146,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
 
   // Children should use useTheme hook instead of receiving currentTheme as prop
 
+  // Helper function to convert hex to filter for SVG
   const toggleSearch = () => {
     setShowSearch(!showSearch);
     if (!showSearch) {
@@ -211,13 +212,13 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
             <div className="flex-shrink-0">
               <Link 
                 href="/" 
-                className="text-2xl font-semibold" 
+                className="flex items-center space-x-3 text-2xl font-semibold" 
                 style={{ 
                   fontFamily: 'Poppins, sans-serif',
                   color: currentTheme.foreground
                 }}
               >
-                VEINOVEL
+                <span>VEINOVEL</span>
               </Link>
             </div>
 

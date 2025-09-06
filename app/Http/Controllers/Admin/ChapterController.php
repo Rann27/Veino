@@ -27,19 +27,24 @@ class ChapterController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_premium' => 'boolean',
-            'coin_price' => 'nullable|integer|min:1',
+            'is_premium' => 'required|in:0,1,true,false', // Accept multiple formats
+            'coin_price' => 'nullable|integer|min:0', // Changed from min:1 to min:0
         ]);
 
         $validated['series_id'] = $series->id;
         $validated['chapter_number'] = $series->getNextChapterNumber();
-        $validated['is_premium'] = $request->boolean('is_premium');
+        
+        // Ensure is_premium is treated as boolean regardless of input format
+        $validated['is_premium'] = in_array($validated['is_premium'], [1, '1', true, 'true']);
         $validated['content'] = $this->sanitizeHtmlContent($validated['content']);
         
         if (!$validated['is_premium']) {
             $validated['coin_price'] = 0;
         } else {
-            $validated['coin_price'] = $validated['coin_price'] ?? 45;
+            // For premium chapters, ensure coin_price is at least 1
+            if (!isset($validated['coin_price']) || $validated['coin_price'] < 1) {
+                $validated['coin_price'] = 45; // Default value
+            }
         }
 
         Chapter::create($validated);
@@ -52,17 +57,21 @@ class ChapterController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_premium' => 'boolean',
-            'coin_price' => 'nullable|integer|min:1',
+            'is_premium' => 'required|in:0,1,true,false', // Accept multiple formats
+            'coin_price' => 'nullable|integer|min:0', // Changed from min:1 to min:0
         ]);
 
-        $validated['is_premium'] = $request->boolean('is_premium');
+        // Ensure is_premium is treated as boolean regardless of input format
+        $validated['is_premium'] = in_array($validated['is_premium'], [1, '1', true, 'true']);
         $validated['content'] = $this->sanitizeHtmlContent($validated['content']);
         
         if (!$validated['is_premium']) {
             $validated['coin_price'] = 0;
         } else {
-            $validated['coin_price'] = $validated['coin_price'] ?? 45;
+            // For premium chapters, ensure coin_price is at least 1
+            if (!isset($validated['coin_price']) || $validated['coin_price'] < 1) {
+                $validated['coin_price'] = 45; // Default value
+            }
         }
 
         $chapter->update($validated);

@@ -39,6 +39,14 @@ class Series extends Model
                 $series->slug = Str::slug($series->title);
             }
         });
+
+        static::deleting(function ($series) {
+            // Delete all chapters when series is deleted
+            $series->chapters()->delete();
+            
+            // Delete all bookmarks when series is deleted
+            $series->bookmarks()->delete();
+        });
     }
 
     public function nativeLanguage(): BelongsTo

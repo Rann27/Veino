@@ -49,6 +49,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
+  const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [editFormData, setEditFormData] = useState({
     title: series.title,
     alternative_title: series.alternative_title || '',
@@ -116,19 +117,86 @@ export default function SeriesShow({ series }: SeriesShowProps) {
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     router.put(`/admin/series/${series.slug}`, editFormData, {
-      onSuccess: () => setShowEditModal(false),
+      onSuccess: () => {
+        setShowEditModal(false);
+        setAlertMessage({ type: 'success', message: 'Series updated successfully!' });
+        setTimeout(() => setAlertMessage(null), 5000);
+      },
+      onError: () => {
+        setAlertMessage({ type: 'error', message: 'Failed to update series. Please try again.' });
+        setTimeout(() => setAlertMessage(null), 5000);
+      }
     });
   };
 
   const handleChapterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prepare data to ensure proper format
+    const submitData = {
+      title: chapterFormData.title,
+      content: chapterFormData.content,
+      is_premium: chapterFormData.is_premium ? 1 : 0, // Convert boolean to integer
+      coin_price: chapterFormData.is_premium ? chapterFormData.coin_price : 0
+    };
+    
     if (editingChapter) {
-      router.put(`/admin/chapters/${editingChapter.id}`, chapterFormData, {
-        onSuccess: () => setShowChapterModal(false),
+      router.put(`/admin/chapters/${editingChapter.id}`, submitData, {
+        onSuccess: () => {
+          setShowChapterModal(false);
+          setAlertMessage({ type: 'success', message: 'Chapter updated successfully!' });
+          setTimeout(() => setAlertMessage(null), 5000);
+        },
+        onError: (errors) => {
+          console.error('Update error:', errors);
+          setAlertMessage({ type: 'error', message: 'Failed to update chapter. Please try again.' });
+          setTimeout(() => setAlertMessage(null), 5000);
+        }
       });
     } else {
-      router.post(`/admin/series/${series.slug}/chapters`, chapterFormData, {
-        onSuccess: () => setShowChapterModal(false),
+      router.post(`/admin/series/${series.slug}/chapters`, submitData, {
+        onSuccess: () => {
+          setShowChapterModal(false);
+          setAlertMessage({ type: 'success', message: 'Chapter created successfully!' });
+          setTimeout(() => setAlertMessage(null), 5000);
+        },
+        onError: (errors) => {
+          console.error('Create error:', errors);
+          setAlertMessage({ type: 'error', message: 'Failed to create chapter. Please try again.' });
+          setTimeout(() => setAlertMessage(null), 5000);
+        }
+      });
+    }
+  };
+
+  const handleDeleteSeries = () => {
+    if (confirm('Are you sure you want to delete this series? This action will also delete all chapters in this series and cannot be undone.')) {
+      router.delete(`/admin/series/${series.slug}`, {
+        onSuccess: () => {
+          setAlertMessage({ type: 'success', message: 'Series deleted successfully!' });
+          setTimeout(() => {
+            router.get('/admin/series');
+          }, 2000);
+        },
+        onError: () => {
+          setAlertMessage({ type: 'error', message: 'Failed to delete series. Please try again.' });
+          setTimeout(() => setAlertMessage(null), 5000);
+        }
+      });
+    }
+  };
+
+  const handleDeleteChapter = (chapterId: number) => {
+    if (confirm('Are you sure you want to delete this chapter? This action cannot be undone.')) {
+      router.delete(`/admin/chapters/${chapterId}`, {
+        onSuccess: () => {
+          setAlertMessage({ type: 'success', message: 'Chapter deleted successfully!' });
+          setTimeout(() => setAlertMessage(null), 5000);
+        },
+        onError: () => {
+          setAlertMessage({ type: 'error', message: 'Failed to delete chapter. Please try again.' });
+          setTimeout(() => setAlertMessage(null), 5000);
+        }
       });
     }
   };
@@ -136,6 +204,50 @@ export default function SeriesShow({ series }: SeriesShowProps) {
   return (
     <AdminLayout>
       <Head title={`${series.title} - Series Management`} />
+
+      {/* Alert Message */}
+      {alertMessage && (
+        <div className={`mb-6 p-4 rounded-md ${
+          alertMessage.type === 'success' 
+            ? 'bg-green-100 border border-green-400 text-green-700' 
+            : 'bg-red-100 border border-red-400 text-red-700'
+        }`}>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              {alertMessage.type === 'success' ? (
+                <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              )}
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">{alertMessage.message}</p>
+            </div>
+            <div className="ml-auto pl-3">
+              <div className="-mx-1.5 -my-1.5">
+                <button
+                  type="button"
+                  onClick={() => setAlertMessage(null)}
+                  className={`inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    alertMessage.type === 'success'
+                      ? 'text-green-500 hover:bg-green-100 focus:ring-green-600'
+                      : 'text-red-500 hover:bg-red-100 focus:ring-red-600'
+                  }`}
+                >
+                  <span className="sr-only">Dismiss</span>
+                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mb-6">
         <Link
@@ -171,12 +283,20 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   <p className="text-gray-600">{series.alternative_title}</p>
                 )}
               </div>
-              <button
-                onClick={openEditModal}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-              >
-                Edit Series
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={openEditModal}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                >
+                  Edit Series
+                </button>
+                <button
+                  onClick={handleDeleteSeries}
+                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700"
+                >
+                  Delete Series
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -220,7 +340,10 @@ export default function SeriesShow({ series }: SeriesShowProps) {
             {series.synopsis && (
               <div>
                 <span className="text-sm text-gray-500">Synopsis</span>
-                <p className="text-gray-700 mt-1">{series.synopsis}</p>
+                <div 
+                  className="text-gray-700 mt-1"
+                  dangerouslySetInnerHTML={{ __html: series.synopsis }}
+                />
               </div>
             )}
           </div>
@@ -249,7 +372,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
             >
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium text-gray-900">
-                  Ch. {chapter.chapter_number}
+                  {chapter.chapter_number}
                 </span>
                 <span className="text-sm text-gray-700">{chapter.title}</span>
                 {chapter.is_premium && (
@@ -267,6 +390,12 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   className="text-blue-600 hover:text-blue-800 text-sm"
                 >
                   Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteChapter(chapter.id)}
+                  className="text-red-600 hover:text-red-800 text-sm"
+                >
+                  Delete
                 </button>
               </div>
             </div>
@@ -317,12 +446,12 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Synopsis</label>
-                  <textarea
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Synopsis</label>
+                  <RichTextEditor
                     value={editFormData.synopsis}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, synopsis: e.target.value }))}
-                    rows={3}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    onChange={(content) => setEditFormData(prev => ({ ...prev, synopsis: content }))}
+                    placeholder="Enter series synopsis here..."
+                    height={200}
                   />
                 </div>
 

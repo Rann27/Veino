@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ReaderSettingsModal from '@/Components/ReaderSettingsModal';
@@ -56,6 +56,7 @@ function ChapterShowContent({
     const [lastScrollY, setLastScrollY] = useState(0);
     const [showChapterList, setShowChapterList] = useState(false);
     const [showReaderSettings, setShowReaderSettings] = useState(false);
+    const readerSettingsButtonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -225,7 +226,7 @@ function ChapterShowContent({
                                     className="text-sm truncate max-w-xs"
                                     style={{ color: `${currentTheme.foreground}70` }}
                                 >
-                                    Chapter {chapter.chapter_number}: {chapter.title}
+                                    {chapter.chapter_number}: {chapter.title}
                                 </p>
                             </div>
                         </div>
@@ -254,7 +255,7 @@ function ChapterShowContent({
                                         borderColor: `${currentTheme.foreground}30`
                                     }}
                                 >
-                                    <span>Ch. {chapter.chapter_number}</span>
+                                    <span>{chapter.chapter_number}</span>
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
@@ -281,7 +282,7 @@ function ChapterShowContent({
                                                 }}
                                             >
                                                 <span className="truncate">
-                                                    Ch. {ch.chapter_number}: {ch.title}
+                                                    {ch.chapter_number}: {ch.title}
                                                 </span>
                                                 {ch.is_premium && (
                                                     <span className="text-xs ml-2" style={{ color: '#f59e0b' }}>Premium</span>
@@ -310,6 +311,7 @@ function ChapterShowContent({
                         <div className="flex items-center space-x-2">
                             {/* Reader Settings Button */}
                             <button
+                                ref={readerSettingsButtonRef}
                                 onClick={() => setShowReaderSettings(true)}
                                 className="p-2 rounded transition-colors hover:opacity-70"
                                 style={{ color: currentTheme.foreground }}
@@ -349,7 +351,7 @@ function ChapterShowContent({
                             className="text-lg"
                             style={{ color: `${currentTheme.foreground}80` }}
                         >
-                            Chapter {chapter.chapter_number}
+                            {chapter.chapter_number}
                         </p>
                         {chapter.is_premium && (
                             <div className="mt-4">
@@ -439,6 +441,7 @@ function ChapterShowContent({
             <ReaderSettingsModal
                 isOpen={showReaderSettings}
                 onClose={() => setShowReaderSettings(false)}
+                triggerElement={readerSettingsButtonRef.current}
             />
         </>
     );

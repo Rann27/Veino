@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTheme, themePresets, ReaderSettings } from '@/Contexts/ThemeContext';
 
 interface ReaderSettingsModalProps {
     isOpen: boolean;
     onClose: () => void;
+    triggerElement?: HTMLElement | null;
 }
 
 const googleFonts = [
@@ -23,15 +24,48 @@ const googleFonts = [
 
 export default function ReaderSettingsModal({ 
     isOpen, 
-    onClose
+    onClose,
+    triggerElement
 }: ReaderSettingsModalProps) {
     const { currentTheme, setTheme, readerSettings, updateReaderSettings } = useTheme();
     const [settings, setSettings] = useState<ReaderSettings>(readerSettings);
     const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setSettings(readerSettings);
     }, [readerSettings]);
+
+    // Calculate position based on trigger element
+    useEffect(() => {
+        if (isOpen && triggerElement) {
+            const rect = triggerElement.getBoundingClientRect();
+            const modalWidth = 320; // Approximate modal width
+            const modalHeight = 400; // Approximate modal height
+            
+            let top = rect.bottom + 8; // 8px spacing below trigger
+            let left = rect.left - modalWidth + rect.width; // Align right edge
+            
+            // Check if modal goes off screen
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Adjust horizontal position if off screen
+            if (left < 8) {
+                left = 8; // 8px margin from left edge
+            } else if (left + modalWidth > viewportWidth - 8) {
+                left = viewportWidth - modalWidth - 8; // 8px margin from right edge
+            }
+            
+            // Adjust vertical position if off screen
+            if (top + modalHeight > viewportHeight - 8) {
+                top = rect.top - modalHeight - 8; // Position above trigger
+            }
+            
+            setPosition({ top, left });
+        }
+    }, [isOpen, triggerElement]);
 
     useEffect(() => {
         if (isOpen) {
@@ -47,6 +81,21 @@ export default function ReaderSettingsModal({
             }
         }
     }, [isOpen]);
+
+    // Close modal when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (modalRef.current && !modalRef.current.contains(event.target as Node) && 
+                triggerElement && !triggerElement.contains(event.target as Node)) {
+                onClose();
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [isOpen, onClose, triggerElement]);
 
     const handleSettingChange = (key: keyof ReaderSettings, value: string | number) => {
         const newSettings = { ...settings, [key]: value };
@@ -68,19 +117,29 @@ export default function ReaderSettingsModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop */}
+        <div className="fixed inset-0 z-50 pointer-events-none">
+            {/* Floating Modal */}
             <div 
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={onClose}
-            />
-            
-            {/* Modal */}
-            <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200">
+                ref={modalRef}
+                className="absolute rounded-xl shadow-2xl w-80 max-h-96 overflow-y-auto pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200"
+                style={{
+                    top: `${position.top}px`,
+                    left: `${position.left}px`,
+                    backgroundColor: currentTheme.background,
+                    borderColor: `${currentTheme.foreground}20`,
+                    border: `1px solid ${currentTheme.foreground}20`
+                }}
+            >
                 {/* Header */}
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                        <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div 
+                    className="flex items-center justify-between p-4 border-b"
+                    style={{ borderColor: `${currentTheme.foreground}20` }}
+                >
+                    <h2 
+                        className="text-lg font-semibold flex items-center"
+                        style={{ color: currentTheme.foreground }}
+                    >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
@@ -88,22 +147,33 @@ export default function ReaderSettingsModal({
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                        className="p-1 transition-colors hover:opacity-70"
+                        style={{ color: `${currentTheme.foreground}60` }}
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                <div className="space-y-6">
+                <div className="p-4 space-y-4">
                     {/* Font Family */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Font Family</label>
+                        <label 
+                            className="block text-sm font-medium mb-2"
+                            style={{ color: currentTheme.foreground }}
+                        >
+                            Font Family
+                        </label>
                         <select
                             value={settings.fontFamily}
                             onChange={(e) => handleSettingChange('fontFamily', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            style={{
+                                backgroundColor: currentTheme.background,
+                                borderColor: `${currentTheme.foreground}30`,
+                                color: currentTheme.foreground
+                            }}
                         >
                             {googleFonts.map((font) => (
                                 <option key={font.name} value={font.family} style={{ fontFamily: font.family }}>
@@ -112,8 +182,12 @@ export default function ReaderSettingsModal({
                             ))}
                         </select>
                         <div 
-                            className="mt-2 p-3 bg-gray-50 rounded-lg text-gray-700"
-                            style={{ fontFamily: settings.fontFamily }}
+                            className="mt-2 p-2 rounded text-sm"
+                            style={{ 
+                                backgroundColor: `${currentTheme.foreground}10`,
+                                color: `${currentTheme.foreground}80`,
+                                fontFamily: settings.fontFamily 
+                            }}
                         >
                             The quick brown fox jumps over the lazy dog. This is a preview of the selected font.
                         </div>
@@ -121,7 +195,10 @@ export default function ReaderSettingsModal({
 
                     {/* Font Size */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                        <label 
+                            className="block text-sm font-medium mb-2"
+                            style={{ color: currentTheme.foreground }}
+                        >
                             Font Size: {settings.fontSize}px
                         </label>
                         <div className="space-y-2">
@@ -132,9 +209,13 @@ export default function ReaderSettingsModal({
                                 step="1"
                                 value={settings.fontSize}
                                 onChange={(e) => handleSettingChange('fontSize', parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer slider"
+                                style={{ backgroundColor: `${currentTheme.foreground}20` }}
                             />
-                            <div className="flex justify-between text-sm text-gray-500">
+                            <div 
+                                className="flex justify-between text-xs"
+                                style={{ color: `${currentTheme.foreground}60` }}
+                            >
                                 <span>8px</span>
                                 <span>20px</span>
                                 <span>32px</span>
@@ -144,7 +225,10 @@ export default function ReaderSettingsModal({
 
                     {/* Line Height */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                        <label 
+                            className="block text-sm font-medium mb-2"
+                            style={{ color: currentTheme.foreground }}
+                        >
                             Line Spacing: {settings.lineHeight}
                         </label>
                         <div className="space-y-2">
@@ -155,9 +239,13 @@ export default function ReaderSettingsModal({
                                 step="0.1"
                                 value={settings.lineHeight}
                                 onChange={(e) => handleSettingChange('lineHeight', parseFloat(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer slider"
+                                style={{ backgroundColor: `${currentTheme.foreground}20` }}
                             />
-                            <div className="flex justify-between text-sm text-gray-500">
+                            <div 
+                                className="flex justify-between text-xs"
+                                style={{ color: `${currentTheme.foreground}60` }}
+                            >
                                 <span>0.5</span>
                                 <span>1.5</span>
                                 <span>2.5</span>
@@ -167,9 +255,17 @@ export default function ReaderSettingsModal({
 
                     {/* Content Width (Desktop only) */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                        <label 
+                            className="block text-sm font-medium mb-2"
+                            style={{ color: currentTheme.foreground }}
+                        >
                             Content Width: {settings.contentWidth}%
-                            <span className="text-xs text-gray-500 ml-1">(Desktop only)</span>
+                            <span 
+                                className="text-xs ml-1"
+                                style={{ color: `${currentTheme.foreground}60` }}
+                            >
+                                (Desktop only)
+                            </span>
                         </label>
                         <div className="space-y-2">
                             <input
@@ -179,9 +275,13 @@ export default function ReaderSettingsModal({
                                 step="1"
                                 value={settings.contentWidth}
                                 onChange={(e) => handleSettingChange('contentWidth', parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                                className="w-full h-2 rounded-lg appearance-none cursor-pointer slider"
+                                style={{ backgroundColor: `${currentTheme.foreground}20` }}
                             />
-                            <div className="flex justify-between text-sm text-gray-500">
+                            <div 
+                                className="flex justify-between text-xs"
+                                style={{ color: `${currentTheme.foreground}60` }}
+                            >
                                 <span>60%</span>
                                 <span>75%</span>
                                 <span>90%</span>
@@ -191,26 +291,45 @@ export default function ReaderSettingsModal({
 
                     {/* Theme Selector */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Theme</label>
+                        <label 
+                            className="block text-sm font-medium mb-2"
+                            style={{ color: currentTheme.foreground }}
+                        >
+                            Theme
+                        </label>
                         <button
                             onClick={() => setShowThemeSelector(!showThemeSelector)}
-                            className="w-full p-3 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-between"
+                            className="w-full p-3 border rounded-lg hover:opacity-80 transition-opacity flex items-center justify-between"
+                            style={{
+                                backgroundColor: currentTheme.background,
+                                borderColor: `${currentTheme.foreground}30`,
+                                color: currentTheme.foreground
+                            }}
                         >
                             <div className="flex items-center space-x-3">
                                 <div 
-                                    className="w-6 h-6 rounded border border-gray-300"
-                                    style={{ backgroundColor: currentTheme.background }}
+                                    className="w-5 h-5 rounded border"
+                                    style={{ 
+                                        backgroundColor: currentTheme.background,
+                                        borderColor: `${currentTheme.foreground}30`
+                                    }}
                                 />
                                 <span>{currentTheme.name}</span>
                             </div>
-                            <svg className={`w-5 h-5 transition-transform ${showThemeSelector ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className={`w-4 h-4 transition-transform ${showThemeSelector ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>
                         </button>
 
                         {showThemeSelector && (
-                            <div className="mt-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                <div className="grid grid-cols-2 gap-2">
+                            <div 
+                                className="mt-2 p-3 border rounded-lg"
+                                style={{
+                                    backgroundColor: `${currentTheme.foreground}05`,
+                                    borderColor: `${currentTheme.foreground}20`
+                                }}
+                            >
+                                <div className="grid grid-cols-1 gap-2">
                                     {themePresets.map((preset) => (
                                         <button
                                             key={preset.name}
@@ -218,20 +337,37 @@ export default function ReaderSettingsModal({
                                                 setTheme(preset);
                                                 setShowThemeSelector(false);
                                             }}
-                                            className={`p-3 rounded-lg border text-left transition-all ${
+                                            className={`p-2 rounded border text-left transition-all text-sm ${
                                                 currentTheme.name === preset.name
                                                     ? 'border-blue-500 bg-blue-50'
-                                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                                    : 'hover:opacity-80'
                                             }`}
+                                            style={{
+                                                backgroundColor: currentTheme.name === preset.name 
+                                                    ? 'rgba(59, 130, 246, 0.1)' 
+                                                    : currentTheme.background,
+                                                borderColor: currentTheme.name === preset.name 
+                                                    ? '#3B82F6' 
+                                                    : `${currentTheme.foreground}20`,
+                                                color: currentTheme.foreground
+                                            }}
                                         >
                                             <div className="flex items-center space-x-2 mb-1">
                                                 <div 
-                                                    className="w-4 h-4 rounded border border-gray-300"
-                                                    style={{ backgroundColor: preset.background }}
+                                                    className="w-3 h-3 rounded border"
+                                                    style={{ 
+                                                        backgroundColor: preset.background,
+                                                        borderColor: `${currentTheme.foreground}30`
+                                                    }}
                                                 />
-                                                <span className="text-sm font-medium">{preset.name}</span>
+                                                <span className="font-medium">{preset.name}</span>
                                             </div>
-                                            <p className="text-xs text-gray-600">{preset.description}</p>
+                                            <p 
+                                                className="text-xs"
+                                                style={{ color: `${currentTheme.foreground}70` }}
+                                            >
+                                                {preset.description}
+                                            </p>
                                         </button>
                                     ))}
                                 </div>
@@ -239,40 +375,21 @@ export default function ReaderSettingsModal({
                         )}
                     </div>
 
-                    {/* Preview */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Preview</label>
-                        <div 
-                            className="p-4 border border-gray-300 rounded-lg"
-                            style={{ 
-                                backgroundColor: currentTheme.background,
-                                color: currentTheme.foreground,
-                                fontFamily: settings.fontFamily,
-                                fontSize: `${settings.fontSize}px`,
-                                lineHeight: settings.lineHeight
-                            }}
-                        >
-                            <h4 className="font-semibold mb-2">Chapter Title Example</h4>
-                            <p className="mb-2">
-                                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-                            </p>
-                            <p>
-                                Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                            </p>
-                        </div>
-                    </div>
-
                     {/* Action Buttons */}
-                    <div className="flex justify-between pt-4 border-t border-gray-200">
+                    <div 
+                        className="flex justify-between pt-3 border-t"
+                        style={{ borderColor: `${currentTheme.foreground}20` }}
+                    >
                         <button
                             onClick={resetToDefaults}
-                            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                            className="px-4 py-2 text-sm transition-opacity hover:opacity-70"
+                            style={{ color: `${currentTheme.foreground}70` }}
                         >
                             Reset to Defaults
                         </button>
                         <button
                             onClick={onClose}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
                         >
                             Done
                         </button>
@@ -283,16 +400,16 @@ export default function ReaderSettingsModal({
             <style>{`
                 .slider::-webkit-slider-thumb {
                     appearance: none;
-                    width: 20px;
-                    height: 20px;
+                    width: 16px;
+                    height: 16px;
                     background: #3b82f6;
                     border-radius: 50%;
                     cursor: pointer;
                 }
                 
                 .slider::-moz-range-thumb {
-                    width: 20px;
-                    height: 20px;
+                    width: 16px;
+                    height: 16px;
                     background: #3b82f6;
                     border-radius: 50%;
                     cursor: pointer;

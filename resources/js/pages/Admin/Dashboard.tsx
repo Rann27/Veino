@@ -144,7 +144,7 @@ export default function Dashboard({ stats }: DashboardProps) {
                 <div key={chapter.id} className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-900">
-                      {chapter.series.title} - Ch. {chapter.chapter_number}
+                      {chapter.series.title} - {chapter.chapter_number}
                     </p>
                     <p className="text-sm text-gray-500">
                       {chapter.title}

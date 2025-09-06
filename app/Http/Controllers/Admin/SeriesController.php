@@ -9,9 +9,22 @@ use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use HTMLPurifier;
+use HTMLPurifier_Config;
 
 class SeriesController extends Controller
 {
+    private function sanitizeHtmlContent(string $content): string
+    {
+        $config = HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,h1,h2,h3,h4,h5,h6,ul,ol,li,img[src|alt|title|width|height],a[href|title],blockquote,code,pre,span[style],div[style]');
+        $config->set('Attr.AllowedFrameTargets', ['_blank']);
+        $config->set('CSS.AllowedProperties', 'color,background-color,text-align,font-weight,font-style,text-decoration,margin,padding');
+        
+        $purifier = new HTMLPurifier($config);
+        return $purifier->purify($content);
+    }
+
     public function index()
     {
         $series = Series::with(['nativeLanguage', 'genres'])
@@ -51,6 +64,11 @@ class SeriesController extends Controller
             'genre_ids.*' => 'exists:genres,id',
         ]);
 
+        // Sanitize synopsis HTML content
+        if (!empty($validated['synopsis'])) {
+            $validated['synopsis'] = $this->sanitizeHtmlContent($validated['synopsis']);
+        }
+
         $validated['slug'] = Str::slug($validated['title']);
 
         $series = Series::create($validated);
@@ -74,6 +92,11 @@ class SeriesController extends Controller
             'genre_ids' => 'required|array',
             'genre_ids.*' => 'exists:genres,id',
         ]);
+
+        // Sanitize synopsis HTML content
+        if (!empty($validated['synopsis'])) {
+            $validated['synopsis'] = $this->sanitizeHtmlContent($validated['synopsis']);
+        }
 
         if ($validated['title'] !== $series->title) {
             $validated['slug'] = Str::slug($validated['title']);
