@@ -51,50 +51,32 @@ export const defaultThemes: ThemePreset[] = [
     },
     {
         name: 'Dark',
-        background: '#1a1a1a',
+        background: '#000000',
         foreground: '#ffffff',
         description: 'Easy on the eyes for night reading'
     },
     {
         name: 'Sepia',
-        background: '#f4f1ea',
-        foreground: '#5c4b37',
+        background: '#f4ecd8',
+        foreground: '#4b3621',
         description: 'Warm tones reminiscent of old books'
     },
     {
-        name: 'Navy',
-        background: '#0f1419',
-        foreground: '#bfbdb6',
-        description: 'Deep blue for focused reading'
+        name: 'Cool Dark',
+        background: '#1e1e2e',
+        foreground: '#cdd6f4',
+        description: 'Cool dark theme with purple accent'
     },
     {
-        name: 'Forest',
-        background: '#232D1C',
-        foreground: '#E8F5E8',
-        description: 'Natural green tones for relaxed reading'
+        name: 'Frost',
+        background: '#cddced',
+        foreground: '#021a36',
+        description: 'Cool light theme with frost colors'
     },
     {
-        name: 'Rose',
-        background: '#1a1a1a',
-        foreground: '#e6b3ba',
-        description: 'Subtle rose accent for a softer feel'
-    },
-    {
-        name: 'Ocean',
-        background: '#0D1B2A',
-        foreground: '#7DD3FC',
-        description: 'Deep ocean blues for calm reading'
-    },
-    {
-        name: 'Sunset',
-        background: '#2D1B1B',
-        foreground: '#FFCCCB',
-        description: 'Warm sunset hues for evening reading'
-    },
-    {
-        name: 'Minimal',
-        background: '#fafafa',
-        foreground: '#333333',
+        name: 'Solarized',
+        background: '#fdf6e3',
+        foreground: '#657b83',
         description: 'Gentle contrast for comfortable reading'
     }
 ];
@@ -180,6 +162,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
                             setIsSystemTheme(data.auto_theme);
                             setReaderSettings(data.reader_settings);
                             
+                            // Update CSS custom properties
+                            document.documentElement.style.setProperty('--theme-background', data.theme.background);
+                            document.documentElement.style.setProperty('--theme-foreground', data.theme.foreground);
+                            
                             // Update localStorage cache
                             localStorage.setItem('veinovel-theme-cache', JSON.stringify(data));
                         }
@@ -226,7 +212,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
     // Sync preferences with backend
     const syncWithBackend = async (theme?: ThemePreset, reader?: ReaderSettings) => {
-        if (!auth?.user) return; // Only sync for logged-in users
+        if (!auth?.user) {
+            return; // Only sync for logged-in users
+        }
 
         const themeToSave = theme || currentTheme;
         const readerToSave = reader || readerSettings;
@@ -265,6 +253,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         setCurrentTheme(theme);
         setIsSystemTheme(false);
         
+        // Apply theme immediately to CSS custom properties
+        document.documentElement.style.setProperty('--theme-background', theme.background);
+        document.documentElement.style.setProperty('--theme-foreground', theme.foreground);
+        
         // Save to localStorage immediately
         localStorage.setItem('veinovel-theme', theme.name);
         localStorage.setItem('veinovel-system-theme', 'false');
@@ -277,14 +269,31 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         const newSystemTheme = !isSystemTheme;
         setIsSystemTheme(newSystemTheme);
         
+        let newTheme;
         if (newSystemTheme) {
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setCurrentTheme(prefersDark ? defaultThemes[1] : defaultThemes[0]);
+            newTheme = prefersDark ? defaultThemes[1] : defaultThemes[0];
+            setCurrentTheme(newTheme);
+        } else {
+            newTheme = currentTheme;
         }
+        
+        // Update CSS custom properties
+        document.documentElement.style.setProperty('--theme-background', newTheme.background);
+        document.documentElement.style.setProperty('--theme-foreground', newTheme.foreground);
         
         localStorage.setItem('veinovel-system-theme', newSystemTheme.toString());
         syncWithBackend();
     };
+
+    // Update CSS custom properties when theme changes
+    useEffect(() => {
+        document.documentElement.style.setProperty('--theme-background', currentTheme.background);
+        document.documentElement.style.setProperty('--theme-foreground', currentTheme.foreground);
+        
+        // Remove loading class after theme is applied
+        document.documentElement.classList.remove('theme-loading');
+    }, [currentTheme]);
 
     const updateReaderSettings = (settings: Partial<ReaderSettings>) => {
         const newSettings = { ...readerSettings, ...settings };

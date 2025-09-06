@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -90,5 +92,31 @@ class User extends Authenticatable
         
         // Default avatar URL - you can use a placeholder service or default image
         return asset('images/default-avatar.svg');
+    }
+
+    /**
+     * Get user's bookmarks
+     */
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
+    /**
+     * Get user's bookmarked series
+     */
+    public function bookmarkedSeries(): BelongsToMany
+    {
+        return $this->belongsToMany(Series::class, 'bookmarks')
+            ->withTimestamps()
+            ->withPivot('note');
+    }
+
+    /**
+     * Check if user has bookmarked a series
+     */
+    public function hasBookmarked(Series $series): bool
+    {
+        return $this->bookmarks()->where('series_id', $series->id)->exists();
     }
 }

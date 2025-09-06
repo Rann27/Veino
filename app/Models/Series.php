@@ -66,4 +66,22 @@ class Series extends Model
     {
         return 'slug';
     }
+
+    /**
+     * Get series bookmarks
+     */
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(Bookmark::class);
+    }
+
+    /**
+     * Get users who bookmarked this series
+     */
+    public function bookmarkedByUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'bookmarks')
+            ->withTimestamps()
+            ->withPivot('note');
+    }
 }

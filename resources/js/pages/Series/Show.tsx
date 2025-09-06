@@ -41,12 +41,50 @@ interface Props {
     series: Series;
     chapters: Chapter[];
     relatedSeries: Series[];
+    isBookmarked?: boolean;
 }
 
-function SeriesShowContent({ series, chapters, relatedSeries }: Props) {
+function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false }: Props) {
     const { currentTheme } = useTheme();
     const [showAllChapters, setShowAllChapters] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [bookmarked, setBookmarked] = useState(isBookmarked);
+    const [showNotification, setShowNotification] = useState(false);
+    const [notificationMessage, setNotificationMessage] = useState('');
+
+    const handleBookmarkToggle = async () => {
+        try {
+            const url = route(bookmarked ? 'bookmarks.destroy' : 'bookmarks.store', series.slug);
+            const method = bookmarked ? 'DELETE' : 'POST';
+            
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setBookmarked(!bookmarked);
+                setNotificationMessage(data.message);
+                setShowNotification(true);
+                
+                // Hide notification after 3 seconds
+                setTimeout(() => {
+                    setShowNotification(false);
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('Error toggling bookmark:', error);
+            setNotificationMessage('An error occurred. Please try again.');
+            setShowNotification(true);
+            setTimeout(() => {
+                setShowNotification(false);
+            }, 3000);
+        }
+    };
 
     const displayedChapters = showAllChapters ? chapters : chapters.slice(0, 10);
     const sortedChapters = [...displayedChapters].sort((a, b) => {
@@ -218,18 +256,18 @@ function SeriesShowContent({ series, chapters, relatedSeries }: Props) {
                                             Read First Chapter
                                         </Link>
                                         <button 
-                                            className="px-6 py-3 border rounded-lg font-medium transition-colors hover:opacity-70"
+                                            className="px-6 py-3 border rounded-lg font-medium transition-colors hover:opacity-70 flex items-center gap-2"
                                             style={{
-                                                borderColor: `${currentTheme.foreground}30`,
-                                                color: currentTheme.foreground,
-                                                backgroundColor: 'transparent'
+                                                borderColor: bookmarked ? '#3B82F6' : `${currentTheme.foreground}30`,
+                                                color: bookmarked ? '#3B82F6' : currentTheme.foreground,
+                                                backgroundColor: bookmarked ? '#3B82F610' : 'transparent'
                                             }}
-                                            onClick={() => {
-                                                // Bookmark functionality will be implemented later
-                                                console.log('Bookmark clicked');
-                                            }}
+                                            onClick={handleBookmarkToggle}
                                         >
-                                            Bookmark
+                                            <svg className="w-5 h-5" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            </svg>
+                                            {bookmarked ? 'Bookmarked' : 'Bookmark'}
                                         </button>
                                     </div>
                                 </div>
@@ -446,6 +484,34 @@ function SeriesShowContent({ series, chapters, relatedSeries }: Props) {
                     </div>
                 </div>
             </div>
+
+            {/* Notification Modal */}
+            {showNotification && (
+                <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-2 duration-300">
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="flex-shrink-0">
+                                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                    {notificationMessage}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowNotification(false)}
+                                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 }

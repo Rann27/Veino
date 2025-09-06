@@ -20,24 +20,9 @@ interface Props {
 }
 
 export default function Bookmarks({ bookmarks }: Props) {
+    const { currentTheme } = useTheme();
     const [sortBy, setSortBy] = useState<'bookmarked_at' | 'series_title' | 'series_rating'>('bookmarked_at');
     const [searchTerm, setSearchTerm] = useState('');
-
-    return (
-        <UserLayout>
-            <BookmarkContent bookmarks={bookmarks} sortBy={sortBy} setSortBy={setSortBy} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-        </UserLayout>
-    );
-}
-
-function BookmarkContent({ bookmarks, sortBy, setSortBy, searchTerm, setSearchTerm }: {
-    bookmarks: Bookmark[];
-    sortBy: 'bookmarked_at' | 'series_title' | 'series_rating';
-    setSortBy: (value: 'bookmarked_at' | 'series_title' | 'series_rating') => void;
-    searchTerm: string;
-    setSearchTerm: (value: string) => void;
-}) {
-    const { currentTheme } = useTheme();
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -94,7 +79,7 @@ function BookmarkContent({ bookmarks, sortBy, setSortBy, searchTerm, setSearchTe
         });
 
     return (
-        <>
+        <UserLayout>
             <Head title="My Bookmarks - Veinovel" />
             
             <div 
@@ -326,6 +311,6 @@ function BookmarkContent({ bookmarks, sortBy, setSortBy, searchTerm, setSearchTe
                     )}
                 </div>
             </div>
-        </>
+        </UserLayout>
     );
 }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
+import SearchSuggestions from '@/Components/Search/SearchSuggestions';
 
 interface User {
   id: number;
@@ -9,6 +10,19 @@ interface User {
   email: string;
   coins: number; // Changed from coin_balance to coins
   avatar?: string;
+}
+
+interface SearchSuggestion {
+  id: number;
+  title: string;
+  author: string;
+  slug: string;
+  cover_url: string | null;
+  chapters_count: number;
+  status: string;
+  rating: number;
+  genres: Array<{ id: number; name: string; }>;
+  native_language: { id: number; name: string; };
 }
 
 interface PageProps {
@@ -31,6 +45,10 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Auto-hide/show navbar on scroll
   const [showNavbar, setShowNavbar] = useState(true);
@@ -74,10 +92,83 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
     };
   }, [lastScrollY]);
 
+  // Search suggestions effect
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timeout for debouncing
+    searchTimeoutRef.current = setTimeout(async () => {
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await fetch(`/api/search/suggestions?q=${encodeURIComponent(searchQuery)}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSuggestions(data);
+          setShowSuggestions(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch suggestions:', error);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    }, 300); // 300ms debounce
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const searchContainer = document.getElementById('search-container');
+      if (searchContainer && !searchContainer.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSuggestions]);
+
   // Children should use useTheme hook instead of receiving currentTheme as prop
 
   const toggleSearch = () => {
     setShowSearch(!showSearch);
+    if (!showSearch) {
+      setSearchQuery('');
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Search submitted:', searchQuery);
+    if (searchQuery.trim()) {
+      router.get(`/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowSearch(false);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = () => {
+    setShowSearch(false);
+    setShowSuggestions(false);
+    setSearchQuery('');
   };
 
   const toggleAccountMenu = () => {
@@ -237,12 +328,16 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                       }}
                     >
                       <div 
-                        className="px-4 py-2 text-xs border-b"
+                        className="px-4 py-3 text-sm border-b font-medium flex items-center gap-2"
                         style={{
-                          color: `${currentTheme.foreground}80`,
+                          color: '#FFD700', // Gold color
                           borderColor: `${currentTheme.foreground}20`
                         }}
                       >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                        </svg>
                         Coins: {auth.user.coins?.toLocaleString() || '0'}
                       </div>
                       
@@ -259,13 +354,6 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         style={{ color: currentTheme.foreground }}
                       >
                         Bookmark
-                      </Link>
-                      <Link 
-                        href="/account/history" 
-                        className="block px-4 py-2 text-sm transition-colors hover:opacity-70"
-                        style={{ color: currentTheme.foreground }}
-                      >
-                        History
                       </Link>
                       
                       {/* Theme Selector */}
@@ -317,49 +405,91 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       {/* Search Bar */}
       {showSearch && (
         <div 
-          className={`fixed z-40 backdrop-blur-[50px] border-b p-4 transition-all duration-300 ${
+          className={`fixed z-[60] backdrop-blur-[50px] border-b p-4 transition-all duration-300 ${
             showNavbar ? 'top-16' : 'top-0'
           } left-0 right-0`}
           style={{
             backgroundColor: `${currentTheme.background}80`,
-            borderColor: `${currentTheme.foreground}20`
+            borderColor: `${currentTheme.foreground}20`,
+            pointerEvents: 'auto'
           }}
         >
           <div className="max-w-7xl mx-auto">
             <div className="w-3/4 mx-auto">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search novels..."
-                  className="w-full px-4 py-3 pl-10 backdrop-blur-[50px] border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
-                  style={{
-                    backgroundColor: `${currentTheme.background}60`,
-                    borderColor: `${currentTheme.foreground}30`,
-                    color: currentTheme.foreground
-                  }}
-                  autoFocus
+              <div id="search-container" className="relative" style={{ pointerEvents: 'auto' }}>
+                <form onSubmit={handleSearchSubmit}>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      console.log('Input changed:', e.target.value);
+                      setSearchQuery(e.target.value);
+                    }}
+                    onFocus={() => {
+                      console.log('Input focused, query:', searchQuery);
+                      searchQuery.trim() && setShowSuggestions(true);
+                    }}
+                    onKeyDown={(e) => {
+                      console.log('Key pressed:', e.key);
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearchSubmit(e);
+                      }
+                    }}
+                    placeholder="Search novels..."
+                    className="w-full px-4 py-3 pl-10 pr-20 backdrop-blur-[50px] border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                    style={{
+                      backgroundColor: `${currentTheme.background}60`,
+                      borderColor: `${currentTheme.foreground}30`,
+                      color: currentTheme.foreground,
+                      pointerEvents: 'auto'
+                    }}
+                    autoFocus
+                  />
+                  <svg 
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
+                    style={{ color: `${currentTheme.foreground}60` }}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  
+                  {/* Loading indicator */}
+                  {isLoadingSuggestions && (
+                    <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+                      <svg className="animate-spin h-4 w-4" style={{ color: `${currentTheme.foreground}60` }} fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    </div>
+                  )}
+                  
+                  <button
+                    type="submit"
+                    onClick={(e) => {
+                      console.log('Search button clicked');
+                      handleSearchSubmit(e);
+                    }}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 px-4 py-1 rounded text-sm transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: currentTheme.foreground,
+                      color: currentTheme.background,
+                      pointerEvents: 'auto'
+                    }}
+                  >
+                    Search
+                  </button>
+                </form>
+
+                {/* Search Suggestions */}
+                <SearchSuggestions
+                  suggestions={suggestions}
+                  query={searchQuery}
+                  onSuggestionClick={handleSuggestionClick}
+                  isVisible={showSuggestions}
                 />
-                <svg 
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
-                  style={{ color: `${currentTheme.foreground}60` }}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <Link
-                  href={`/series?search=${encodeURIComponent(searchQuery)}`}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 px-4 py-1 rounded text-sm transition-colors"
-                  style={{
-                    backgroundColor: currentTheme.foreground,
-                    color: currentTheme.background
-                  }}
-                >
-                  Search
-                </Link>
               </div>
             </div>
           </div>

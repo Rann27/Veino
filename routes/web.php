@@ -10,7 +10,9 @@ use App\Http\Controllers\UserChapterController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\Admin\ChapterController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
@@ -77,6 +79,10 @@ Route::get('/buy-coins', function () {
     ]);
 })->name('buy-coins');
 
+// Search routes
+Route::get('/search', [SearchController::class, 'search'])->name('search');
+Route::get('/api/search/suggestions', [SearchController::class, 'suggestions'])->name('search.suggestions');
+
 // Discord redirect
 Route::get('/discord', function () {
     return redirect('https://discord.gg/your-discord-server');
@@ -104,8 +110,7 @@ Route::post('/payment/paypal-ipn', [PaymentController::class, 'handleIPN'])->nam
 Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'dashboard'])->name('account.dashboard');
     Route::get('/account/library', [AccountController::class, 'library'])->name('account.library');
-    Route::get('/account/bookmarks', [AccountController::class, 'bookmarks'])->name('account.bookmarks');
-    Route::get('/account/history', [AccountController::class, 'history'])->name('account.history');
+    Route::get('/account/bookmarks', [BookmarkController::class, 'index'])->name('account.bookmarks');
     Route::get('/account/coins', [AccountController::class, 'coins'])->name('account.coins');
     Route::get('/account/settings', [AccountController::class, 'settings'])->name('account.settings');
     
@@ -113,6 +118,12 @@ Route::middleware('auth')->group(function () {
     Route::put('/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::put('/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
     Route::delete('/account', [AccountController::class, 'deleteAccount'])->name('account.delete');
+
+    // Bookmark routes
+    Route::post('/series/{series}/bookmark', [BookmarkController::class, 'store'])->name('bookmarks.store');
+    Route::delete('/series/{series}/bookmark', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
+    Route::delete('/bookmarks/{bookmark}', [BookmarkController::class, 'destroyById'])->name('bookmarks.destroy.id');
+    Route::get('/series/{series}/bookmark/check', [BookmarkController::class, 'check'])->name('bookmarks.check');
 });
 
 // Admin Routes

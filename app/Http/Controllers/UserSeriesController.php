@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Series;
 use App\Models\Chapter;
 use App\Models\ChapterPurchase;
+use App\Models\Bookmark;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -23,12 +24,18 @@ class UserSeriesController extends Controller
             ->get(['id', 'title', 'chapter_number', 'is_premium', 'coin_price', 'created_at']);
 
         // Add ownership information if user is authenticated
+        $isBookmarked = false;
         if (Auth::check()) {
             $userId = Auth::id();
             $purchasedChapterIds = ChapterPurchase::where('user_id', $userId)
                 ->whereIn('chapter_id', $chapters->pluck('id'))
                 ->pluck('chapter_id')
                 ->toArray();
+
+            // Check if series is bookmarked
+            $isBookmarked = Bookmark::where('user_id', $userId)
+                ->where('series_id', $series->id)
+                ->exists();
 
             $chapters = $chapters->map(function ($chapter) use ($purchasedChapterIds) {
                 $chapter->is_owned = in_array($chapter->id, $purchasedChapterIds);
@@ -56,6 +63,7 @@ class UserSeriesController extends Controller
             'series' => $series,
             'chapters' => $chapters,
             'relatedSeries' => $relatedSeries,
+            'isBookmarked' => $isBookmarked,
         ]);
     }
 }
