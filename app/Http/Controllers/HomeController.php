@@ -23,7 +23,7 @@ class HomeController extends Controller
             ->withCount('chapters')
             ->orderBy('chapters_count', 'desc')
             ->orderBy('updated_at', 'desc')
-            ->take(12)
+            ->take(6)
             ->get();
 
         // Latest updates - series with recent chapters
@@ -35,6 +35,13 @@ class HomeController extends Controller
                 $query->where('created_at', '>=', now()->subDays(30));
             })
             ->orderBy('updated_at', 'desc')
+            ->take(24)
+            ->get();
+
+        // New series - recently published series
+        $newSeries = Series::with(['nativeLanguage', 'genres'])
+            ->withCount('chapters')
+            ->orderBy('created_at', 'desc')
             ->take(12)
             ->get();
 
@@ -42,6 +49,7 @@ class HomeController extends Controller
             'heroSeries' => $heroSeries,
             'popularSeries' => $popularSeries,
             'latestUpdates' => $latestUpdates,
+            'newSeries' => $newSeries,
         ]);
     }
 }

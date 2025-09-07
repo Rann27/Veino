@@ -195,7 +195,7 @@ function BuyCoinsContent({ coinPackages }: Props) {
                             className="text-xl max-w-2xl mx-auto"
                             style={{ color: `${currentTheme.foreground}80` }}
                         >
-                            Purchase coins to unlock premium chapters and support your favorite authors
+                            Purchase coins to unlock premium chapters!
                         </p>
                     </div>
 

@@ -373,15 +373,17 @@ function ChapterShowContent({
 
                     {/* Chapter Content */}
                     <div
-                        className="prose max-w-none"
+                        className="prose max-w-none chapter-content"
                         style={{ 
                             fontSize: `${readerSettings.fontSize}px`,
                             lineHeight: readerSettings.lineHeight,
                             fontFamily: readerSettings.fontFamily,
-                            color: currentTheme.foreground
+                            color: currentTheme.foreground,
+                            whiteSpace: 'pre-wrap'
                         }}
                     >
                         <div
+                            style={{ whiteSpace: 'pre-wrap' }}
                             dangerouslySetInnerHTML={{ __html: chapter.content }}
                         />
                     </div>

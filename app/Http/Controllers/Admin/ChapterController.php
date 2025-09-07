@@ -14,12 +14,57 @@ class ChapterController extends Controller
     private function sanitizeHtmlContent(string $content): string
     {
         $config = HTMLPurifier_Config::createDefault();
-        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,h1,h2,h3,h4,h5,h6,ul,ol,li,img[src|alt|title|width|height],a[href|title],blockquote,code,pre,span[style],div[style]');
+        
+        // Enhanced allowed HTML tags for chapter content
+        $config->set('HTML.Allowed', 
+            'p,br,strong,em,b,i,u,s,sup,sub,' .
+            'h1,h2,h3,h4,h5,h6,' .
+            'ul,ol,li,' .
+            'img[src|alt|title|width|height|style],' .
+            'a[href|title|target],' .
+            'blockquote,code,pre,' .
+            'span[style],div[style],' .
+            'hr'
+        );
+        
+        // Allow safe CSS properties
+        $config->set('CSS.AllowedProperties', 
+            'color,background-color,text-align,font-weight,font-style,text-decoration,' .
+            'margin,margin-top,margin-bottom,margin-left,margin-right,' .
+            'padding,padding-top,padding-bottom,padding-left,padding-right,' .
+            'width,height,max-width,max-height,' .
+            'border,border-radius,' .
+            'display,float,clear'
+        );
+        
+        // Allow target="_blank" for links
         $config->set('Attr.AllowedFrameTargets', ['_blank']);
-        $config->set('CSS.AllowedProperties', 'color,background-color,text-align,font-weight,font-style,text-decoration,margin,padding');
+        
+        // Preserve line breaks and whitespace
+        $config->set('AutoFormat.RemoveEmpty', false);
+        $config->set('AutoFormat.RemoveEmpty.RemoveNbsp', false);
+        $config->set('Core.NormalizeNewlines', false);
+        $config->set('AutoFormat.Linkify', false);
+        $config->set('AutoFormat.AutoParagraph', false);
+        $config->set('HTML.TidyLevel', 'none');
+        $config->set('Output.TidyFormat', false);
         
         $purifier = new HTMLPurifier($config);
-        return $purifier->purify($content);
+        $cleanContent = $purifier->purify($content);
+        
+        // Additional processing to preserve line breaks
+        // Convert double line breaks to proper paragraph breaks
+        $cleanContent = preg_replace('/\n\s*\n/', '</p><p>', $cleanContent);
+        
+        // Ensure content is wrapped in paragraphs if not already
+        if (!preg_match('/^<p>/', trim($cleanContent))) {
+            $cleanContent = '<p>' . $cleanContent . '</p>';
+        }
+        
+        // Convert single line breaks to <br> tags within paragraphs
+        $cleanContent = preg_replace('/(?<!>)\n(?!<)/', '<br>', $cleanContent);
+        
+        return $cleanContent;
     }
 
     public function store(Request $request, Series $series)

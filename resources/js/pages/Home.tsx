@@ -44,9 +44,10 @@ interface HomeProps {
   heroSeries: Series[];
   popularSeries: Series[];
   latestUpdates: Series[];
+  newSeries: Series[];
 }
 
-function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
+function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: HomeProps) {
   const [currentHero, setCurrentHero] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -158,8 +159,8 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
     switch (themeName) {
       case 'light':
         return {
-          background: 'linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #fdf2f8 100%)',
-          overlay: 'linear-gradient(135deg, rgba(99, 102, 241, 0.7) 0%, rgba(139, 92, 246, 0.7) 50%, rgba(219, 39, 119, 0.7) 100%)'
+          background: 'linear-gradient(135deg, #DADADA 0%, #F5F5F5 100%)',
+          overlay: 'linear-gradient(135deg, rgba(218, 218, 218, 0.7) 0%, rgba(245, 245, 245, 0.7) 100%)'
         };
       case 'dark':
         return {
@@ -188,13 +189,20 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
         };
       default:
         return {
-          background: 'linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #fdf2f8 100%)',
-          overlay: 'linear-gradient(135deg, rgba(99, 102, 241, 0.7) 0%, rgba(139, 92, 246, 0.7) 50%, rgba(219, 39, 119, 0.7) 100%)'
+          background: 'linear-gradient(135deg, #DADADA 0%, #F5F5F5 100%)',
+          overlay: 'linear-gradient(135deg, rgba(218, 218, 218, 0.7) 0%, rgba(245, 245, 245, 0.7) 100%)'
         };
     }
   };
 
+  // Get text color based on theme for hero section
+  const getHeroTextColor = () => {
+    const themeName = currentTheme.name.toLowerCase();
+    return themeName === 'light' ? '#2d3748' : 'white'; // Dark text for light theme, white for others
+  };
+
   const themeGradients = getThemeGradients();
+  const heroTextColor = getHeroTextColor();
 
   return (
     <>
@@ -227,7 +235,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
             <div className="w-full flex items-center justify-between gap-8">
               {/* Content Left */}
-              <div className="flex-1 text-white z-10">
+              <div className="flex-1 z-10" style={{ color: heroTextColor }}>
                 {/* Genre Tags */}
                 <div className="flex flex-wrap gap-2 mb-3">
                   {heroSeries[currentHero].genres.slice(0, 3).map((genre) => (
@@ -235,8 +243,10 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                       key={genre.id}
                       className="px-2 py-1 text-xs font-medium rounded-full"
                       style={{
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        color: 'white'
+                        backgroundColor: currentTheme.name.toLowerCase() === 'light' 
+                          ? 'rgba(45, 55, 72, 0.15)' 
+                          : 'rgba(255, 255, 255, 0.2)',
+                        color: heroTextColor
                       }}
                     >
                       {genre.name}
@@ -249,12 +259,22 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                 </h1>
                 
                 {heroSeries[currentHero].synopsis && (
-                  <p className="text-sm sm:text-base opacity-90 mb-4 line-clamp-3 leading-relaxed max-w-2xl">
+                  <p 
+                    className="text-sm sm:text-base mb-4 line-clamp-3 leading-relaxed max-w-2xl"
+                    style={{ 
+                      opacity: currentTheme.name.toLowerCase() === 'light' ? 0.7 : 0.9 
+                    }}
+                  >
                     {heroSeries[currentHero].synopsis}
                   </p>
                 )}
                 
-                <div className="flex items-center gap-4 text-sm opacity-80">
+                <div 
+                  className="flex items-center gap-4 text-sm"
+                  style={{ 
+                    opacity: currentTheme.name.toLowerCase() === 'light' ? 0.6 : 0.8 
+                  }}
+                >
                   <span>★ {heroSeries[currentHero].rating}</span>
                   <span>•</span>
                   <span>{heroSeries[currentHero].chapters_count || 0} chapters</span>
@@ -284,10 +304,14 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                   e.stopPropagation();
                   prevHero();
                 }}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-20 backdrop-blur-sm"
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-opacity-70 transition-all z-20 backdrop-blur-sm"
                 style={{
-                  backgroundColor: `${currentTheme.foreground}30`,
-                  color: currentTheme.background,
+                  backgroundColor: currentTheme.name.toLowerCase() === 'light' 
+                    ? 'rgba(45, 55, 72, 0.8)' 
+                    : `${currentTheme.foreground}30`,
+                  color: currentTheme.name.toLowerCase() === 'light' 
+                    ? 'white' 
+                    : currentTheme.background,
                   borderColor: `${currentTheme.background}20`
                 }}
               >
@@ -300,10 +324,14 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                   e.stopPropagation();
                   nextHero();
                 }}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-20 backdrop-blur-sm"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-opacity-70 transition-all z-20 backdrop-blur-sm"
                 style={{
-                  backgroundColor: `${currentTheme.foreground}30`,
-                  color: currentTheme.background,
+                  backgroundColor: currentTheme.name.toLowerCase() === 'light' 
+                    ? 'rgba(45, 55, 72, 0.8)' 
+                    : `${currentTheme.foreground}30`,
+                  color: currentTheme.name.toLowerCase() === 'light' 
+                    ? 'white' 
+                    : currentTheme.background,
                   borderColor: `${currentTheme.background}20`
                 }}
               >
@@ -350,7 +378,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
           >
             Popular Series
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
             {popularSeries.map((series) => (
               <Link
                 key={series.id}
@@ -477,7 +505,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
           >
             Latest Updates
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
             {latestUpdates.map((series) => (
               <Link
                 key={series.id}
@@ -572,6 +600,133 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates }: HomeProps) {
                           </svg>
                         )}
                       </div>
+                    )}
+                  </div>
+
+                  {/* Rating */}
+                  <div className="flex items-center mt-auto">
+                    <span className="text-yellow-500 text-sm">★</span>
+                    <span 
+                      className="text-sm ml-1"
+                      style={{ color: `${currentTheme.foreground}80` }}
+                    >
+                      {series.rating}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* New Series */}
+      <section 
+        className="py-8 sm:py-12"
+        style={{ backgroundColor: currentTheme.background }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 
+            className="text-xl sm:text-2xl font-bold mb-6"
+            style={{ color: currentTheme.foreground }}
+          >
+            New Series
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
+            {newSeries.map((series) => (
+              <Link
+                key={series.id}
+                href={`/series/${series.slug}`}
+                className="group"
+              >
+                <div 
+                  className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
+                  style={{
+                    backgroundColor: currentTheme.name === 'Light' 
+                      ? 'rgba(248, 250, 252, 0.8)' 
+                      : currentTheme.name === 'Dark'
+                      ? 'rgba(30, 41, 59, 0.6)'
+                      : currentTheme.name === 'Sepia'
+                      ? 'rgba(244, 236, 216, 0.6)'
+                      : currentTheme.name === 'Cool Dark'
+                      ? 'rgba(49, 50, 68, 0.6)'
+                      : currentTheme.name === 'Frost'
+                      ? 'rgba(205, 220, 237, 0.6)'
+                      : currentTheme.name === 'Solarized'
+                      ? 'rgba(253, 246, 227, 0.6)'
+                      : 'rgba(30, 41, 59, 0.6)',
+                    border: `1px solid ${currentTheme.foreground}10`
+                  }}
+                >
+                  <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
+                    {series.cover_url ? (
+                      <img
+                        src={series.cover_url}
+                        alt={series.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div 
+                        className="w-full h-full flex items-center justify-center text-xs"
+                        style={{ color: `${currentTheme.foreground}60` }}
+                      >
+                        No Cover
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h3 
+                    className="font-semibold text-sm md:text-base line-clamp-2 mb-3 leading-tight"
+                    style={{ color: currentTheme.foreground }}
+                  >
+                    {series.title}
+                  </h3>
+
+                  {/* Latest Chapters */}
+                  <div className="mb-3 flex-1 space-y-1">
+                    {/* Chapter 1 (Latest) */}
+                    <div 
+                      className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                      style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/series/${series.slug}/chapter/${series.chapters_count || 1}`;
+                      }}
+                    >
+                      <span 
+                        className="text-sm font-medium"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        Ch {series.chapters_count || 1}
+                      </span>
+                      {/* Premium indicator if chapter > 5 */}
+                      {(series.chapters_count || 1) > 5 && (
+                        <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    {/* Chapter 2 (Previous) */}
+                    {(series.chapters_count || 1) > 1 && (
+                      <Link 
+                        href={`/series/${series.slug}/chapter/${(series.chapters_count || 1) - 1}`}
+                        className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all"
+                        style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span 
+                          className="text-sm opacity-80"
+                          style={{ color: currentTheme.foreground }}
+                        >
+                          Ch {(series.chapters_count || 1) - 1}
+                        </span>
+                        {/* Premium indicator if chapter > 5 */}
+                        {((series.chapters_count || 1) - 1) > 5 && (
+                          <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
+                      </Link>
                     )}
                   </div>
 

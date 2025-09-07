@@ -1,6 +1,6 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import RichTextEditor from '@/Components/RichTextEditor';
 
 interface Genre {
@@ -50,6 +50,12 @@ export default function SeriesShow({ series }: SeriesShowProps) {
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
   const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+  
+  // Refs for auto-focus
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const chapterTitleInputRef = useRef<HTMLInputElement>(null);
   const [editFormData, setEditFormData] = useState({
     title: series.title,
     alternative_title: series.alternative_title || '',
@@ -72,14 +78,24 @@ export default function SeriesShow({ series }: SeriesShowProps) {
   const [nativeLanguages, setNativeLanguages] = useState<NativeLanguage[]>([]);
 
   const openEditModal = async () => {
+    setIsLoadingFormData(true);
     try {
       const response = await fetch('/admin/series-form-data');
       const data = await response.json();
       setGenres(data.genres);
       setNativeLanguages(data.native_languages);
       setShowEditModal(true);
+      
+      // Auto-focus on title input after modal opens
+      setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 100);
     } catch (error) {
       console.error('Failed to load form data:', error);
+      setAlertMessage({ type: 'error', message: 'Failed to load form data. Please try again.' });
+      setTimeout(() => setAlertMessage(null), 5000);
+    } finally {
+      setIsLoadingFormData(false);
     }
   };
 
@@ -102,6 +118,11 @@ export default function SeriesShow({ series }: SeriesShowProps) {
       });
     }
     setShowChapterModal(true);
+    
+    // Auto-focus on chapter title input after modal opens
+    setTimeout(() => {
+      chapterTitleInputRef.current?.focus();
+    }, 100);
   };
 
   // Handle genre toggle for edit form
@@ -116,13 +137,17 @@ export default function SeriesShow({ series }: SeriesShowProps) {
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    
     router.put(`/admin/series/${series.slug}`, editFormData, {
       onSuccess: () => {
         setShowEditModal(false);
+        setIsSubmitting(false);
         setAlertMessage({ type: 'success', message: 'Series updated successfully!' });
         setTimeout(() => setAlertMessage(null), 5000);
       },
       onError: () => {
+        setIsSubmitting(false);
         setAlertMessage({ type: 'error', message: 'Failed to update series. Please try again.' });
         setTimeout(() => setAlertMessage(null), 5000);
       }
@@ -131,6 +156,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
 
   const handleChapterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     // Prepare data to ensure proper format
     const submitData = {
@@ -144,11 +170,13 @@ export default function SeriesShow({ series }: SeriesShowProps) {
       router.put(`/admin/chapters/${editingChapter.id}`, submitData, {
         onSuccess: () => {
           setShowChapterModal(false);
+          setIsSubmitting(false);
           setAlertMessage({ type: 'success', message: 'Chapter updated successfully!' });
           setTimeout(() => setAlertMessage(null), 5000);
         },
         onError: (errors) => {
           console.error('Update error:', errors);
+          setIsSubmitting(false);
           setAlertMessage({ type: 'error', message: 'Failed to update chapter. Please try again.' });
           setTimeout(() => setAlertMessage(null), 5000);
         }
@@ -157,11 +185,13 @@ export default function SeriesShow({ series }: SeriesShowProps) {
       router.post(`/admin/series/${series.slug}/chapters`, submitData, {
         onSuccess: () => {
           setShowChapterModal(false);
+          setIsSubmitting(false);
           setAlertMessage({ type: 'success', message: 'Chapter created successfully!' });
           setTimeout(() => setAlertMessage(null), 5000);
         },
         onError: (errors) => {
           console.error('Create error:', errors);
+          setIsSubmitting(false);
           setAlertMessage({ type: 'error', message: 'Failed to create chapter. Please try again.' });
           setTimeout(() => setAlertMessage(null), 5000);
         }
@@ -286,9 +316,16 @@ export default function SeriesShow({ series }: SeriesShowProps) {
               <div className="flex space-x-2">
                 <button
                   onClick={openEditModal}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  disabled={isLoadingFormData}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
-                  Edit Series
+                  {isLoadingFormData && (
+                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  <span>{isLoadingFormData ? 'Loading...' : 'Edit Series'}</span>
                 </button>
                 <button
                   onClick={handleDeleteSeries}
@@ -342,8 +379,10 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                 <span className="text-sm text-gray-500">Synopsis</span>
                 <div 
                   className="text-gray-700 mt-1"
-                  dangerouslySetInnerHTML={{ __html: series.synopsis }}
-                />
+                  style={{ whiteSpace: 'pre-line' }}
+                >
+                  {series.synopsis}
+                </div>
               </div>
             )}
           </div>
@@ -417,10 +456,12 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Title *</label>
                   <input
+                    ref={titleInputRef}
                     type="text"
                     value={editFormData.title}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                    placeholder="Enter series title..."
                     required
                   />
                 </div>
@@ -431,7 +472,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                     type="text"
                     value={editFormData.alternative_title}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, alternative_title: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                    placeholder="Enter alternative title (optional)..."
                   />
                 </div>
 
@@ -441,7 +483,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                     type="url"
                     value={editFormData.cover_url}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, cover_url: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                    placeholder="https://example.com/cover-image.jpg"
                   />
                 </div>
 
@@ -462,7 +505,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                       type="text"
                       value={editFormData.author}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, author: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                      placeholder="Enter author name..."
                     />
                   </div>
 
@@ -472,7 +516,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                       type="text"
                       value={editFormData.artist}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, artist: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                      placeholder="Enter artist name..."
                     />
                   </div>
                 </div>
@@ -487,7 +532,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                       step="0.1"
                       value={editFormData.rating}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, rating: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                      placeholder="8.5"
                     />
                   </div>
 
@@ -496,7 +542,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                     <select
                       value={editFormData.status}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, status: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
                       required
                     >
                       <option value="ongoing">Ongoing</option>
@@ -511,7 +557,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   <select
                     value={editFormData.native_language_id}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, native_language_id: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
                     required
                   >
                     <option value="">Select Language</option>
@@ -523,14 +569,14 @@ export default function SeriesShow({ series }: SeriesShowProps) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Genres *</label>
-                  <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
                     {genres.map((genre) => (
-                      <label key={genre.id} className="flex items-center">
+                      <label key={genre.id} className="flex items-center hover:bg-white p-1 rounded cursor-pointer transition-colors duration-150">
                         <input
                           type="checkbox"
                           checked={editFormData.genre_ids.includes(genre.id)}
                           onChange={() => handleGenreToggle(genre.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
                         />
                         <span className="ml-2 text-sm text-gray-700">{genre.name}</span>
                       </label>
@@ -541,15 +587,23 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    Update Series
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    <span>{isSubmitting ? 'Updating...' : 'Update Series'}</span>
                   </button>
                 </div>
               </form>
@@ -570,10 +624,12 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Chapter Title *</label>
                   <input
+                    ref={chapterTitleInputRef}
                     type="text"
                     value={chapterFormData.title}
                     onChange={(e) => setChapterFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                    placeholder="Enter chapter title..."
                     required
                   />
                 </div>
@@ -588,15 +644,15 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   />
                 </div>
 
-                <div className="flex items-center space-x-4">
-                  <label className="flex items-center">
+                <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-md border border-gray-200">
+                  <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
                     <input
                       type="checkbox"
                       checked={chapterFormData.is_premium}
                       onChange={(e) => setChapterFormData(prev => ({ ...prev, is_premium: e.target.checked }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Premium Chapter</span>
+                    <span className="ml-2 text-sm text-gray-700 font-medium">Premium Chapter</span>
                   </label>
 
                   {chapterFormData.is_premium && (
@@ -607,7 +663,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                         min="1"
                         value={chapterFormData.coin_price}
                         onChange={(e) => setChapterFormData(prev => ({ ...prev, coin_price: parseInt(e.target.value) }))}
-                        className="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                        placeholder="45"
                       />
                     </div>
                   )}
@@ -617,15 +674,28 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   <button
                     type="button"
                     onClick={() => setShowChapterModal(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md disabled:bg-green-400 disabled:cursor-not-allowed flex items-center space-x-2"
                   >
-                    {editingChapter ? 'Update Chapter' : 'Create Chapter'}
+                    {isSubmitting && (
+                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                    )}
+                    <span>
+                      {isSubmitting 
+                        ? (editingChapter ? 'Updating...' : 'Creating...') 
+                        : (editingChapter ? 'Update Chapter' : 'Create Chapter')
+                      }
+                    </span>
                   </button>
                 </div>
               </form>

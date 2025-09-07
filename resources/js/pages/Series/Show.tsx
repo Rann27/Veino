@@ -236,11 +236,13 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                         <div className="prose max-w-none">
                                             <div 
                                                 className="leading-relaxed"
-                                                style={{ color: `${currentTheme.foreground}90` }}
-                                                dangerouslySetInnerHTML={{ 
-                                                    __html: series.synopsis || 'No synopsis available.' 
+                                                style={{ 
+                                                    color: `${currentTheme.foreground}90`,
+                                                    whiteSpace: 'pre-line'
                                                 }}
-                                            />
+                                            >
+                                                {series.synopsis || 'No synopsis available.'}
+                                            </div>
                                         </div>
                                     </div>
 
