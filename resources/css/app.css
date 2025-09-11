@@ -1,0 +1,249 @@
+@import 'tailwindcss';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* Theme Variables */
+:root {
+    --theme-bg: #ffffff;
+    --theme-fg: #000000;
+    --theme-bg-inverted: #000000;
+    --theme-fg-inverted: #ffffff;
+}
+
+/* Global theme classes */
+.theme-bg {
+    background-color: var(--theme-bg) !important;
+}
+
+.theme-fg {
+    color: var(--theme-fg) !important;
+}
+
+.theme-bg-inverted {
+    background-color: var(--theme-bg-inverted) !important;
+}
+
+.theme-fg-inverted {
+    color: var(--theme-fg-inverted) !important;
+}
+
+.theme-border {
+    border-color: var(--theme-fg) !important;
+    opacity: 0.2;
+}
+
+.theme-hover:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+/* Button variants using theme colors */
+.btn-theme-primary {
+    background-color: var(--theme-fg);
+    color: var(--theme-bg);
+    border: 1px solid var(--theme-fg);
+}
+
+.btn-theme-primary:hover {
+    background-color: var(--theme-bg);
+    color: var(--theme-fg);
+}
+
+.btn-theme-secondary {
+    background-color: transparent;
+    color: var(--theme-fg);
+    border: 1px solid var(--theme-fg);
+}
+
+.btn-theme-secondary:hover {
+    background-color: var(--theme-fg);
+    color: var(--theme-bg);
+}
+
+/* Form elements using theme colors */
+.input-theme {
+    background-color: var(--theme-bg);
+    color: var(--theme-fg);
+    border: 1px solid var(--theme-fg);
+    opacity: 0.7;
+}
+
+.input-theme:focus {
+    border-color: var(--theme-fg);
+    opacity: 1;
+}
+
+/* Smooth transitions for theme changes */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Animation utilities */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes zoom-in {
+    from { transform: scale(0.95); }
+    to { transform: scale(1); }
+}
+
+.animate-in {
+    animation-duration: 200ms;
+    animation-timing-function: ease-out;
+    animation-fill-mode: both;
+}
+
+.fade-in-0 {
+    animation-name: fade-in;
+}
+
+.zoom-in-95 {
+    animation-name: zoom-in;
+}
+
+/* Chapter Content Styling */
+.chapter-content {
+    line-height: inherit !important;
+    white-space: pre-wrap !important;
+}
+
+.chapter-content > div {
+    white-space: pre-wrap !important;
+}
+
+.chapter-content p {
+    margin-bottom: 1em;
+    line-height: inherit;
+    white-space: pre-wrap !important;
+}
+
+.chapter-content p:last-child {
+    margin-bottom: 0;
+}
+
+.chapter-content br {
+    line-height: inherit;
+}
+
+.chapter-content div {
+    white-space: pre-wrap !important;
+}
+
+/* Reader Content - Override all line-height for user settings */
+.reader-content {
+    line-height: var(--reader-line-height, 1.6) !important;
+}
+
+.reader-content *,
+.reader-content p,
+.reader-content div,
+.reader-content span,
+.reader-content > div,
+.reader-content > div *,
+.reader-content > div p {
+    line-height: var(--reader-line-height, 1.6) !important;
+}
+
+.reader-content h1,
+.reader-content h2,
+.reader-content h3,
+.reader-content h4,
+.reader-content h5,
+.reader-content h6 {
+    line-height: calc(var(--reader-line-height, 1.6) * 0.8) !important;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+}
+
+.chapter-content img {
+    max-width: 100%;
+    height: auto;
+    margin: 1.5em auto;
+    display: block;
+    border-radius: 8px;
+}
+
+.chapter-content h1, 
+.chapter-content h2, 
+.chapter-content h3, 
+.chapter-content h4, 
+.chapter-content h5, 
+.chapter-content h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+    line-height: 1.3;
+}
+
+.chapter-content blockquote {
+    margin: 1.5em 0;
+    padding-left: 1em;
+    border-left: 3px solid currentColor;
+    opacity: 0.8;
+}
+
+.chapter-content ul, 
+.chapter-content ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+.chapter-content li {
+    margin-bottom: 0.5em;
+}
+
+.chapter-content strong, 
+.chapter-content b {
+    font-weight: 600;
+}
+
+.chapter-content em, 
+.chapter-content i {
+    font-style: italic;
+}
+
+.chapter-content code {
+    background-color: rgba(0, 0, 0, 0.1);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.chapter-content pre {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 1em;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 1.5em 0;
+}
+
+.chapter-content pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.chapter-content a {
+    color: #3b82f6;
+    text-decoration: underline;
+}
+
+.chapter-content a:hover {
+    text-decoration: none;
+}
+
+/* Basic Reader Content Styling - settings will be applied dynamically */
+.reader-content {
+    line-height: inherit;
+}
+
+.reader-content p {
+    word-wrap: break-word;
+}
