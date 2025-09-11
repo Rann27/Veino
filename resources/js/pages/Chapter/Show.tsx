@@ -285,19 +285,32 @@ function ChapterShowContent({
                             )}
                             
                             <div className="relative">
-                                <button
-                                    onClick={() => setShowChapterList(!showChapterList)}
-                                    className="px-2 sm:px-3 py-2 text-sm border rounded transition-colors hover:opacity-70 flex items-center space-x-1"
-                                    style={{
-                                        color: currentTheme.foreground,
-                                        borderColor: `${currentTheme.foreground}30`
-                                    }}
-                                >
-                                    <span>{chapter.chapter_number}</span>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
+                                <div className="flex items-center space-x-2">
+                                    <Link
+                                        href={route('series.show', series.slug)}
+                                        className="px-2 sm:px-3 py-2 text-sm border rounded transition-colors hover:opacity-70 truncate max-w-32 sm:max-w-48"
+                                        style={{
+                                            color: '#3b82f6',
+                                            borderColor: `${currentTheme.foreground}30`
+                                        }}
+                                        title={series.title}
+                                    >
+                                        {series.title}
+                                    </Link>
+                                    <button
+                                        onClick={() => setShowChapterList(!showChapterList)}
+                                        className="px-2 py-2 text-sm border rounded transition-colors hover:opacity-70 flex items-center"
+                                        style={{
+                                            color: currentTheme.foreground,
+                                            borderColor: `${currentTheme.foreground}30`
+                                        }}
+                                        title="Chapter list"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
                                 
                                 {showChapterList && (
                                     <div 
@@ -371,7 +384,7 @@ function ChapterShowContent({
                 style={{ backgroundColor: currentTheme.background }}
             >
                 <div 
-                    className="mx-auto px-4 sm:px-6 lg:px-8 py-8"
+                    className="mx-auto px-2 sm:px-6 lg:px-8 py-8"
                     style={{ 
                         maxWidth: `${readerSettings.contentWidth}%`,
                         width: '100%'
