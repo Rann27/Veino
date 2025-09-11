@@ -285,7 +285,25 @@ function ChapterShowContent({
                             )}
                             
                             <div className="relative">
-                                <div className="flex items-center space-x-2">
+                                {/* Mobile: Simple chapter number display */}
+                                <div className="sm:hidden">
+                                    <button
+                                        onClick={() => setShowChapterList(!showChapterList)}
+                                        className="px-3 py-2 text-sm border rounded transition-colors hover:opacity-70 flex items-center space-x-1"
+                                        style={{
+                                            color: currentTheme.foreground,
+                                            borderColor: `${currentTheme.foreground}30`
+                                        }}
+                                    >
+                                        <span>Ch.{chapter.chapter_number}</span>
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                {/* Desktop: Series title link + chapter dropdown */}
+                                <div className="hidden sm:flex items-center space-x-2">
                                     <Link
                                         href={route('series.show', series.slug)}
                                         className="px-2 sm:px-3 py-2 text-sm border rounded transition-colors hover:opacity-70 truncate max-w-32 sm:max-w-48"
@@ -398,12 +416,13 @@ function ChapterShowContent({
                         >
                             {chapter.title}
                         </h1>
-                        <p 
-                            className="text-lg"
-                            style={{ color: `${currentTheme.foreground}80` }}
+                        <Link
+                            href={route('series.show', series.slug)}
+                            className="text-lg transition-colors hover:opacity-70"
+                            style={{ color: '#3b82f6' }}
                         >
-                            {chapter.chapter_number}
-                        </p>
+                            {series.title}
+                        </Link>
                         {chapter.is_premium && (
                             <div className="mt-4">
                                 <span 
