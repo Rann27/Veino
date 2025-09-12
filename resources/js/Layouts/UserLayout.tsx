@@ -44,6 +44,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -183,6 +184,10 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
     setShowAccountMenu(!showAccountMenu);
   };
 
+  const toggleMobileSidebar = () => {
+    setShowMobileSidebar(!showMobileSidebar);
+  };
+
   // Helper function to get user initials
   const getUserInitials = (name: string) => {
     return name
@@ -215,8 +220,21 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex-shrink-0">
+            {/* Mobile burger menu */}
+            <div className="md:hidden">
+              <button
+                onClick={toggleMobileSidebar}
+                className="p-2 transition-colors hover:opacity-70"
+                style={{ color: currentTheme.foreground }}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Logo - Hidden on mobile */}
+            <div className="flex-shrink-0 hidden md:block">
               <Link 
                 href="/" 
                 className="flex items-center space-x-3 text-2xl font-semibold" 
@@ -278,17 +296,18 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </svg>
               </button>
 
-              {/* User Menu or Login */}
-              {auth?.user ? (
-                <div className="relative">
-                  <button
-                    onClick={toggleAccountMenu}
-                    className="flex items-center space-x-2 p-2 rounded-full transition-colors"
-                    style={{ 
-                      color: currentTheme.foreground,
-                      backgroundColor: showAccountMenu ? `${currentTheme.foreground}10` : 'transparent'
-                    }}
-                  >
+              {/* User Menu or Login - Desktop only */}
+              <div className="hidden md:block">
+                {auth?.user ? (
+                  <div className="relative">
+                    <button
+                      onClick={toggleAccountMenu}
+                      className="flex items-center space-x-2 p-2 rounded-full transition-colors"
+                      style={{ 
+                        color: currentTheme.foreground,
+                        backgroundColor: showAccountMenu ? `${currentTheme.foreground}10` : 'transparent'
+                      }}
+                    >
                     {auth.user.avatar ? (
                       <img
                         src={auth.user.avatar}
@@ -407,10 +426,208 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   Login
                 </Link>
               )}
+              </div>
             </div>
           </div>
         </div>
       </nav>
+
+      {/* Mobile Sidebar */}
+      {showMobileSidebar && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-[70] bg-black bg-opacity-50 md:hidden"
+            onClick={toggleMobileSidebar}
+          />
+          
+          {/* Sidebar */}
+          <div 
+            className={`fixed top-0 left-0 h-full w-80 z-[75] transform transition-transform duration-300 ease-in-out md:hidden ${
+              showMobileSidebar ? 'translate-x-0' : '-translate-x-full'
+            }`}
+            style={{ 
+              backgroundColor: currentTheme.background,
+              borderRight: `1px solid ${currentTheme.foreground}20`
+            }}
+          >
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-8">
+                <Link 
+                  href="/" 
+                  className="text-2xl font-semibold" 
+                  style={{ 
+                    fontFamily: 'Poppins, sans-serif',
+                    color: currentTheme.foreground
+                  }}
+                  onClick={toggleMobileSidebar}
+                >
+                  VEINOVEL
+                </Link>
+                <button
+                  onClick={toggleMobileSidebar}
+                  className="p-2 transition-colors hover:opacity-70"
+                  style={{ color: currentTheme.foreground }}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Navigation Menu */}
+              <nav className="space-y-4">
+                <Link 
+                  href="/" 
+                  className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
+                  style={{ 
+                    color: currentTheme.foreground,
+                    backgroundColor: `${currentTheme.foreground}05`
+                  }}
+                  onClick={toggleMobileSidebar}
+                >
+                  Home
+                </Link>
+                <Link 
+                  href="/explore" 
+                  className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
+                  style={{ 
+                    color: currentTheme.foreground,
+                    backgroundColor: `${currentTheme.foreground}05`
+                  }}
+                  onClick={toggleMobileSidebar}
+                >
+                  Explore
+                </Link>
+                <Link 
+                  href="/buy-coins" 
+                  className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
+                  style={{ 
+                    color: currentTheme.foreground,
+                    backgroundColor: `${currentTheme.foreground}05`
+                  }}
+                  onClick={toggleMobileSidebar}
+                >
+                  Buy Coins
+                </Link>
+                <a 
+                  href="https://discord.gg/5HcJf7p3ZG" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
+                  style={{ 
+                    color: currentTheme.foreground,
+                    backgroundColor: `${currentTheme.foreground}05`
+                  }}
+                  onClick={toggleMobileSidebar}
+                >
+                  Discord
+                </a>
+              </nav>
+
+              {/* User Section */}
+              {auth?.user ? (
+                <div className="mt-8 pt-6 border-t" style={{ borderColor: `${currentTheme.foreground}20` }}>
+                  <div className="flex items-center space-x-3 mb-4">
+                    {auth.user.avatar ? (
+                      <img
+                        src={auth.user.avatar}
+                        alt={auth.user.display_name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium"
+                        style={{
+                          backgroundColor: currentTheme.foreground,
+                          color: currentTheme.background
+                        }}
+                      >
+                        {getUserInitials(auth.user.display_name)}
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium" style={{ color: currentTheme.foreground }}>
+                        {auth.user.display_name}
+                      </p>
+                      <p className="text-sm flex items-center gap-1" style={{ color: '#FFD700' }}>
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                        </svg>
+                        {auth.user.coins} Coins
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Link
+                      href="/profile"
+                      className="block px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      style={{ 
+                        color: currentTheme.foreground,
+                        backgroundColor: `${currentTheme.foreground}05`
+                      }}
+                      onClick={toggleMobileSidebar}
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      href="/bookmarks"
+                      className="block px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      style={{ 
+                        color: currentTheme.foreground,
+                        backgroundColor: `${currentTheme.foreground}05`
+                      }}
+                      onClick={toggleMobileSidebar}
+                    >
+                      My Bookmarks
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setShowThemeModal(true);
+                        toggleMobileSidebar();
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      style={{ 
+                        color: currentTheme.foreground,
+                        backgroundColor: `${currentTheme.foreground}05`
+                      }}
+                    >
+                      Theme Settings
+                    </button>
+                    <Link
+                      href="/logout"
+                      method="post"
+                      as="button"
+                      className="block w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      style={{ color: '#ef4444' }}
+                      onClick={toggleMobileSidebar}
+                    >
+                      Logout
+                    </Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-8 pt-6 border-t" style={{ borderColor: `${currentTheme.foreground}20` }}>
+                  <Link
+                    href="/login"
+                    className="block w-full text-center px-4 py-3 rounded-lg text-lg font-medium transition-colors"
+                    style={{
+                      backgroundColor: currentTheme.foreground,
+                      color: currentTheme.background
+                    }}
+                    onClick={toggleMobileSidebar}
+                  >
+                    Login
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Search Bar */}
       {showSearch && (
