@@ -52,18 +52,7 @@ class ChapterController extends Controller
         $purifier = new HTMLPurifier($config);
         $cleanContent = $purifier->purify($content);
         
-        // Additional processing to preserve line breaks
-        // Convert double line breaks to proper paragraph breaks
-        $cleanContent = preg_replace('/\n\s*\n/', '</p><p>', $cleanContent);
-        
-        // Ensure content is wrapped in paragraphs if not already
-        if (!preg_match('/^<p>/', trim($cleanContent))) {
-            $cleanContent = '<p>' . $cleanContent . '</p>';
-        }
-        
-        // Convert single line breaks to <br> tags within paragraphs
-        $cleanContent = preg_replace('/(?<!>)\n(?!<)/', '<br>', $cleanContent);
-        
+        // Return clean content without auto-formatting to preserve plain text
         return $cleanContent;
     }
 
