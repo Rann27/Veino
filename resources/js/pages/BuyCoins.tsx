@@ -409,6 +409,16 @@ function BuyCoinsContent({ coinPackages }: Props) {
                                 </p>
                             </div>
                         </div>
+                        
+                        {/* Note */}
+                        <div className="mt-8 text-center">
+                            <p 
+                                className="text-sm italic"
+                                style={{ color: `${currentTheme.foreground}70` }}
+                            >
+                                *If you didn't receive your coins, you can contact us on Discord.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>
