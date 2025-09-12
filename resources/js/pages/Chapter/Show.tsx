@@ -285,50 +285,20 @@ function ChapterShowContent({
                             )}
                             
                             <div className="relative">
-                                {/* Mobile: Simple chapter number display */}
-                                <div className="sm:hidden">
-                                    <button
-                                        onClick={() => setShowChapterList(!showChapterList)}
-                                        className="px-3 py-2 text-sm border rounded transition-colors hover:opacity-70 flex items-center space-x-1"
-                                        style={{
-                                            color: currentTheme.foreground,
-                                            borderColor: `${currentTheme.foreground}30`
-                                        }}
-                                    >
-                                        <span>Ch.{chapter.chapter_number}</span>
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                {/* Desktop: Series title link + chapter dropdown */}
-                                <div className="hidden sm:flex items-center space-x-2">
-                                    <Link
-                                        href={route('series.show', series.slug)}
-                                        className="px-2 sm:px-3 py-2 text-sm border rounded transition-colors hover:opacity-70 truncate max-w-32 sm:max-w-48"
-                                        style={{
-                                            color: '#3b82f6',
-                                            borderColor: `${currentTheme.foreground}30`
-                                        }}
-                                        title={series.title}
-                                    >
-                                        {series.title}
-                                    </Link>
-                                    <button
-                                        onClick={() => setShowChapterList(!showChapterList)}
-                                        className="px-2 py-2 text-sm border rounded transition-colors hover:opacity-70 flex items-center"
-                                        style={{
-                                            color: currentTheme.foreground,
-                                            borderColor: `${currentTheme.foreground}30`
-                                        }}
-                                        title="Chapter list"
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                </div>
+                                {/* Both Mobile and Desktop: Simple burger menu for chapter list */}
+                                <button
+                                    onClick={() => setShowChapterList(!showChapterList)}
+                                    className="p-2 rounded transition-colors hover:opacity-70"
+                                    style={{
+                                        color: currentTheme.foreground
+                                    }}
+                                    title="Chapter list"
+                                >
+                                    {/* Burger icon */}
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                    </svg>
+                                </button>
                                 
                                 {showChapterList && (
                                     <div 
