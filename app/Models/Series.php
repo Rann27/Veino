@@ -66,8 +66,11 @@ class Series extends Model
 
     public function getNextChapterNumber(): int
     {
-        $lastChapter = $this->chapters()->orderBy('chapter_number', 'desc')->first();
-        return $lastChapter ? $lastChapter->chapter_number + 1 : 1;
+        // Use fresh query to avoid caching issues
+        $maxChapterNumber = Chapter::where('series_id', $this->id)
+            ->max('chapter_number');
+        
+        return $maxChapterNumber ? $maxChapterNumber + 1 : 1;
     }
 
     public function getRouteKeyName()

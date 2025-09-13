@@ -66,7 +66,6 @@ class ChapterController extends Controller
         ]);
 
         $validated['series_id'] = $series->id;
-        $validated['chapter_number'] = $series->getNextChapterNumber();
         
         // Ensure is_premium is treated as boolean regardless of input format
         $validated['is_premium'] = in_array($validated['is_premium'], [1, '1', true, 'true']);
@@ -81,7 +80,40 @@ class ChapterController extends Controller
             }
         }
 
-        Chapter::create($validated);
+        // Use database transaction to prevent race conditions
+        $maxRetries = 3;
+        $attempt = 0;
+        
+        while ($attempt < $maxRetries) {
+            try {
+                \DB::transaction(function () use (&$validated, $series) {
+                    // Get next chapter number inside transaction with lock
+                    $maxChapterNumber = Chapter::where('series_id', $series->id)
+                        ->lockForUpdate()
+                        ->max('chapter_number');
+                    
+                    $validated['chapter_number'] = $maxChapterNumber ? $maxChapterNumber + 1 : 1;
+                    
+                    Chapter::create($validated);
+                });
+                
+                // If we get here, transaction succeeded
+                break;
+                
+            } catch (\Illuminate\Database\QueryException $e) {
+                $attempt++;
+                
+                // If it's a duplicate key error and we have retries left, try again
+                if ($e->getCode() == '23000' && $attempt < $maxRetries) {
+                    // Wait a small random time before retry
+                    usleep(rand(10000, 50000)); // 10-50ms
+                    continue;
+                }
+                
+                // If it's not a duplicate error or we're out of retries, rethrow
+                throw $e;
+            }
+        }
 
         return redirect()->back()->with('success', 'Chapter created successfully');
     }
