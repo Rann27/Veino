@@ -54,6 +54,10 @@ class ThemeController extends Controller
             'reader_settings.fontSize' => 'integer|min:8|max:32',
             'reader_settings.lineHeight' => 'numeric|min:0.5|max:3',
             'reader_settings.contentWidth' => 'integer|min:50|max:100',
+            'reader_settings.paragraphSpacing' => 'numeric|min:0.5|max:3.0',
+            'reader_settings.textAlign' => 'string|in:left,center,justify',
+            'reader_settings.textIndent' => 'numeric|min:0|max:4',
+            'reader_settings.hyphenation' => 'boolean',
         ]);
 
         $preference = $user->getThemePreference();
