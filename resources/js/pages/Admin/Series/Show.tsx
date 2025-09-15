@@ -72,7 +72,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     title: '',
     content: '',
     is_premium: false,
-    coin_price: 45,
+    coin_price: 35,
   });
   const [genres, setGenres] = useState<Genre[]>([]);
   const [nativeLanguages, setNativeLanguages] = useState<NativeLanguage[]>([]);
@@ -114,7 +114,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
         title: '',
         content: '',
         is_premium: false,
-        coin_price: 45,
+        coin_price: 35,
       });
     }
     setShowChapterModal(true);
@@ -649,7 +649,12 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                     <input
                       type="checkbox"
                       checked={chapterFormData.is_premium}
-                      onChange={(e) => setChapterFormData(prev => ({ ...prev, is_premium: e.target.checked }))}
+                      onChange={(e) => setChapterFormData(prev => ({
+                        ...prev,
+                        is_premium: e.target.checked,
+                        // If toggled ON and no price set (or 0), default to 35; if OFF, reset to 0
+                        coin_price: e.target.checked ? (prev.coin_price && prev.coin_price > 0 ? prev.coin_price : 35) : 0,
+                      }))}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
                     />
                     <span className="ml-2 text-sm text-gray-700 font-medium">Premium Chapter</span>
@@ -664,7 +669,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                         value={chapterFormData.coin_price}
                         onChange={(e) => setChapterFormData(prev => ({ ...prev, coin_price: parseInt(e.target.value) }))}
                         className="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                        placeholder="45"
+                        placeholder="35"
                       />
                     </div>
                   )}

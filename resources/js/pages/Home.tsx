@@ -37,7 +37,9 @@ interface Series {
   chapters_count?: number;
   native_language: NativeLanguage;
   genres: Genre[];
-  latest_chapters?: Chapter[]; // For latest updates
+  // Backend includes latest 1-2 chapters as `chapters` relation; keep optional for safety
+  chapters?: Chapter[];
+  latest_chapters?: Chapter[]; // legacy/comment
 }
 
 interface HomeProps {
@@ -449,54 +451,68 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                     {series.title}
                   </h3>
 
-                  {/* Latest Chapters */}
+                  {/* Latest Chapters (use actual is_premium flags) */}
                   <div className="mb-3 flex-1 space-y-1">
-                    {/* Chapter 1 (Latest) */}
-                    <div 
-                      className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
-                      style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.location.href = `/series/${series.slug}/chapter/${series.chapters_count || 1}`;
-                      }}
-                    >
-                      <span 
-                        className="text-sm font-medium"
-                        style={{ color: currentTheme.foreground }}
-                      >
-                        Ch {series.chapters_count || 1}
-                      </span>
-                      {/* Premium indicator if chapter > 5 */}
-                      {(series.chapters_count || 1) > 5 && (
-                        <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 3 0 6 16 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    {/* Chapter 2 (Previous) */}
-                    {(series.chapters_count || 1) > 1 && (
-                      <div 
-                        className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
-                        style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = `/series/${series.slug}/chapter/${(series.chapters_count || 1) - 1}`;
-                        }}
-                      >
-                        <span 
-                          className="text-sm opacity-80"
-                          style={{ color: currentTheme.foreground }}
+                    {(() => {
+                      const chs = (series.chapters || []).slice(0, 2); // use server-provided list
+                      // Fallback to synthetic chapters if none provided
+                      if (chs.length === 0) {
+                        const latestNum = series.chapters_count || 1;
+                        return [
+                          { chapter_number: latestNum, is_premium: false },
+                          latestNum > 1 ? { chapter_number: latestNum - 1, is_premium: false } : null,
+                        ]
+                          .filter(Boolean)
+                          .map((c: any, idx: number) => (
+                            <div
+                              key={`fallback-${idx}`}
+                              className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                              style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                              }}
+                            >
+                              <span
+                                className="text-sm font-medium"
+                                style={{ color: currentTheme.foreground }}
+                              >
+                                Ch {c.chapter_number}
+                              </span>
+                              {c.is_premium && (
+                                <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          ));
+                      }
+
+                      const chsDesc = [...chs].sort((a, b) => b.chapter_number - a.chapter_number);
+                      return chsDesc.map((c) => (
+                        <div
+                          key={c.id ?? c.chapter_number}
+                          className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                          style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                          }}
                         >
-                          Ch {(series.chapters_count || 1) - 1}
-                        </span>
-                        {/* Premium indicator if chapter > 5 */}
-                        {((series.chapters_count || 1) - 1) > 5 && (
-                          <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 3 0 6 16 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    )}
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: currentTheme.foreground }}
+                          >
+                            Ch {c.chapter_number}
+                          </span>
+                          {c.is_premium && (
+                            <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      ));
+                    })()}
                   </div>
 
                   {/* Rating */}
@@ -578,52 +594,67 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                     {series.title}
                   </h3>
 
-                  {/* Latest Chapters */}
+                  {/* Latest Chapters (use actual is_premium flags) */}
                   <div className="mb-3 flex-1 space-y-1">
-                    {/* Chapter 1 (Latest) */}
-                    <Link 
-                      href={`/series/${series.slug}/chapter/${series.chapters_count || 1}`}
-                      className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all"
-                      style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span 
-                        className="text-sm font-medium"
-                        style={{ color: currentTheme.foreground }}
-                      >
-                        Ch {series.chapters_count || 1}
-                      </span>
-                      {/* Premium indicator if chapter > 5 */}
-                      {(series.chapters_count || 1) > 5 && (
-                        <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </Link>
-                    {/* Chapter 2 (Previous) */}
-                    {(series.chapters_count || 1) > 1 && (
-                      <div 
-                        className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
-                        style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = `/series/${series.slug}/chapter/${(series.chapters_count || 1) - 1}`;
-                        }}
-                      >
-                        <span 
-                          className="text-sm opacity-80"
-                          style={{ color: currentTheme.foreground }}
+                    {(() => {
+                      const chs = (series.chapters || []).slice(0, 2);
+                      if (chs.length === 0) {
+                        const latestNum = series.chapters_count || 1;
+                        return [
+                          { chapter_number: latestNum, is_premium: false },
+                          latestNum > 1 ? { chapter_number: latestNum - 1, is_premium: false } : null,
+                        ]
+                          .filter(Boolean)
+                          .map((c: any, idx: number) => (
+                            <div
+                              key={`fallback-lu-${idx}`}
+                              className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                              style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                              }}
+                            >
+                              <span
+                                className="text-sm font-medium"
+                                style={{ color: currentTheme.foreground }}
+                              >
+                                Ch {c.chapter_number}
+                              </span>
+                              {c.is_premium && (
+                                <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          ));
+                      }
+
+                      const chsDesc = [...chs].sort((a, b) => b.chapter_number - a.chapter_number);
+                      return chsDesc.map((c) => (
+                        <div
+                          key={c.id ?? c.chapter_number}
+                          className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                          style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                          }}
                         >
-                          Ch {(series.chapters_count || 1) - 1}
-                        </span>
-                        {/* Premium indicator if chapter > 5 */}
-                        {((series.chapters_count || 1) - 1) > 5 && (
-                          <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 3 0 6 16 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    )}
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: currentTheme.foreground }}
+                          >
+                            Ch {c.chapter_number}
+                          </span>
+                          {c.is_premium && (
+                            <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      ));
+                    })()}
                   </div>
 
                   {/* Rating */}
@@ -705,54 +736,67 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                     {series.title}
                   </h3>
 
-                  {/* Latest Chapters */}
+                  {/* Latest Chapters (use actual is_premium flags) */}
                   <div className="mb-3 flex-1 space-y-1">
-                    {/* Chapter 1 (Latest) */}
-                    <div 
-                      className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
-                      style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.location.href = `/series/${series.slug}/chapter/${series.chapters_count || 1}`;
-                      }}
-                    >
-                      <span 
-                        className="text-sm font-medium"
-                        style={{ color: currentTheme.foreground }}
-                      >
-                        Ch {series.chapters_count || 1}
-                      </span>
-                      {/* Premium indicator if chapter > 5 */}
-                      {(series.chapters_count || 1) > 5 && (
-                        <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                    {/* Chapter 2 (Previous) */}
-                    {(series.chapters_count || 1) > 1 && (
-                      <div 
-                        className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
-                        style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = `/series/${series.slug}/chapter/${(series.chapters_count || 1) - 1}`;
-                        }}
-                      >
-                        <span 
-                          className="text-sm opacity-80"
-                          style={{ color: currentTheme.foreground }}
+                    {(() => {
+                      const chs = (series.chapters || []).slice(0, 2);
+                      if (chs.length === 0) {
+                        const latestNum = series.chapters_count || 1;
+                        return [
+                          { chapter_number: latestNum, is_premium: false },
+                          latestNum > 1 ? { chapter_number: latestNum - 1, is_premium: false } : null,
+                        ]
+                          .filter(Boolean)
+                          .map((c: any, idx: number) => (
+                            <div
+                              key={`fallback-new-${idx}`}
+                              className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                              style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                              }}
+                            >
+                              <span
+                                className="text-sm font-medium"
+                                style={{ color: currentTheme.foreground }}
+                              >
+                                Ch {c.chapter_number}
+                              </span>
+                              {c.is_premium && (
+                                <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </div>
+                          ));
+                      }
+
+                      const chsDesc = [...chs].sort((a, b) => b.chapter_number - a.chapter_number);
+                      return chsDesc.map((c) => (
+                        <div
+                          key={c.id ?? c.chapter_number}
+                          className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                          style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                          }}
                         >
-                          Ch {(series.chapters_count || 1) - 1}
-                        </span>
-                        {/* Premium indicator if chapter > 5 */}
-                        {((series.chapters_count || 1) - 1) > 5 && (
-                          <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 3 0 6 16 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    )}
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: currentTheme.foreground }}
+                          >
+                            Ch {c.chapter_number}
+                          </span>
+                          {c.is_premium && (
+                            <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      ));
+                    })()}
                   </div>
 
                   {/* Rating */}

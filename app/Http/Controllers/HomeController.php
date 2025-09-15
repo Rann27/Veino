@@ -19,7 +19,12 @@ class HomeController extends Controller
             ->get();
 
         // Popular series based on chapters count and recent activity
-        $popularSeries = Series::with(['nativeLanguage', 'genres'])
+    $popularSeries = Series::with(['nativeLanguage', 'genres', 'chapters' => function ($query) {
+        // Override default orderBy from relation and take 2 newest by chapter_number
+        $query->reorder()->orderByDesc('chapter_number')
+            ->take(2)
+            ->select(['id', 'series_id', 'title', 'chapter_number', 'is_premium']);
+        }])
             ->withCount('chapters')
             ->orderBy('chapters_count', 'desc')
             ->orderBy('updated_at', 'desc')
@@ -28,7 +33,9 @@ class HomeController extends Controller
 
         // Latest updates - series with recent chapters
         $latestUpdates = Series::with(['nativeLanguage', 'genres', 'chapters' => function ($query) {
-                $query->latest()->first();
+                $query->reorder()->orderByDesc('chapter_number')
+                    ->take(2)
+                    ->select(['id', 'series_id', 'title', 'chapter_number', 'is_premium']);
             }])
             ->withCount('chapters')
             ->whereHas('chapters', function ($query) {
@@ -39,7 +46,11 @@ class HomeController extends Controller
             ->get();
 
         // New series - recently published series
-        $newSeries = Series::with(['nativeLanguage', 'genres'])
+    $newSeries = Series::with(['nativeLanguage', 'genres', 'chapters' => function ($query) {
+        $query->reorder()->orderByDesc('chapter_number')
+            ->take(2)
+            ->select(['id', 'series_id', 'title', 'chapter_number', 'is_premium']);
+        }])
             ->withCount('chapters')
             ->orderBy('created_at', 'desc')
             ->take(12)
