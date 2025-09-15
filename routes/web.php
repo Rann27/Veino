@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\SeriesController;
 use App\Http\Controllers\Admin\TransactionHistoryController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Auth;
 
 // Authentication Routes
@@ -181,6 +182,9 @@ Route::get('/dmca', function () {
 Route::get('/contact', function () {
     return Inertia::render('Legal/Contact');
 })->name('contact');
+
+// Sitemap route
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
 // Test route for debugging
 require_once 'test.php';
