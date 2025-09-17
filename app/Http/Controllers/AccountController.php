@@ -71,7 +71,7 @@ class AccountController extends Controller
         $user = Auth::user();
         
         // TODO: Fetch coin packages and transaction history
-        $coinPackages = \App\Models\CoinPackage::orderBy('coins')->get();
+        $coinPackages = \App\Models\CoinPackage::orderBy('coin_amount')->get();
         $transactions = [];
         
         return Inertia::render('Account/Coins', [

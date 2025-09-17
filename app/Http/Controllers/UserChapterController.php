@@ -60,7 +60,7 @@ class UserChapterController extends Controller
             'chapter' => $chapter,
             'canAccess' => $canAccess,
             'hasPurchased' => $hasPurchased,
-            'userCoins' => $user ? $user->coins : 0,
+            'userCoins' => (int) ($user ? $user->coins : 0),
             'prevChapter' => $prevChapter,
             'nextChapter' => $nextChapter,
             'allChapters' => $allChapters,
@@ -93,7 +93,8 @@ class UserChapterController extends Controller
         }
 
         if ($user->coins < $chapter->coin_price) {
-            return back()->with('error', 'Insufficient coins. Please purchase more coins.');
+            $neededCoins = $chapter->coin_price - $user->coins;
+            return back()->with('error', "Insufficient coins. You need {$neededCoins} more coins to purchase this chapter.");
         }
 
         // Start transaction

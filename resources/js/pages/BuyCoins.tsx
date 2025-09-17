@@ -3,6 +3,7 @@ import UserLayout from '@/Layouts/UserLayout';
 import { useState, useEffect } from 'react';
 import PurchaseConfirmationModal from '@/Components/PurchaseConfirmationModal';
 import SuccessModal from '@/Components/SuccessModal';
+import ErrorModal from '@/Components/ErrorModal';
 import { useTheme } from '@/Contexts/ThemeContext';
 
 interface CoinPackage {
@@ -28,7 +29,9 @@ function BuyCoinsContent({ coinPackages }: Props) {
     const [selectedPackage, setSelectedPackage] = useState<CoinPackage | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState(false);
     const [successData, setSuccessData] = useState<{coinAmount: number, newBalance: number} | null>(null);
+    const [errorData, setErrorData] = useState<{title?: string, message: string} | null>(null);
 
     // Fetch PayPal configuration
     useEffect(() => {
@@ -126,21 +129,81 @@ function BuyCoinsContent({ coinPackages }: Props) {
         }
     };
 
-    // Handle success message from flash data
+    // Handle success and error messages from flash data
     useEffect(() => {
-        if (flash?.success && flash.success.includes('coins have been added')) {
+        console.log('BuyCoins useEffect - Flash data:', flash);
+        console.log('BuyCoins useEffect - Auth user:', auth?.user);
+        
+        // Check payment_data first (more reliable)
+        if (flash?.payment_data?.transaction_completed) {
+            console.log('Payment data detected:', flash.payment_data);
+            setSuccessData({
+                coinAmount: flash.payment_data.coins_added,
+                newBalance: flash.payment_data.new_balance
+            });
+            setShowSuccessModal(true);
+        }
+        // Fallback to success message parsing
+        else if (flash?.success && flash.success.includes('coins have been added')) {
+            console.log('Success flash detected:', flash.success);
             // Extract coin amount from flash message
             const match = flash.success.match(/(\d+(?:,\d+)*) coins/);
+            const balanceMatch = flash.success.match(/new balance is (\d+(?:,\d+)*) coins/);
+            
             if (match) {
                 const coinAmount = parseInt(match[1].replace(/,/g, ''));
+                const newBalance = balanceMatch ? parseInt(balanceMatch[1].replace(/,/g, '')) : (auth.user?.coins || 0);
+                
                 setSuccessData({
                     coinAmount: coinAmount,
-                    newBalance: auth.user?.coins || 0
+                    newBalance: newBalance
                 });
                 setShowSuccessModal(true);
+                console.log('Success modal should show with:', { coinAmount, newBalance });
             }
         }
+        
+        // Handle error messages
+        if (flash?.error) {
+            console.log('Error flash detected:', flash.error);
+            setErrorData({
+                title: "Payment Failed",
+                message: flash.error
+            });
+            setShowErrorModal(true);
+        }
+        
+        // Handle info messages (e.g., payment cancelled)
+        if (flash?.info) {
+            console.log('Info flash detected:', flash.info);
+            setErrorData({
+                title: "Payment Cancelled",
+                message: flash.info
+            });
+            setShowErrorModal(true);
+        }
     }, [flash]);
+
+    // Also check URL parameters for success (fallback method)
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentSuccess = urlParams.get('payment');
+        const coins = urlParams.get('coins');
+        const balance = urlParams.get('balance');
+        
+        if (paymentSuccess === 'success' && coins && balance) {
+            console.log('URL parameter success detected:', { coins, balance });
+            setSuccessData({
+                coinAmount: parseInt(coins),
+                newBalance: parseInt(balance)
+            });
+            setShowSuccessModal(true);
+            
+            // Clean URL parameters
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+    }, []);
 
     return (
         <>
@@ -449,6 +512,19 @@ function BuyCoinsContent({ coinPackages }: Props) {
                     }}
                     coinAmount={successData.coinAmount}
                     newBalance={successData.newBalance}
+                />
+            )}
+
+            {/* Error Modal */}
+            {errorData && (
+                <ErrorModal
+                    isOpen={showErrorModal}
+                    onClose={() => {
+                        setShowErrorModal(false);
+                        setErrorData(null);
+                    }}
+                    title={errorData.title}
+                    message={errorData.message}
                 />
             )}
         </>

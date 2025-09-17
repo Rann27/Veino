@@ -135,19 +135,71 @@ class PayPalService
     public function captureOrder($orderId)
     {
         try {
+            Log::info('Starting PayPal capture order', ['order_id' => $orderId]);
+            
             $accessToken = $this->getAccessToken();
             if (!$accessToken) {
+                Log::error('Failed to get PayPal access token for capture');
                 return [
                     'success' => false,
                     'error' => 'Failed to get PayPal access token'
                 ];
             }
 
-            $response = Http::withToken($accessToken)
-                ->post($this->baseUrl . "/v2/checkout/orders/{$orderId}/capture");
+            Log::info('PayPal access token obtained for capture', ['has_token' => !empty($accessToken)]);
 
-            if ($response->successful()) {
-                $result = $response->json();
+            // Try with manual cURL - sometimes Laravel Http has issues with PayPal
+            $url = $this->baseUrl . "/v2/checkout/orders/{$orderId}/capture";
+            
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, '{}'); // Empty JSON object
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $accessToken,
+                'PayPal-Request-Id: ' . uniqid('VN_', true),
+                'Prefer: return=representation'
+            ]);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            Log::info('PayPal capture cURL response', [
+                'http_code' => $httpCode,
+                'curl_error' => $curlError,
+                'response_preview' => substr($response, 0, 500)
+            ]);
+
+            if ($curlError) {
+                Log::error('PayPal capture cURL error: ' . $curlError);
+                return [
+                    'success' => false,
+                    'error' => 'Network error: ' . $curlError
+                ];
+            }
+
+            if ($httpCode >= 200 && $httpCode < 300) {
+                $result = json_decode($response, true);
+                
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    Log::error('PayPal capture JSON decode error: ' . json_last_error_msg());
+                    return [
+                        'success' => false,
+                        'error' => 'Invalid JSON response from PayPal'
+                    ];
+                }
+                
+                Log::info('PayPal capture successful', [
+                    'capture_id' => $result['purchase_units'][0]['payments']['captures'][0]['id'] ?? 'not_found',
+                    'status' => $result['status'] ?? 'unknown'
+                ]);
+                
                 return [
                     'success' => true,
                     'capture_id' => $result['purchase_units'][0]['payments']['captures'][0]['id'] ?? null,
@@ -155,10 +207,14 @@ class PayPalService
                 ];
             }
 
-            Log::error('PayPal capture order failed: ' . $response->body());
+            Log::error('PayPal capture order failed', [
+                'http_code' => $httpCode,
+                'response' => $response
+            ]);
+            
             return [
                 'success' => false,
-                'error' => 'Failed to capture PayPal order'
+                'error' => "PayPal API Error: HTTP {$httpCode} - {$response}"
             ];
 
         } catch (\Exception $e) {

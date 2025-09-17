@@ -23,6 +23,8 @@ class Chapter extends Model
     protected $casts = [
         'is_premium' => 'boolean',
         'is_published' => 'boolean',
+        'coin_price' => 'integer',
+        'chapter_number' => 'integer',
     ];
 
     public function series(): BelongsTo

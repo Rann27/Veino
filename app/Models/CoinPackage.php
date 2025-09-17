@@ -17,6 +17,7 @@ class CoinPackage extends Model
     ];
 
     protected $casts = [
+        'coin_amount' => 'integer',
         'price_usd' => 'decimal:2',
         'is_active' => 'boolean',
     ];

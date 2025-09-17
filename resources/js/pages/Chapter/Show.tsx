@@ -101,7 +101,19 @@ function ChapterShowContent({
         };
     }, []);
 
+    // Ensure numeric values for calculations to prevent type coercion issues
+    const userCoinsNum = parseInt(String(userCoins)) || 0;
+    const coinPriceNum = parseInt(String(chapter.coin_price)) || 0;
+    const hasEnoughCoins = userCoinsNum >= coinPriceNum;
+    const coinsNeeded = Math.max(0, coinPriceNum - userCoinsNum);
+
     const handlePurchase = () => {
+        // Double check with our pre-calculated values
+        if (!hasEnoughCoins) {
+            alert(`Insufficient coins! You need ${coinsNeeded} more coins.`);
+            return;
+        }
+        
         router.post(route('chapters.purchase', [series.slug, chapter.chapter_number]), {}, {
             onSuccess: () => {
                 // Reload the page to update the access status
@@ -122,18 +134,7 @@ function ChapterShowContent({
     if (!canAccess && chapter.is_premium) {
         return (
             <UserLayout>
-                <Head>
-                    <title>{chapter.title} - {series.title} | VeiNovel</title>
-                    <meta name="description" content={`Read ${chapter.title} from ${series.title} on VeiNovel. Chapter ${chapter.chapter_number} available with premium access.`} />
-                    <meta name="keywords" content={`${chapter.title}, ${series.title}, chapter ${chapter.chapter_number}, english novel, premium chapter`} />
-                    
-                    <meta property="og:title" content={`${chapter.title} - ${series.title}`} />
-                    <meta property="og:description" content={`Read Chapter ${chapter.chapter_number}: ${chapter.title} from ${series.title}`} />
-                    <meta property="og:type" content="article" />
-                    
-                    <link rel="canonical" href={`https://veinovel.com/series/${series.slug}/chapter/${chapter.chapter_number}`} />
-                </Head>
-                
+               
                 <div 
                     className="min-h-screen pt-20"
                     style={{ backgroundColor: currentTheme.background }}
@@ -165,18 +166,18 @@ function ChapterShowContent({
                                     className="mb-2"
                                     style={{ color: `${currentTheme.foreground}80` }}
                                 >
-                                    This chapter requires {chapter.coin_price} coins to unlock
+                                    This chapter requires {coinPriceNum} coins to unlock
                                 </p>
                                 <p 
                                     className="text-sm"
                                     style={{ color: `${currentTheme.foreground}60` }}
                                 >
-                                    Your balance: {userCoins} coins
+                                    Your balance: {userCoinsNum} coins
                                 </p>
                             </div>
                             
                             <div className="space-y-4">
-                                {userCoins >= chapter.coin_price ? (
+                                {hasEnoughCoins ? (
                                     <button
                                         onClick={handlePurchase}
                                         className="px-6 py-3 font-semibold rounded-lg transition-colors"
@@ -185,12 +186,12 @@ function ChapterShowContent({
                                             color: '#ffffff'
                                         }}
                                     >
-                                        Unlock for {chapter.coin_price} Coins
+                                        Unlock for {coinPriceNum} Coins
                                     </button>
                                 ) : (
                                     <div className="space-y-3">
                                         <p className="font-medium" style={{ color: '#ef4444' }}>
-                                            Insufficient coins! You need {chapter.coin_price - userCoins} more coins.
+                                            Insufficient coins! You need {coinsNeeded} more coins.
                                         </p>
                                         <Link
                                             href="/buy-coins"
