@@ -31,7 +31,7 @@ class HomeController extends Controller
             ->take(6)
             ->get();
 
-        // Latest updates - series with recent chapters
+        // Latest updates - series with recent chapters, ordered by latest chapter creation
         $latestUpdates = Series::with(['nativeLanguage', 'genres', 'chapters' => function ($query) {
                 $query->reorder()->orderByDesc('chapter_number')
                     ->take(2)
@@ -41,7 +41,8 @@ class HomeController extends Controller
             ->whereHas('chapters', function ($query) {
                 $query->where('created_at', '>=', now()->subDays(30));
             })
-            ->orderBy('updated_at', 'desc')
+            ->select('series.*', \DB::raw('(SELECT MAX(created_at) FROM chapters WHERE chapters.series_id = series.id) as latest_chapter_date'))
+            ->orderByDesc('latest_chapter_date')
             ->take(24)
             ->get();
 
