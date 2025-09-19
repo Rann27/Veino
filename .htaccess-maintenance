@@ -1,0 +1,44 @@
+# VeiNovel Maintenance Mode
+# This .htaccess file redirects all traffic to maintenance.html
+# Rename this file to ".htaccess" when maintenance is needed
+
+# Enable rewrite engine
+RewriteEngine On
+
+# Allow access to maintenance.html itself
+RewriteCond %{REQUEST_URI} !^/maintenance\.html$
+
+# Allow access to static assets (CSS, JS, images, favicon)
+RewriteCond %{REQUEST_URI} !^/favicon\.ico$
+RewriteCond %{REQUEST_URI} !^/favicon\.svg$
+RewriteCond %{REQUEST_URI} !^/images/
+RewriteCond %{REQUEST_URI} !^/css/
+RewriteCond %{REQUEST_URI} !^/js/
+RewriteCond %{REQUEST_URI} !^/assets/
+
+# Allow access from specific IP addresses (optional - replace with your IP)
+# RewriteCond %{REMOTE_ADDR} !^123\.456\.789\.000$
+# RewriteCond %{REMOTE_ADDR} !^192\.168\.1\.
+
+# Redirect all other requests to maintenance page
+RewriteRule ^(.*)$ /maintenance.html [R=503,L]
+
+# Set proper HTTP status code for maintenance
+ErrorDocument 503 /maintenance.html
+
+# Set cache headers for maintenance page
+<FilesMatch "maintenance\.html$">
+    Header always set Cache-Control "no-cache, no-store, must-revalidate"
+    Header always set Pragma "no-cache"
+    Header always set Expires "0"
+</FilesMatch>
+
+# Optional: Block access to sensitive files during maintenance
+<Files ~ "\.(env|log|sql|config)$">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
+# Optional: Set maintenance headers
+Header always set Retry-After "900"
+Header always set X-Maintenance-Mode "active"

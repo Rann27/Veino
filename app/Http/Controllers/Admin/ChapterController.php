@@ -63,6 +63,9 @@ class ChapterController extends Controller
             'content' => 'required|string',
             'is_premium' => 'required|in:0,1,true,false', // Accept multiple formats
             'coin_price' => 'nullable|integer|min:0', // Changed from min:1 to min:0
+            'volume' => 'nullable|numeric|min:0',
+            'chapter_number' => 'nullable|numeric|min:0',
+            'use_volume' => 'nullable|boolean',
         ]);
 
         $validated['series_id'] = $series->id;
@@ -87,12 +90,33 @@ class ChapterController extends Controller
         while ($attempt < $maxRetries) {
             try {
                 \DB::transaction(function () use (&$validated, $series) {
-                    // Get next chapter number inside transaction with lock
-                    $maxChapterNumber = Chapter::where('series_id', $series->id)
-                        ->lockForUpdate()
-                        ->max('chapter_number');
+                    // If volume is being used
+                    if (!empty($validated['volume'])) {
+                        // If chapter_number is provided, use it; otherwise auto-increment within volume
+                        if (empty($validated['chapter_number'])) {
+                            $maxChapterInVolume = Chapter::where('series_id', $series->id)
+                                ->where('volume', $validated['volume'])
+                                ->lockForUpdate()
+                                ->max('chapter_number');
+                            
+                            $validated['chapter_number'] = $maxChapterInVolume ? $maxChapterInVolume + 1 : 1;
+                        }
+                    } else {
+                        // Traditional webnovel style - no volume, auto-increment chapter
+                        $validated['volume'] = null;
+                        
+                        if (empty($validated['chapter_number'])) {
+                            $maxChapterNumber = Chapter::where('series_id', $series->id)
+                                ->whereNull('volume')
+                                ->lockForUpdate()
+                                ->max('chapter_number');
+                            
+                            $validated['chapter_number'] = $maxChapterNumber ? $maxChapterNumber + 1 : 1;
+                        }
+                    }
                     
-                    $validated['chapter_number'] = $maxChapterNumber ? $maxChapterNumber + 1 : 1;
+                    // Remove the use_volume flag before creating
+                    unset($validated['use_volume']);
                     
                     Chapter::create($validated);
                 });
@@ -125,6 +149,9 @@ class ChapterController extends Controller
             'content' => 'required|string',
             'is_premium' => 'required|in:0,1,true,false', // Accept multiple formats
             'coin_price' => 'nullable|integer|min:0', // Changed from min:1 to min:0
+            'volume' => 'nullable|numeric|min:0',
+            'chapter_number' => 'nullable|numeric|min:0',
+            'use_volume' => 'nullable|boolean',
         ]);
 
         // Ensure is_premium is treated as boolean regardless of input format
@@ -139,6 +166,23 @@ class ChapterController extends Controller
                 $validated['coin_price'] = 45; // Default value
             }
         }
+
+        // Handle volume/chapter_number logic for updates
+        if (!empty($validated['volume'])) {
+            // Keep volume, validate chapter_number if provided
+            if (empty($validated['chapter_number'])) {
+                $validated['chapter_number'] = $chapter->chapter_number; // Keep existing
+            }
+        } else {
+            // No volume - traditional webnovel style
+            $validated['volume'] = null;
+            if (empty($validated['chapter_number'])) {
+                $validated['chapter_number'] = $chapter->chapter_number; // Keep existing
+            }
+        }
+
+        // Remove the use_volume flag before updating
+        unset($validated['use_volume']);
 
         $chapter->update($validated);
 

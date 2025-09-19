@@ -16,6 +16,7 @@ interface NativeLanguage {
 interface Chapter {
   id: number;
   chapter_number: number;
+  volume?: number;
   title: string;
   content: string;
   is_premium: boolean;
@@ -73,6 +74,9 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     content: '',
     is_premium: false,
     coin_price: 35,
+    use_volume: false,
+    volume: '',
+    chapter_number: '',
   });
   const [genres, setGenres] = useState<Genre[]>([]);
   const [nativeLanguages, setNativeLanguages] = useState<NativeLanguage[]>([]);
@@ -107,6 +111,9 @@ export default function SeriesShow({ series }: SeriesShowProps) {
         content: chapter.content || '',
         is_premium: chapter.is_premium,
         coin_price: chapter.coin_price,
+        use_volume: !!chapter.volume,
+        volume: chapter.volume ? chapter.volume.toString() : '',
+        chapter_number: chapter.chapter_number.toString(),
       });
     } else {
       setEditingChapter(null);
@@ -115,6 +122,9 @@ export default function SeriesShow({ series }: SeriesShowProps) {
         content: '',
         is_premium: false,
         coin_price: 35,
+        use_volume: false,
+        volume: '',
+        chapter_number: '',
       });
     }
     setShowChapterModal(true);
@@ -163,7 +173,10 @@ export default function SeriesShow({ series }: SeriesShowProps) {
       title: chapterFormData.title,
       content: chapterFormData.content,
       is_premium: chapterFormData.is_premium ? 1 : 0, // Convert boolean to integer
-      coin_price: chapterFormData.is_premium ? chapterFormData.coin_price : 0
+      coin_price: chapterFormData.is_premium ? chapterFormData.coin_price : 0,
+      use_volume: chapterFormData.use_volume,
+      volume: chapterFormData.use_volume && chapterFormData.volume ? parseFloat(chapterFormData.volume) : null,
+      chapter_number: chapterFormData.chapter_number ? parseFloat(chapterFormData.chapter_number) : null,
     };
     
     if (editingChapter) {
@@ -411,7 +424,10 @@ export default function SeriesShow({ series }: SeriesShowProps) {
             >
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium text-gray-900">
-                  {chapter.chapter_number}
+                  {chapter.volume 
+                    ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                    : `Chapter ${chapter.chapter_number}`
+                  }
                 </span>
                 <span className="text-sm text-gray-700">{chapter.title}</span>
                 {chapter.is_premium && (
@@ -642,6 +658,64 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                     placeholder="Enter chapter content here... You can paste image URLs and they will be converted to images automatically."
                     height={400}
                   />
+                </div>
+
+                {/* Volume and Chapter Number Section */}
+                <div className="space-y-4 p-4 bg-blue-50 rounded-md border border-blue-200">
+                  <div className="flex items-center">
+                    <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
+                      <input
+                        type="checkbox"
+                        checked={chapterFormData.use_volume}
+                        onChange={(e) => setChapterFormData(prev => ({
+                          ...prev,
+                          use_volume: e.target.checked,
+                          volume: e.target.checked ? prev.volume || '1' : '',
+                        }))}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 font-medium">Use Volume (Light Novel Style)</span>
+                    </label>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    {chapterFormData.use_volume && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Volume</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          value={chapterFormData.volume}
+                          onChange={(e) => setChapterFormData(prev => ({ ...prev, volume: e.target.value }))}
+                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                          placeholder="1"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">For light novels with volumes</p>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Chapter Number {!chapterFormData.use_volume && <span className="text-gray-400">(Auto-increment if empty)</span>}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        value={chapterFormData.chapter_number}
+                        onChange={(e) => setChapterFormData(prev => ({ ...prev, chapter_number: e.target.value }))}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                        placeholder="Auto-increment"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {chapterFormData.use_volume 
+                          ? "Chapter within the volume (e.g., 1, 2, 3.5)" 
+                          : "Leave empty for auto-increment (webnovel style)"
+                        }
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-md border border-gray-200">

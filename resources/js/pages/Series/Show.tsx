@@ -17,6 +17,7 @@ interface Chapter {
     id: number;
     title: string;
     chapter_number: number;
+    volume?: number;
     is_premium: boolean;
     is_owned?: boolean;
     coin_price: number;
@@ -51,6 +52,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     const [bookmarked, setBookmarked] = useState(isBookmarked);
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
+    const [isExpanded, setIsExpanded] = useState(false);
 
     const handleBookmarkToggle = async () => {
         try {
@@ -155,7 +157,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                             <div className="flex flex-col md:flex-row gap-6">
                                 {/* Cover Image */}
                                 <div className="w-full md:w-48 flex-shrink-0">
-                                    <div className="aspect-[3/4] relative">
+                                    <div className="aspect-[3/4] relative mb-4">
                                         {series.cover_url ? (
                                             <img
                                                 src={series.cover_url}
@@ -170,6 +172,34 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                 <span style={{ color: `${currentTheme.foreground}50` }}>No Cover</span>
                                             </div>
                                         )}
+                                    </div>
+                                    
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-col gap-3">
+                                        <Link
+                                            href={route('chapters.show', [series.slug, 1])}
+                                            className="px-6 py-3 rounded-lg font-medium transition-colors hover:opacity-90 text-center"
+                                            style={{
+                                                backgroundColor: currentTheme.foreground,
+                                                color: currentTheme.background
+                                            }}
+                                        >
+                                            Read First Chapter
+                                        </Link>
+                                        <button 
+                                            className="px-6 py-3 border rounded-lg font-medium transition-colors hover:opacity-70 flex items-center justify-center gap-2"
+                                            style={{
+                                                borderColor: bookmarked ? '#3B82F6' : `${currentTheme.foreground}30`,
+                                                color: bookmarked ? '#3B82F6' : currentTheme.foreground,
+                                                backgroundColor: bookmarked ? '#3B82F610' : 'transparent'
+                                            }}
+                                            onClick={handleBookmarkToggle}
+                                        >
+                                            <svg className="w-5 h-5" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            </svg>
+                                            {bookmarked ? 'Bookmarked' : 'Bookmark'}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -232,9 +262,11 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                         >
                                             Synopsis
                                         </h3>
-                                        <div className="prose max-w-none">
+                                        <div className="prose max-w-none relative">
                                             <div 
-                                                className="leading-relaxed"
+                                                className={`leading-relaxed transition-all duration-300 ${
+                                                    isExpanded ? '' : 'line-clamp-4 overflow-hidden'
+                                                }`}
                                                 style={{ 
                                                     color: `${currentTheme.foreground}90`,
                                                     whiteSpace: 'pre-line'
@@ -242,35 +274,44 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             >
                                                 {series.synopsis || 'No synopsis available.'}
                                             </div>
+                                            
+                                            {/* Expand/Collapse Button with Gradient */}
+                                            {(series.synopsis && series.synopsis.length > 200) && (
+                                                <div className="relative">
+                                                    {!isExpanded && (
+                                                        <div 
+                                                            className="absolute bottom-8 left-0 right-0 h-16 pointer-events-none"
+                                                            style={{
+                                                                background: `linear-gradient(to bottom, transparent, ${currentTheme.background})`
+                                                            }}
+                                                        />
+                                                    )}
+                                                    <button
+                                                        onClick={() => setIsExpanded(!isExpanded)}
+                                                        className="w-full mt-2 py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                                                        style={{
+                                                            background: `linear-gradient(to bottom, transparent, ${currentTheme.background})`,
+                                                            color: `${currentTheme.foreground}80`,
+                                                            border: 'none'
+                                                        }}
+                                                    >
+                                                        <span className="text-sm font-medium">
+                                                            {isExpanded ? 'Show Less' : 'Show More'}
+                                                        </span>
+                                                        <svg 
+                                                            className={`w-4 h-4 transition-transform duration-200 ${
+                                                                isExpanded ? 'rotate-180' : ''
+                                                            }`} 
+                                                            fill="none" 
+                                                            stroke="currentColor" 
+                                                            viewBox="0 0 24 24"
+                                                        >
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-col sm:flex-row gap-3">
-                                        <Link
-                                            href={route('chapters.show', [series.slug, 1])}
-                                            className="px-6 py-3 rounded-lg font-medium transition-colors hover:opacity-90 text-center"
-                                            style={{
-                                                backgroundColor: currentTheme.foreground,
-                                                color: currentTheme.background
-                                            }}
-                                        >
-                                            Read First Chapter
-                                        </Link>
-                                        <button 
-                                            className="px-6 py-3 border rounded-lg font-medium transition-colors hover:opacity-70 flex items-center gap-2"
-                                            style={{
-                                                borderColor: bookmarked ? '#3B82F6' : `${currentTheme.foreground}30`,
-                                                color: bookmarked ? '#3B82F6' : currentTheme.foreground,
-                                                backgroundColor: bookmarked ? '#3B82F610' : 'transparent'
-                                            }}
-                                            onClick={handleBookmarkToggle}
-                                        >
-                                            <svg className="w-5 h-5" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                            </svg>
-                                            {bookmarked ? 'Bookmarked' : 'Bookmark'}
-                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -331,7 +372,10 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                 className="text-sm font-medium"
                                                                 style={{ color: `${currentTheme.foreground}70` }}
                                                             >
-                                                                {chapter.chapter_number}
+                                                                {chapter.volume 
+                                                                    ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                    : `Chapter ${chapter.chapter_number}`
+                                                                }
                                                             </span>
                                                             <h3 
                                                                 className="font-medium"

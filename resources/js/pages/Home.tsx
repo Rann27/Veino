@@ -18,6 +18,7 @@ interface Chapter {
   id: number;
   title: string;
   chapter_number: number;
+  volume?: number;
   is_premium: boolean;
 }
 
@@ -56,6 +57,14 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
   const [currentX, setCurrentX] = useState(0);
   const [hasMovedMouse, setHasMovedMouse] = useState(false);
   const { currentTheme } = useTheme();
+
+  // Helper function to format chapter display
+  const formatChapterDisplay = (chapter: Chapter): string => {
+    if (chapter.volume) {
+      return `Vol ${chapter.volume} Ch ${chapter.chapter_number}`;
+    }
+    return `Chapter ${chapter.chapter_number}`;
+  };
 
   // Auto slide functionality
   useEffect(() => {
@@ -300,8 +309,6 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                 >
                   <span>★ {heroSeries[currentHero].rating}</span>
                   <span>•</span>
-                  <span>{heroSeries[currentHero].chapters_count || 0} chapters</span>
-                  <span>•</span>
                   <span>{heroSeries[currentHero].status}</span>
                 </div>
               </div>
@@ -477,7 +484,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                                 className="text-sm font-medium"
                                 style={{ color: currentTheme.foreground }}
                               >
-                                Ch {c.chapter_number}
+                                {formatChapterDisplay(c)}
                               </span>
                               {c.is_premium && (
                                 <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -503,7 +510,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                             className="text-sm font-medium"
                             style={{ color: currentTheme.foreground }}
                           >
-                            Ch {c.chapter_number}
+                            {formatChapterDisplay(c)}
                           </span>
                           {c.is_premium && (
                             <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -619,7 +626,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                                 className="text-sm font-medium"
                                 style={{ color: currentTheme.foreground }}
                               >
-                                Ch {c.chapter_number}
+                                {formatChapterDisplay(c)}
                               </span>
                               {c.is_premium && (
                                 <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -645,7 +652,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                             className="text-sm font-medium"
                             style={{ color: currentTheme.foreground }}
                           >
-                            Ch {c.chapter_number}
+                            {formatChapterDisplay(c)}
                           </span>
                           {c.is_premium && (
                             <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -761,7 +768,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                                 className="text-sm font-medium"
                                 style={{ color: currentTheme.foreground }}
                               >
-                                Ch {c.chapter_number}
+                                {formatChapterDisplay(c)}
                               </span>
                               {c.is_premium && (
                                 <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -787,7 +794,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                             className="text-sm font-medium"
                             style={{ color: currentTheme.foreground }}
                           >
-                            Ch {c.chapter_number}
+                            {formatChapterDisplay(c)}
                           </span>
                           {c.is_premium && (
                             <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
