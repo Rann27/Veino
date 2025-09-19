@@ -80,6 +80,27 @@ export default function SeriesShow({ series }: SeriesShowProps) {
   });
   const [genres, setGenres] = useState<Genre[]>([]);
   const [nativeLanguages, setNativeLanguages] = useState<NativeLanguage[]>([]);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+
+  // Sort chapters based on volume first, then chapter_number
+  const sortedChapters = [...series.chapters].sort((a, b) => {
+    // Handle volume sorting - nullish volumes go to end
+    if (a.volume && b.volume) {
+      const volumeDiff = a.volume - b.volume;
+      if (volumeDiff !== 0) {
+        return sortOrder === 'desc' ? -volumeDiff : volumeDiff;
+      }
+    } else if (a.volume && !b.volume) {
+      return sortOrder === 'desc' ? -1 : 1;
+    } else if (!a.volume && b.volume) {
+      return sortOrder === 'desc' ? 1 : -1;
+    }
+    
+    // If volumes are equal or both null, sort by chapter_number
+    const chapterDiff = a.chapter_number - b.chapter_number;
+    return sortOrder === 'desc' ? -chapterDiff : chapterDiff;
+  });
 
   const openEditModal = async () => {
     setIsLoadingFormData(true);
@@ -390,11 +411,51 @@ export default function SeriesShow({ series }: SeriesShowProps) {
             {series.synopsis && (
               <div>
                 <span className="text-sm text-gray-500">Synopsis</span>
-                <div 
-                  className="text-gray-700 mt-1"
-                  style={{ whiteSpace: 'pre-line' }}
-                >
-                  {series.synopsis}
+                <div className="mt-1 relative">
+                  <div 
+                    className={`text-gray-700 transition-all duration-300 ${
+                      isSynopsisExpanded ? '' : 'line-clamp-4 overflow-hidden'
+                    }`}
+                    style={{ whiteSpace: 'pre-line' }}
+                  >
+                    {series.synopsis}
+                  </div>
+                  
+                  {/* Expand/Collapse Button with Gradient */}
+                  {series.synopsis.length > 200 && (
+                    <div className="relative">
+                      {!isSynopsisExpanded && (
+                        <div 
+                          className="absolute bottom-8 left-0 right-0 h-16 pointer-events-none"
+                          style={{
+                            background: `linear-gradient(to bottom, transparent, white)`
+                          }}
+                        />
+                      )}
+                      <button
+                        onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+                        className="w-full mt-2 py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                        style={{
+                          background: `linear-gradient(to bottom, transparent, white)`,
+                          border: 'none'
+                        }}
+                      >
+                        <span className="text-sm font-medium">
+                          {isSynopsisExpanded ? 'Show Less' : 'Show More'}
+                        </span>
+                        <svg 
+                          className={`w-4 h-4 transition-transform duration-200 ${
+                            isSynopsisExpanded ? 'rotate-180' : ''
+                          }`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -408,47 +469,82 @@ export default function SeriesShow({ series }: SeriesShowProps) {
           <h2 className="text-xl font-semibold text-gray-900">
             Chapters ({series.chapters.length})
           </h2>
-          <button
-            onClick={() => openChapterModal()}
-            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
-          >
-            Add New Chapter
-          </button>
+          <div className="flex items-center gap-4">
+            {/* Sort Toggle */}
+            <button
+              onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
+            >
+              <span>Sort:</span>
+              <span className="font-semibold">
+                {sortOrder === 'desc' ? 'Latest First' : 'Oldest First'}
+              </span>
+              <svg 
+                className={`w-4 h-4 transition-transform ${sortOrder === 'desc' ? 'rotate-180' : ''}`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 10l5 5 5-5" />
+              </svg>
+            </button>
+            
+            <button
+              onClick={() => openChapterModal()}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+            >
+              Add New Chapter
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          {series.chapters.map((chapter) => (
+        {/* Chapter Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {sortedChapters.map((chapter) => (
             <div
               key={chapter.id}
-              className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
+              className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md hover:border-gray-300 transition-all duration-200"
             >
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-900">
+              {/* Compact Info Row */}
+              <div className="flex items-center justify-between mb-3">
+                {/* Volume/Chapter */}
+                <div className="font-semibold text-gray-900 text-sm">
                   {chapter.volume 
                     ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
                     : `Chapter ${chapter.chapter_number}`
                   }
-                </span>
-                <span className="text-sm text-gray-700">{chapter.title}</span>
-                {chapter.is_premium && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                    🔒 {chapter.coin_price} coins
-                  </span>
-                )}
+                </div>
+                
+                {/* Type Badge */}
+                <div>
+                  {chapter.is_premium ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      🔒 {chapter.coin_price}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Free
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-xs text-gray-500">
-                  {new Date(chapter.created_at).toLocaleDateString()}
-                </span>
+              
+              {/* Date */}
+              <div className="text-xs text-gray-500 mb-3">
+                📅 {new Date(chapter.created_at).toLocaleDateString()}
+              </div>
+              
+              {/* Actions */}
+              <div className="flex gap-2">
                 <button
                   onClick={() => openChapterModal(chapter)}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  className="flex-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => handleDeleteChapter(chapter.id)}
-                  className="text-red-600 hover:text-red-800 text-sm"
+                  className="flex-1 px-2 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors"
                 >
                   Delete
                 </button>
@@ -457,7 +553,11 @@ export default function SeriesShow({ series }: SeriesShowProps) {
           ))}
           
           {series.chapters.length === 0 && (
-            <p className="text-gray-500 text-center py-8">No chapters yet</p>
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-400 text-6xl mb-4">📚</div>
+              <p className="text-gray-500 text-lg">No chapters yet</p>
+              <p className="text-gray-400 text-sm mt-2">Click "Add New Chapter" to get started</p>
+            </div>
           )}
         </div>
       </div>
