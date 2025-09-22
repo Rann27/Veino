@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
@@ -53,6 +53,73 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
+    
+    // New states for enhanced chapter management
+    const [viewMode, setViewMode] = useState<'detailed' | 'simple'>('detailed');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            const isMobileSize = window.innerWidth < 768;
+            setIsMobile(isMobileSize);
+            if (isMobileSize) {
+                setViewMode('simple');
+            }
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Items per page based on mode and screen size
+    const getItemsPerPage = () => {
+        if (isMobile) return 50; // Mobile: 50 rows in simple mode
+        return viewMode === 'detailed' ? 25 : 40; // Desktop: 25 detailed rows, 40 simple cards (2 col * 20)
+    };
+
+    // Filter chapters by search query
+    const filteredChapters = chapters.filter(chapter => {
+        if (!searchQuery) return true;
+        const chapterDisplay = chapter.volume 
+            ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+            : `Chapter ${chapter.chapter_number}`;
+        return chapterDisplay.toLowerCase().includes(searchQuery.toLowerCase()) ||
+               chapter.chapter_number.toString().includes(searchQuery);
+    });
+
+    // Sort chapters
+    const sortedChapters = [...filteredChapters].sort((a, b) => {
+        // Sort by volume first (if exists), then by chapter number
+        if (a.volume && b.volume) {
+            const volumeDiff = a.volume - b.volume;
+            if (volumeDiff !== 0) {
+                return sortOrder === 'asc' ? volumeDiff : -volumeDiff;
+            }
+        } else if (a.volume && !b.volume) {
+            return sortOrder === 'asc' ? -1 : 1;
+        } else if (!a.volume && b.volume) {
+            return sortOrder === 'asc' ? 1 : -1;
+        }
+        
+        const chapterDiff = a.chapter_number - b.chapter_number;
+        return sortOrder === 'asc' ? chapterDiff : -chapterDiff;
+    });
+
+    // Paginate chapters
+    const itemsPerPage = getItemsPerPage();
+    const totalPages = Math.ceil(sortedChapters.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const displayedChapters = sortedChapters.slice(startIndex, startIndex + itemsPerPage);
+
+    // Reset to page 1 when search query changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, viewMode, sortOrder]);
 
     const handleBookmarkToggle = async () => {
         try {
@@ -87,13 +154,6 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
             }, 3000);
         }
     };
-
-    const displayedChapters = showAllChapters ? chapters : chapters.slice(0, 10);
-    const sortedChapters = [...displayedChapters].sort((a, b) => {
-        return sortOrder === 'asc' 
-            ? a.chapter_number - b.chapter_number 
-            : b.chapter_number - a.chapter_number;
-    });
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -337,13 +397,59 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                 className="text-xl font-semibold"
                                                 style={{ color: currentTheme.foreground }}
                                             >
-                                                Chapters
+                                                Chapters ({filteredChapters.length})
                                             </h2>
-                                            <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-3">
+                                                {/* Search Bar */}
+                                                <div className="relative">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search chapter..."
+                                                        value={searchQuery}
+                                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                                        className="px-3 py-2 pr-8 border rounded-lg focus:ring-2 transition-colors text-sm w-40"
+                                                        style={{
+                                                            backgroundColor: currentTheme.background,
+                                                            borderColor: `${currentTheme.foreground}30`,
+                                                            color: currentTheme.foreground
+                                                        }}
+                                                    />
+                                                    <svg className="absolute right-2 top-2.5 w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                </div>
+
+                                                {/* View Mode Toggle - Hidden on Mobile */}
+                                                {!isMobile && (
+                                                    <div className="flex items-center border rounded-lg overflow-hidden" style={{ borderColor: `${currentTheme.foreground}30` }}>
+                                                        <button
+                                                            onClick={() => setViewMode('detailed')}
+                                                            className={`px-3 py-2 text-sm transition-colors ${viewMode === 'detailed' ? 'font-medium' : ''}`}
+                                                            style={{
+                                                                backgroundColor: viewMode === 'detailed' ? currentTheme.foreground : 'transparent',
+                                                                color: viewMode === 'detailed' ? currentTheme.background : currentTheme.foreground
+                                                            }}
+                                                        >
+                                                            Detailed
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setViewMode('simple')}
+                                                            className={`px-3 py-2 text-sm transition-colors ${viewMode === 'simple' ? 'font-medium' : ''}`}
+                                                            style={{
+                                                                backgroundColor: viewMode === 'simple' ? currentTheme.foreground : 'transparent',
+                                                                color: viewMode === 'simple' ? currentTheme.background : currentTheme.foreground
+                                                            }}
+                                                        >
+                                                            Simple
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {/* Sort Dropdown */}
                                                 <select
                                                     value={sortOrder}
                                                     onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                                    className="px-3 py-2 border rounded-lg focus:ring-2 transition-colors"
+                                                    className="px-3 py-2 border rounded-lg focus:ring-2 transition-colors text-sm"
                                                     style={{
                                                         backgroundColor: currentTheme.background,
                                                         borderColor: `${currentTheme.foreground}30`,
@@ -357,97 +463,214 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                         </div>
                                     </div>
 
-                                    <div style={{ borderTopColor: `${currentTheme.foreground}20` }} className="divide-y">
-                                        {sortedChapters.map((chapter) => (
-                                            <Link
-                                                key={chapter.id}
-                                                href={route('chapters.show', [series.slug, chapter.chapter_number])}
-                                                className="block p-4 transition-colors hover:opacity-70"
-                                                style={{ borderBottomColor: `${currentTheme.foreground}10` }}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3">
-                                                            <span 
-                                                                className="text-sm font-medium"
-                                                                style={{ color: `${currentTheme.foreground}70` }}
-                                                            >
-                                                                {chapter.volume 
-                                                                    ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
-                                                                    : `Chapter ${chapter.chapter_number}`
-                                                                }
-                                                            </span>
-                                                            <h3 
-                                                                className="font-medium"
-                                                                style={{ color: currentTheme.foreground }}
-                                                            >
-                                                                {chapter.title}
-                                                            </h3>
-                                                            {chapter.is_premium && (
+                                    {/* Chapter Content - Conditional Based on View Mode */}
+                                    {viewMode === 'detailed' ? (
+                                        /* Detailed Mode - List View */
+                                        <div style={{ borderTopColor: `${currentTheme.foreground}20` }} className="divide-y">
+                                            {displayedChapters.map((chapter) => (
+                                                <Link
+                                                    key={chapter.id}
+                                                    href={route('chapters.show', [series.slug, chapter.chapter_number])}
+                                                    className="block p-4 transition-colors hover:opacity-70"
+                                                    style={{ borderBottomColor: `${currentTheme.foreground}10` }}
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-3">
                                                                 <span 
-                                                                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
-                                                                    style={{
-                                                                        backgroundColor: '#fef3c7',
-                                                                        color: '#d97706'
-                                                                    }}
+                                                                    className="text-sm font-medium"
+                                                                    style={{ color: `${currentTheme.foreground}70` }}
                                                                 >
-                                                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                                                    </svg>
-                                                                    Premium
+                                                                    {chapter.volume 
+                                                                        ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                        : `Chapter ${chapter.chapter_number}`
+                                                                    }
                                                                 </span>
-                                                            )}
-                                                            {chapter.is_owned && (
+                                                                <h3 
+                                                                    className="font-medium"
+                                                                    style={{ color: currentTheme.foreground }}
+                                                                >
+                                                                    {chapter.title}
+                                                                </h3>
+                                                                {chapter.is_premium && (
+                                                                    <span 
+                                                                        className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                                                                        style={{
+                                                                            backgroundColor: '#fef3c7',
+                                                                            color: '#d97706'
+                                                                        }}
+                                                                    >
+                                                                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                        Premium
+                                                                    </span>
+                                                                )}
+                                                                {chapter.is_owned && (
+                                                                    <span 
+                                                                        className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
+                                                                        style={{
+                                                                            backgroundColor: '#d1fae5',
+                                                                            color: '#059669'
+                                                                        }}
+                                                                    >
+                                                                        <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                                        </svg>
+                                                                        Owned
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-4 mt-1">
                                                                 <span 
-                                                                    className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full"
-                                                                    style={{
-                                                                        backgroundColor: '#d1fae5',
-                                                                        color: '#059669'
-                                                                    }}
+                                                                    className="text-sm"
+                                                                    style={{ color: `${currentTheme.foreground}60` }}
                                                                 >
-                                                                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                                    </svg>
-                                                                    Owned
+                                                                    {formatDate(chapter.created_at)}
                                                                 </span>
-                                                            )}
+                                                                {chapter.is_premium && (
+                                                                    <span className="text-sm font-medium" style={{ color: '#d97706' }}>
+                                                                        {chapter.coin_price} coins
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="flex items-center gap-4 mt-1">
-                                                            <span 
-                                                                className="text-sm"
-                                                                style={{ color: `${currentTheme.foreground}60` }}
-                                                            >
-                                                                {formatDate(chapter.created_at)}
-                                                            </span>
-                                                            {chapter.is_premium && (
-                                                                <span className="text-sm font-medium" style={{ color: '#d97706' }}>
-                                                                    {chapter.coin_price} coins
-                                                                </span>
-                                                            )}
+                                                        <div className="flex items-center" style={{ color: `${currentTheme.foreground}40` }}>
+                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                            </svg>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center" style={{ color: `${currentTheme.foreground}40` }}>
-                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                        </svg>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        /* Simple Mode - Card Grid */
+                                        <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                            {displayedChapters.map((chapter) => (
+                                                <Link
+                                                    key={chapter.id}
+                                                    href={route('chapters.show', [series.slug, chapter.chapter_number])}
+                                                    className="block p-3 border rounded-lg transition-all hover:shadow-md hover:border-opacity-60"
+                                                    style={{ 
+                                                        borderColor: `${currentTheme.foreground}20`,
+                                                        backgroundColor: currentTheme.background 
+                                                    }}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span 
+                                                            className="font-semibold text-sm"
+                                                            style={{ color: currentTheme.foreground }}
+                                                        >
+                                                            {chapter.volume 
+                                                                ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                : `Chapter ${chapter.chapter_number}`
+                                                            }
+                                                        </span>
+                                                        {chapter.is_premium ? (
+                                                            <span 
+                                                                className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full"
+                                                                style={{
+                                                                    backgroundColor: '#fef3c7',
+                                                                    color: '#d97706'
+                                                                }}
+                                                            >
+                                                                🔒 {chapter.coin_price}
+                                                            </span>
+                                                        ) : (
+                                                            <span 
+                                                                className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full"
+                                                                style={{
+                                                                    backgroundColor: '#d1fae5',
+                                                                    color: '#059669'
+                                                                }}
+                                                            >
+                                                                Free
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            </Link>
-                                        ))}
-                                    </div>
+                                                    <div className="text-xs" style={{ color: `${currentTheme.foreground}60` }}>
+                                                        📅 {formatDate(chapter.created_at)}
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
 
-                                    {chapters.length > 10 && (
+                                    {/* Pagination */}
+                                    {totalPages > 1 && (
                                         <div 
-                                            className="p-4 border-t text-center"
+                                            className="flex items-center justify-between p-4 border-t"
                                             style={{ borderColor: `${currentTheme.foreground}20` }}
                                         >
-                                            <button
-                                                onClick={() => setShowAllChapters(!showAllChapters)}
-                                                className="font-medium hover:opacity-70 transition-opacity"
-                                                style={{ color: currentTheme.foreground }}
-                                            >
-                                                {showAllChapters ? 'Show Less' : `Show All ${chapters.length} Chapters`}
-                                            </button>
+                                            <div className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>
+                                                Page {currentPage} of {totalPages} ({filteredChapters.length} chapters)
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                    disabled={currentPage === 1}
+                                                    className="px-3 py-1 text-sm border rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    style={{
+                                                        borderColor: `${currentTheme.foreground}30`,
+                                                        color: currentTheme.foreground,
+                                                        backgroundColor: currentTheme.background
+                                                    }}
+                                                >
+                                                    Previous
+                                                </button>
+                                                
+                                                {/* Page Numbers */}
+                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                                                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                                                    if (pageNum > totalPages) return null;
+                                                    
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setCurrentPage(pageNum)}
+                                                            className={`px-3 py-1 text-sm border rounded-md transition-colors ${
+                                                                currentPage === pageNum ? 'font-medium' : ''
+                                                            }`}
+                                                            style={{
+                                                                borderColor: `${currentTheme.foreground}30`,
+                                                                backgroundColor: currentPage === pageNum ? currentTheme.foreground : currentTheme.background,
+                                                                color: currentPage === pageNum ? currentTheme.background : currentTheme.foreground
+                                                            }}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                })}
+                                                
+                                                <button
+                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                                    disabled={currentPage === totalPages}
+                                                    className="px-3 py-1 text-sm border rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    style={{
+                                                        borderColor: `${currentTheme.foreground}30`,
+                                                        color: currentTheme.foreground,
+                                                        backgroundColor: currentTheme.background
+                                                    }}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* No Results */}
+                                    {filteredChapters.length === 0 && (
+                                        <div className="text-center py-12">
+                                            <div className="text-4xl mb-4">📚</div>
+                                            <p className="text-lg" style={{ color: currentTheme.foreground }}>
+                                                {searchQuery ? 'No chapters found' : 'No chapters available'}
+                                            </p>
+                                            {searchQuery && (
+                                                <p className="text-sm mt-2" style={{ color: `${currentTheme.foreground}60` }}>
+                                                    Try adjusting your search terms
+                                                </p>
+                                            )}
                                         </div>
                                     )}
                                 </div>
