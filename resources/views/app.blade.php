@@ -15,6 +15,10 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
+        <!-- Google AdSense -->
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6459699146085990"
+             crossorigin="anonymous"></script>
+
         <!-- Theme CSS Custom Properties -->
         <style>
             :root {
