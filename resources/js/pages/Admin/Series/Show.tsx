@@ -413,13 +413,11 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                 <span className="text-sm text-gray-500">Synopsis</span>
                 <div className="mt-1 relative">
                   <div 
-                    className={`text-gray-700 transition-all duration-300 ${
+                    className={`text-gray-700 transition-all duration-300 prose prose-sm max-w-none ${
                       isSynopsisExpanded ? '' : 'line-clamp-4 overflow-hidden'
                     }`}
-                    style={{ whiteSpace: 'pre-line' }}
-                  >
-                    {series.synopsis}
-                  </div>
+                    dangerouslySetInnerHTML={{ __html: series.synopsis }}
+                  />
                   
                   {/* Expand/Collapse Button with Gradient */}
                   {series.synopsis.length > 200 && (

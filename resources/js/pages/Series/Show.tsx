@@ -418,12 +418,12 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     isExpanded ? '' : 'line-clamp-4 overflow-hidden'
                                                 }`}
                                                 style={{ 
-                                                    color: `${currentTheme.foreground}90`,
-                                                    whiteSpace: 'pre-line'
+                                                    color: `${currentTheme.foreground}90`
                                                 }}
-                                            >
-                                                {series.synopsis || 'No synopsis available.'}
-                                            </div>
+                                                dangerouslySetInnerHTML={{
+                                                    __html: series.synopsis || 'No synopsis available.'
+                                                }}
+                                            />
                                             
                                             {/* Expand/Collapse Button with Gradient */}
                                             {(series.synopsis && series.synopsis.length > 200) && (
