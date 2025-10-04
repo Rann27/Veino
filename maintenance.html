@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VEINOVEL — Maintenance</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <style>
+    :root{
+      --bg: #f6f7f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #6b7280;
+      --accent: #111827;
+      --ring: rgba(17,24,39,.08);
+      --shadow: 0 10px 30px rgba(2,6,23,.07), 0 4px 10px rgba(2,6,23,.04);
+      --radius: 16px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{
+        --bg: #0b0f1a;
+        --card: #0f172a;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --accent: #e5e7eb;
+        --ring: rgba(226,232,240,.08);
+        --shadow: 0 10px 30px rgba(0,0,0,.35), 0 4px 10px rgba(0,0,0,.25);
+      }
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(2,6,23,.06), transparent 60%),
+        radial-gradient(1000px 500px at 100% 0, rgba(2,6,23,.05), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+
+    .wrap{
+      width:min(880px, 100%);
+    }
+
+    .brand{
+      display:flex;align-items:center;gap:10px;margin:0 0 18px;
+      letter-spacing:.08em;font-weight:800;color:var(--text);user-select:none
+    }
+    .brand .dot{
+      width:10px;height:10px;border-radius:999px;background:var(--accent);
+      box-shadow:0 0 0 6px var(--ring);
+    }
+    .brand span{font-size:14px;text-transform:uppercase;opacity:.9}
+
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      border:1px solid var(--ring);
+      padding:28px;
+    }
+
+    .hero{
+      display:grid;gap:22px;align-items:center;
+      grid-template-columns: 96px 1fr;
+    }
+    @media (max-width:640px){
+      .hero{grid-template-columns:1fr}
+      .loader{margin-inline:auto}
+    }
+
+    .title{
+      font-size:clamp(22px, 3.4vw, 34px);
+      line-height:1.15;margin:0 0 6px;font-weight:800;letter-spacing:-.02em
+    }
+    .desc{margin:0;color:var(--muted);font-size:clamp(14px,1.7vw,16px)}
+    .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .chip{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:6px 10px;border:1px solid var(--ring);
+      border-radius:999px;background:linear-gradient(to bottom, rgba(2,6,23,.02), rgba(2,6,23,.04));
+      font-size:12px;color:var(--muted)
+    }
+    .chip i{width:6px;height:6px;border-radius:999px;background:var(--muted);opacity:.5}
+
+    /* Spinner — minimalist ring that fits the site's clean theme */
+    .loader{
+      width:86px;aspect-ratio:1;border-radius:50%;
+      background:
+        radial-gradient(farthest-side, var(--accent) 95%, #0000) top/10px 10px no-repeat,
+        conic-gradient(#0000 10%, var(--accent));
+      -webkit-mask:radial-gradient(farthest-side, #0000 calc(100% - 12px), #000 0);
+      mask:radial-gradient(farthest-side, #0000 calc(100% - 12px), #000 0);
+      animation:spin 0.9s linear infinite;
+      filter: drop-shadow(0 8px 18px rgba(2,6,23,.15));
+    }
+    @keyframes spin{to{transform:rotate(1turn)}}
+
+    .progress{
+      height:4px;border-radius:999px;overflow:hidden;background:rgba(2,6,23,.08);margin:16px 0 4px
+    }
+    .progress>span{
+      display:block;height:100%;width:40%;border-radius:inherit;background:var(--accent);
+      animation:indeterminate 2.2s ease-in-out infinite;
+    }
+    @keyframes indeterminate{
+      0%{transform:translateX(-100%) scaleX(.4)}
+      50%{transform:translateX(35%) scaleX(1)}
+      100%{transform:translateX(260%) scaleX(.6)}
+    }
+
+    .row{
+      display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between
+    }
+    .muted{color:var(--muted);font-size:14px}
+    .space{height:6px}
+
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+    .btn{
+      appearance:none;border:1px solid var(--ring);background:var(--text);color:var(--card);
+      padding:10px 14px;border-radius:12px;font-weight:600;cursor:pointer;transition:.2s box-shadow,.2s transform;
+      box-shadow:0 6px 18px rgba(2,6,23,.18);
+    }
+    .btn.secondary{
+      background:transparent;color:var(--text);border-color:var(--ring)
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+    .footer{
+      margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:12px
+    }
+    .sep{opacity:.3}
+
+    .note{
+      margin-top:18px;padding:12px;border:1px dashed var(--ring);border-radius:12px;
+      color:var(--muted);font-size:13px;background:linear-gradient(to bottom right, rgba(2,6,23,.03), rgba(2,6,23,.05));
+    }
+    .center{display:flex;align-items:center;gap:8px}
+    .pulse{width:8px;height:8px;border-radius:999px;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 1.8s infinite}
+    @keyframes pulse{70%{box-shadow:0 0 0 10px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h6 class="brand"><span>VEINOVEL</span><span class="dot" aria-hidden="true"></span></h6>
+
+    <section class="card" role="status" aria-live="polite">
+      <div class="hero">
+        <div class="loader" aria-hidden="true"></div>
+
+        <div>
+          <h1 class="title">We’re doing a quick maintenance</h1>
+          <p class="desc">Optimizing pages & polishing a few things so your reading feels smoother. This won’t take long.</p>
+
+          <div class="chips" aria-label="System status">
+            <span class="chip"><i></i> API online</span>
+            <span class="chip"><i></i> Database migrating</span>
+            <span class="chip"><i></i> Assets caching</span>
+          </div>
+
+          <div class="space"></div>
+
+          <div class="progress" aria-hidden="true"><span></span></div>
+
+          <div class="row">
+            <div class="muted">Auto-retry in <strong id="cd">30</strong>s</div>
+            <div class="actions">
+              <button class="btn" id="retry">Refresh now</button>
+              <a class="btn secondary" href="https://discord.gg/vudY5kMk4s" rel="noopener">Discord</a>
+            </div>
+          </div>
+
+          <div class="note center" id="note">
+            <span class="pulse" aria-hidden="true"></span>
+            <span>Live status: <strong id="status">Applying updates…</strong></span>
+          </div>
+
+          <div class="footer">
+            <span>© <span id="y"></span> VEINOVEL</span><span class="sep">•</span>
+            <span>We’ll be back shortly.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Year
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+    // Rotating status lines (keeps things lively but subtle)
+    const lines = [
+      "Applying updates…",
+      "Clearing stale caches…",
+      "Warming pages for faster loads…",
+      "Checking payments & auth…",
+      "Almost done…"
+    ];
+    let li = 0;
+    setInterval(() => {
+      li = (li + 1) % lines.length;
+      document.getElementById('status').textContent = lines[li];
+    }, 3000);
+
+    // Auto-retry countdown + hard refresh
+    const cdEl = document.getElementById('cd');
+    let secs = 30;
+    const tick = setInterval(() => {
+      secs--;
+      cdEl.textContent = secs;
+      if (secs <= 0) {
+        clearInterval(tick);
+        location.reload();
+      }
+    }, 1000);
+    document.getElementById('retry').addEventListener('click', () => location.reload());
+
+    // Optional: attempt a lightweight ping and flip the chip if ok
+    // Replace '/favicon.ico' with a cheap health endpoint if available.
+    (function ping(){
+      fetch('/favicon.ico', {cache:'no-store'}).then(() => {
+        // Indicate API reachable with a tiny visual bump (no layout shift)
+        const chips = document.querySelectorAll('.chip i');
+        if (chips[0]) chips[0].style.background = '#22c55e';
+      }).catch(()=>{}).finally(()=>{
+        setTimeout(ping, 8000);
+      });
+    })();
+  </script>
+</body>
+</html>
