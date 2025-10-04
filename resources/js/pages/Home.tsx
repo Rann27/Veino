@@ -244,9 +244,6 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
       {heroSeries.length > 0 && (
         <section 
           className="relative h-72 sm:h-80 md:h-96 overflow-hidden cursor-pointer select-none"
-          style={{
-            background: themeGradients.background
-          }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
@@ -256,11 +253,40 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
           onTouchEnd={handleTouchEnd}
           onClick={handleHeroClick}
         >
-          {/* Background overlay */}
+          {/* Background Cover Image - Zoomed */}
+          {heroSeries[currentHero].cover_url && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: `url(${heroSeries[currentHero].cover_url})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                transform: 'scale(1.1)',
+                filter: 'blur(0px)'
+              }}
+            />
+          )}
+          
+          {/* Background overlay with 20% opacity */}
           <div 
             className="absolute inset-0"
             style={{
-              background: themeGradients.overlay
+              background: themeGradients.overlay,
+              opacity: 0.2
+            }}
+          />
+          
+          {/* Side fade gradients */}
+          <div 
+            className="absolute inset-y-0 left-0 w-32 sm:w-48 md:w-64"
+            style={{
+              background: `linear-gradient(to right, ${currentTheme.background} 0%, transparent 100%)`
+            }}
+          />
+          <div 
+            className="absolute inset-y-0 right-0 w-32 sm:w-48 md:w-64"
+            style={{
+              background: `linear-gradient(to left, ${currentTheme.background} 0%, transparent 100%)`
             }}
           />
           
@@ -325,52 +351,6 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
               </div>
             </div>
           </div>
-
-          {/* Navigation Arrows */}
-          {heroSeries.length > 1 && (
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  prevHero();
-                }}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-opacity-70 transition-all z-20 backdrop-blur-sm"
-                style={{
-                  backgroundColor: currentTheme.name.toLowerCase() === 'light' 
-                    ? 'rgba(45, 55, 72, 0.8)' 
-                    : `${currentTheme.foreground}30`,
-                  color: currentTheme.name.toLowerCase() === 'light' 
-                    ? 'white' 
-                    : currentTheme.background,
-                  borderColor: `${currentTheme.background}20`
-                }}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  nextHero();
-                }}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full hover:bg-opacity-70 transition-all z-20 backdrop-blur-sm"
-                style={{
-                  backgroundColor: currentTheme.name.toLowerCase() === 'light' 
-                    ? 'rgba(45, 55, 72, 0.8)' 
-                    : `${currentTheme.foreground}30`,
-                  color: currentTheme.name.toLowerCase() === 'light' 
-                    ? 'white' 
-                    : currentTheme.background,
-                  borderColor: `${currentTheme.background}20`
-                }}
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </>
-          )}
 
           {/* Dots Indicator */}
           {heroSeries.length > 1 && (
