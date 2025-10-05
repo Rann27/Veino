@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CommentSection from '@/Components/CommentSection';
+import ReactionBar from '@/Components/ReactionBar';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -107,9 +109,15 @@ interface Props {
     chapters: Chapter[];
     relatedSeries: Series[];
     isBookmarked?: boolean;
+    auth?: {
+        user?: {
+            id: number;
+            display_name: string;
+        };
+    };
 }
 
-function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false }: Props) {
+function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false, auth }: Props) {
     const { currentTheme } = useTheme();
     const [showAllChapters, setShowAllChapters] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -776,6 +784,40 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                     </div>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Reactions Section */}
+                        <div className="mt-8">
+                            <div 
+                                className="rounded-lg border p-8 text-center"
+                                style={{
+                                    backgroundColor: currentTheme.background,
+                                    borderColor: `${currentTheme.foreground}20`
+                                }}
+                            >
+                                <h3 
+                                    className="text-2xl font-bold mb-6"
+                                    style={{ color: currentTheme.foreground }}
+                                >
+                                    How do you feel about this series?
+                                </h3>
+                                <ReactionBar
+                                    reactableType="series"
+                                    reactableId={series.id}
+                                    isAuthenticated={!!auth?.user}
+                                    size="large"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Comment Section */}
+                        <div className="mt-8">
+                            <CommentSection
+                                commentableType="series"
+                                commentableId={series.id}
+                                isAuthenticated={!!auth?.user}
+                                currentUserId={auth?.user?.id}
+                            />
                         </div>
                     </div>
                 </div>

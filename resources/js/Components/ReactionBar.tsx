@@ -49,14 +49,38 @@ export default function ReactionBar({
     const [reactionCounts, setReactionCounts] = useState<ReactionCounts>(initialCounts);
     const [userReaction, setUserReaction] = useState<string | null>(initialUserReaction);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const sizes = {
-        small: { image: 20, padding: 'px-2 py-1', text: 'text-xs' },
-        medium: { image: 24, padding: 'px-3 py-1.5', text: 'text-sm' },
-        large: { image: 28, padding: 'px-4 py-2', text: 'text-base' },
+        small: { image: 24, text: 'text-xs' },
+        medium: { image: 32, text: 'text-sm' },
+        large: { image: 48, text: 'text-base' },
     };
 
     const currentSize = sizes[size];
+
+    // Load initial reaction data from backend
+    useEffect(() => {
+        loadReactions();
+    }, [reactableType, reactableId]);
+
+    const loadReactions = async () => {
+        try {
+            const response = await fetch(
+                route('reactions.index', { type: reactableType, id: reactableId })
+            );
+            
+            if (response.ok) {
+                const data = await response.json();
+                setReactionCounts(data.reaction_counts || {});
+                setUserReaction(data.user_reaction || null);
+            }
+        } catch (error) {
+            console.error('Error loading reactions:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleReaction = async (type: string) => {
         if (!isAuthenticated) {
@@ -101,56 +125,92 @@ export default function ReactionBar({
     // Calculate total reactions
     const totalReactions = Object.values(reactionCounts).reduce((sum, count) => sum + (count || 0), 0);
 
+    // Image sizes based on size prop
+    const imageSizes = {
+        small: 32,
+        medium: 48,
+        large: 56,
+    };
+
+    const imageSize = imageSizes[size];
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center py-4">
+                <div 
+                    className="animate-spin rounded-full h-8 w-8 border-b-2"
+                    style={{ borderColor: currentTheme.foreground }}
+                />
+            </div>
+        );
+    }
+
     return (
-        <div className="flex items-center gap-2 flex-wrap">
-            {Object.entries(reactionImages).map(([type, image]) => {
-                const count = reactionCounts[type as keyof ReactionCounts] || 0;
-                const isActive = userReaction === type;
-                
-                return (
-                    <button
-                        key={type}
-                        onClick={() => handleReaction(type)}
-                        disabled={isSubmitting}
-                        className={`flex items-center gap-1.5 rounded-full border transition-all ${currentSize.padding} ${currentSize.text} ${
-                            isActive 
-                                ? 'border-opacity-50 shadow-md' 
-                                : 'border-opacity-20 hover:border-opacity-40 hover:shadow-sm'
-                        } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        style={{
-                            borderColor: isActive ? '#3b82f6' : `${currentTheme.foreground}30`,
-                            backgroundColor: isActive ? '#eff6ff' : currentTheme.background,
-                            color: isActive ? '#3b82f6' : currentTheme.foreground,
-                        }}
-                        title={reactionLabels[type as keyof typeof reactionLabels]}
-                    >
-                        <img 
-                            src={image} 
-                            alt={type}
-                            className={`${isActive ? 'scale-110' : ''} transition-transform`}
-                            style={{ 
-                                width: currentSize.image, 
-                                height: currentSize.image,
-                                filter: isActive ? 'brightness(1.1)' : 'none',
-                            }}
-                        />
-                        {count > 0 && (
-                            <span className="font-medium">
-                                {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
+        <div className="flex flex-col items-center gap-6">
+            {/* Total Reactions Count */}
+            <div 
+                className="text-lg font-semibold"
+                style={{ color: currentTheme.foreground }}
+            >
+                {totalReactions.toLocaleString()} Reactions
+            </div>
+
+            {/* Reaction Buttons */}
+            <div className="flex items-center justify-center gap-6 flex-wrap">
+                {Object.entries(reactionImages).map(([type, image]) => {
+                    const count = reactionCounts[type as keyof ReactionCounts] || 0;
+                    const isActive = userReaction === type;
+                    
+                    return (
+                        <button
+                            key={type}
+                            onClick={() => handleReaction(type)}
+                            disabled={isSubmitting}
+                            className={`flex flex-col items-center gap-2 transition-all ${
+                                isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'
+                            } ${isActive ? 'scale-110' : ''}`}
+                        >
+                            {/* Reaction Image with Badge */}
+                            <div className="relative">
+                                <img 
+                                    src={image} 
+                                    alt={type}
+                                    className="transition-transform"
+                                    style={{ 
+                                        width: imageSize, 
+                                        height: imageSize,
+                                        filter: isActive ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none',
+                                    }}
+                                />
+
+                                {/* Count Badge - Always visible if count > 0 */}
+                                {count > 0 && (
+                                    <div 
+                                        className="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center rounded-full text-[11px] font-bold px-1.5"
+                                        style={{
+                                            backgroundColor: '#3b82f6',
+                                            color: '#ffffff',
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                        }}
+                                    >
+                                        {count > 999 ? `${(count / 1000).toFixed(1)}k` : count}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Reaction Label */}
+                            <span 
+                                className={`text-xs font-medium ${currentSize.text}`}
+                                style={{ 
+                                    color: isActive ? '#3b82f6' : `${currentTheme.foreground}80`,
+                                }}
+                            >
+                                {reactionLabels[type as keyof typeof reactionLabels]}
                             </span>
-                        )}
-                    </button>
-                );
-            })}
-            
-            {totalReactions > 0 && (
-                <span 
-                    className={`ml-2 ${currentSize.text} font-medium`}
-                    style={{ color: `${currentTheme.foreground}60` }}
-                >
-                    {totalReactions} {totalReactions === 1 ? 'reaction' : 'reactions'}
-                </span>
-            )}
+                        </button>
+                    );
+                })}
+            </div>
         </div>
     );
 }

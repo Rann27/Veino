@@ -3,6 +3,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ReaderSettingsModal from '@/Components/ReaderSettingsModal';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CommentSection from '@/Components/CommentSection';
+import ReactionBar from '@/Components/ReactionBar';
 
 interface Series {
     id: number;
@@ -39,6 +41,12 @@ interface Props {
     prevChapter: NavigationChapter | null;
     nextChapter: NavigationChapter | null;
     allChapters: ChapterOption[];
+    auth?: {
+        user?: {
+            id: number;
+            display_name: string;
+        };
+    };
 }
 
 function ChapterShowContent({ 
@@ -49,7 +57,8 @@ function ChapterShowContent({
     userCoins,
     prevChapter, 
     nextChapter, 
-    allChapters
+    allChapters,
+    auth
 }: Props) {
     const { currentTheme, readerSettings } = useTheme();
     const [showNavbar, setShowNavbar] = useState(true);
@@ -578,6 +587,40 @@ function ChapterShowContent({
                             ) : (
                                 <div className="w-full sm:w-auto"></div>
                             )}
+                        </div>
+
+                        {/* Reactions Section */}
+                        <div className="mt-8">
+                            <div 
+                                className="rounded-lg border p-8 text-center"
+                                style={{
+                                    backgroundColor: currentTheme.background,
+                                    borderColor: `${currentTheme.foreground}20`
+                                }}
+                            >
+                                <h3 
+                                    className="text-2xl font-bold mb-6"
+                                    style={{ color: currentTheme.foreground }}
+                                >
+                                    How was this chapter?
+                                </h3>
+                                <ReactionBar
+                                    reactableType="chapter"
+                                    reactableId={chapter.id}
+                                    isAuthenticated={!!auth?.user}
+                                    size="large"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Comment Section */}
+                        <div className="mt-8">
+                            <CommentSection
+                                commentableType="chapter"
+                                commentableId={chapter.id}
+                                isAuthenticated={!!auth?.user}
+                                currentUserId={auth?.user?.id}
+                            />
                         </div>
                     </div>
                 </div>
