@@ -54,6 +54,12 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
                 >
                   Transactions
                 </Link>
+                <Link
+                  href="/admin/monitoring"
+                  className="inline-flex items-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                >
+                  Monitoring
+                </Link>
               </nav>
             </div>
             <div className="flex items-center space-x-4">
