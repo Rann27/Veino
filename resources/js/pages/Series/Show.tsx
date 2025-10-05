@@ -121,21 +121,15 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     // New states for enhanced chapter management
     const [viewMode, setViewMode] = useState<'detailed' | 'simple'>('detailed');
     const [searchQuery, setSearchQuery] = useState('');
-    const [currentPage, setCurrentPage] = useState(1);
     const [loading, setLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     // Load preferences from localStorage
     useEffect(() => {
         const savedViewMode = localStorage.getItem('series-view-mode') as 'detailed' | 'simple';
-        const savedItemsPerPage = localStorage.getItem('series-items-per-page');
         
         if (savedViewMode && ['detailed', 'simple'].includes(savedViewMode)) {
             setViewMode(savedViewMode);
-        }
-        if (savedItemsPerPage && !isNaN(Number(savedItemsPerPage))) {
-            setItemsPerPage(Number(savedItemsPerPage));
         }
     }, []);
 
@@ -143,12 +137,6 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     const updateViewMode = (mode: 'detailed' | 'simple') => {
         setViewMode(mode);
         localStorage.setItem('series-view-mode', mode);
-    };
-
-    const updateItemsPerPage = (count: number) => {
-        setItemsPerPage(count);
-        setCurrentPage(1);
-        localStorage.setItem('series-items-per-page', count.toString());
     };
 
     // Detect mobile screen size
@@ -165,12 +153,6 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
-
-    // Items per page based on mode and screen size
-    const getItemsPerPage = () => {
-        if (isMobile) return 50; // Mobile: 50 rows in simple mode
-        return viewMode === 'detailed' ? 25 : 40; // Desktop: 25 detailed rows, 40 simple cards (2 col * 20)
-    };
 
     // Filter chapters by search query
     const filteredChapters = chapters.filter(chapter => {
@@ -200,16 +182,8 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
         return sortOrder === 'asc' ? chapterDiff : -chapterDiff;
     });
 
-    // Paginate chapters
-    const actualItemsPerPage = itemsPerPage === -1 ? sortedChapters.length : itemsPerPage;
-    const totalPages = Math.ceil(sortedChapters.length / actualItemsPerPage);
-    const startIndex = (currentPage - 1) * actualItemsPerPage;
-    const displayedChapters = itemsPerPage === -1 ? sortedChapters : sortedChapters.slice(startIndex, startIndex + actualItemsPerPage);
-
-    // Reset to page 1 when search query changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery, viewMode, sortOrder]);
+    // Display all sorted chapters (no pagination)
+    const displayedChapters = sortedChapters;
 
     const handleBookmarkToggle = async () => {
         try {
@@ -557,8 +531,15 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
 
                                     {/* Chapter Content - Conditional Based on View Mode */}
                                     {viewMode === 'detailed' ? (
-                                        /* Detailed Mode - List View */
-                                        <div style={{ borderTopColor: `${currentTheme.foreground}20` }} className="divide-y">
+                                        /* Detailed Mode - List View with Scrolling */
+                                        <div 
+                                            style={{ 
+                                                borderTopColor: `${currentTheme.foreground}20`,
+                                                maxHeight: 'calc(100vh - 300px)',
+                                                minHeight: '600px'
+                                            }} 
+                                            className="divide-y overflow-y-auto"
+                                        >
                                             {displayedChapters.map((chapter) => (
                                                 <Link
                                                     key={chapter.id}
@@ -629,8 +610,14 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             ))}
                                         </div>
                                     ) : (
-                                        /* Simple Mode - Card Grid */
-                                        <div className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                                        /* Simple Mode - Card Grid with Scrolling */
+                                        <div 
+                                            className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} overflow-y-auto`}
+                                            style={{
+                                                maxHeight: 'calc(100vh - 300px)',
+                                                minHeight: '600px'
+                                            }}
+                                        >
                                             {displayedChapters.map((chapter) => (
                                                 <Link
                                                     key={chapter.id}
@@ -694,97 +681,6 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     </div>
                                                 </Link>
                                             ))}
-                                        </div>
-                                    )}
-
-                                    {/* Pagination */}
-                                    {(totalPages > 1 || filteredChapters.length > 10) && (
-                                        <div 
-                                            className="flex items-center justify-between p-4 border-t"
-                                            style={{ borderColor: `${currentTheme.foreground}20` }}
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>
-                                                    {itemsPerPage === -1 
-                                                        ? `Showing all ${filteredChapters.length} chapters`
-                                                        : `Page ${currentPage} of ${totalPages} (${filteredChapters.length} chapters)`
-                                                    }
-                                                </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>Show:</span>
-                                                    <select
-                                                        value={itemsPerPage}
-                                                        onChange={(e) => {
-                                                            const value = parseInt(e.target.value);
-                                                            setItemsPerPage(value);
-                                                            setCurrentPage(1);
-                                                        }}
-                                                        className="px-2 py-1 text-sm border rounded-md"
-                                                        style={{
-                                                            borderColor: `${currentTheme.foreground}30`,
-                                                            color: currentTheme.foreground,
-                                                            backgroundColor: currentTheme.background
-                                                        }}
-                                                    >
-                                                        <option value={10}>10</option>
-                                                        <option value={25}>25</option>
-                                                        <option value={50}>50</option>
-                                                        <option value={-1}>All</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            {totalPages > 1 && (
-                                                <div className="flex items-center gap-2">
-                                                    <button
-                                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                                        disabled={currentPage === 1}
-                                                        className="px-3 py-1 text-sm border rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        style={{
-                                                            borderColor: `${currentTheme.foreground}30`,
-                                                            color: currentTheme.foreground,
-                                                            backgroundColor: currentTheme.background
-                                                        }}
-                                                    >
-                                                        Previous
-                                                    </button>
-                                                
-                                                {/* Page Numbers */}
-                                                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                                                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                                                    if (pageNum > totalPages) return null;
-                                                    
-                                                    return (
-                                                        <button
-                                                            key={pageNum}
-                                                            onClick={() => setCurrentPage(pageNum)}
-                                                            className={`px-3 py-1 text-sm border rounded-md transition-colors ${
-                                                                currentPage === pageNum ? 'font-medium' : ''
-                                                            }`}
-                                                            style={{
-                                                                borderColor: `${currentTheme.foreground}30`,
-                                                                backgroundColor: currentPage === pageNum ? currentTheme.foreground : currentTheme.background,
-                                                                color: currentPage === pageNum ? currentTheme.background : currentTheme.foreground
-                                                            }}
-                                                        >
-                                                            {pageNum}
-                                                        </button>
-                                                    );
-                                                })}
-                                                
-                                                <button
-                                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                                    disabled={currentPage === totalPages}
-                                                    className="px-3 py-1 text-sm border rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    style={{
-                                                        borderColor: `${currentTheme.foreground}30`,
-                                                        color: currentTheme.foreground,
-                                                        backgroundColor: currentTheme.background
-                                                    }}
-                                                >
-                                                    Next
-                                                </button>
-                                            </div>
-                                            )}
                                         </div>
                                     )}
 
