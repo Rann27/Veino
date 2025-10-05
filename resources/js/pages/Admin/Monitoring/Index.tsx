@@ -170,9 +170,9 @@ export default function Index({ series }: Props) {
         <AdminLayout>
             <Head title="Monitoring - Comments & Reactions" />
 
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white shadow-sm sm:rounded-lg">
+            <div className="py-6">
+                <div className="w-full px-4">
+                    <div className="bg-white shadow-sm rounded-lg">
                         {/* Header */}
                         <div className="p-6 border-b border-gray-200">
                             <h2 className="text-2xl font-bold text-gray-900">
@@ -298,28 +298,28 @@ export default function Index({ series }: Props) {
 
                                     {/* Comments Table */}
                                     <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                        <div className="overflow-x-auto" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                                        <div className="overflow-x-auto" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                                             {commentsLoading ? (
                                                 <div className="p-8 text-center text-gray-500">Loading...</div>
                                             ) : comments.length === 0 ? (
                                                 <div className="p-8 text-center text-gray-500">No comments found</div>
                                             ) : (
-                                                <table className="min-w-full divide-y divide-gray-200">
+                                                <table className="w-full divide-y divide-gray-200">
                                                     <thead className="bg-gray-50 sticky top-0">
                                                         <tr>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
                                                                 Page
                                                             </th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                                                                 User
                                                             </th>
                                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                                 Comment
                                                             </th>
-                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
                                                                 Date
                                                             </th>
-                                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                                                                 Actions
                                                             </th>
                                                         </tr>
@@ -327,14 +327,14 @@ export default function Index({ series }: Props) {
                                                     <tbody className="bg-white divide-y divide-gray-200">
                                                         {comments.map((comment) => (
                                                             <tr key={comment.id} className="hover:bg-gray-50">
-                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                    {comment.page}
-                                                                </td>
-                                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                                    {comment.user_name}
+                                                                <td className="px-6 py-4 text-sm text-gray-900">
+                                                                    <div className="max-w-xs">{comment.page}</div>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-sm text-gray-900">
-                                                                    <div className="line-clamp-3">
+                                                                    <div className="truncate max-w-[120px]">{comment.user_name}</div>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-sm text-gray-900">
+                                                                    <div className="whitespace-normal break-words">
                                                                         {comment.content}
                                                                     </div>
                                                                 </td>
@@ -430,13 +430,13 @@ export default function Index({ series }: Props) {
 
                                     {/* Reactions Table */}
                                     <div className="border border-gray-200 rounded-lg overflow-hidden">
-                                        <div className="overflow-x-auto" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                                        <div className="overflow-x-auto" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
                                             {reactionsLoading ? (
                                                 <div className="p-8 text-center text-gray-500">Loading...</div>
                                             ) : reactions.length === 0 ? (
                                                 <div className="p-8 text-center text-gray-500">No reactions found</div>
                                             ) : (
-                                                <table className="min-w-full divide-y divide-gray-200">
+                                                <table className="w-full divide-y divide-gray-200">
                                                     <thead className="bg-gray-50 sticky top-0">
                                                         <tr>
                                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
