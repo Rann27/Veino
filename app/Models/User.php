@@ -120,4 +120,20 @@ class User extends Authenticatable
     {
         return $this->bookmarks()->where('series_id', $series->id)->exists();
     }
+
+    /**
+     * Get user's comments
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Get user's reactions
+     */
+    public function reactions(): HasMany
+    {
+        return $this->hasMany(Reaction::class);
+    }
 }

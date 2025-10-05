@@ -170,6 +170,29 @@ Route::prefix('api')->group(function () {
     });
 });
 
+// Comment & Reaction Routes
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ReactionController;
+
+Route::prefix('api')->group(function () {
+    // Get comments (public)
+    Route::get('/comments/{type}/{id}', [CommentController::class, 'index'])->name('comments.index');
+    
+    // Get reactions (public)
+    Route::get('/reactions/{type}/{id}', [ReactionController::class, 'index'])->name('reactions.index');
+    
+    // Comment & Reaction actions (requires authentication)
+    Route::middleware('auth')->group(function () {
+        // Comments
+        Route::post('/comments/{type}/{id}', [CommentController::class, 'store'])->name('comments.store');
+        Route::put('/comments/{id}', [CommentController::class, 'update'])->name('comments.update');
+        Route::delete('/comments/{id}', [CommentController::class, 'destroy'])->name('comments.destroy');
+        
+        // Reactions
+        Route::post('/reactions/toggle', [ReactionController::class, 'toggle'])->name('reactions.toggle');
+    });
+});
+
 // Legal Pages
 Route::get('/privacy', function () {
     return Inertia::render('Legal/Privacy');

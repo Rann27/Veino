@@ -95,4 +95,20 @@ class Series extends Model
             ->withTimestamps()
             ->withPivot('note');
     }
+
+    /**
+     * Get all comments for this series
+     */
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable')->whereNull('parent_id')->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get all reactions for this series
+     */
+    public function reactions()
+    {
+        return $this->morphMany(Reaction::class, 'reactable');
+    }
 }

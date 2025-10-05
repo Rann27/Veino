@@ -97,4 +97,20 @@ class Chapter extends Model
         
         return "Chapter {$this->chapter_number}";
     }
+
+    /**
+     * Get all comments for this chapter
+     */
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable')->whereNull('parent_id')->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Get all reactions for this chapter
+     */
+    public function reactions()
+    {
+        return $this->morphMany(Reaction::class, 'reactable');
+    }
 }
