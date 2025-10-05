@@ -20,6 +20,9 @@ class UserChapterController extends Controller
             ->where('chapter_number', $chapterNumber)
             ->firstOrFail();
 
+        // Increment views
+        $chapter->increment('views');
+
         // Check if user can access this chapter
         $canAccess = true;
         $user = Auth::user();

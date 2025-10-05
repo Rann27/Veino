@@ -19,6 +19,7 @@ class Chapter extends Model
         'is_premium',
         'coin_price',
         'is_published',
+        'views',
     ];
 
     protected $casts = [

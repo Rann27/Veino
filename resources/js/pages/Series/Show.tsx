@@ -4,6 +4,7 @@ import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CommentSection from '@/Components/CommentSection';
 import ReactionBar from '@/Components/ReactionBar';
+import EyeIcon from '@/Components/Icons/EyeIcon';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -88,6 +89,7 @@ interface Chapter {
     is_owned?: boolean;
     coin_price: number;
     created_at: string;
+    views: number;
 }
 
 interface Series {
@@ -102,6 +104,7 @@ interface Series {
     chapters_count: number;
     genres: Genre[];
     native_language: NativeLanguage;
+    views: number;
 }
 
 interface Props {
@@ -116,6 +119,17 @@ interface Props {
         };
     };
 }
+
+// Format number helper
+const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    }
+    if (num >= 1000) {
+        return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    }
+    return num.toString();
+};
 
 function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false, auth }: Props) {
     const { currentTheme } = useTheme();
@@ -332,6 +346,17 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             </svg>
                                             {bookmarked ? 'Bookmarked' : 'Bookmark'}
                                         </button>
+                                        
+                                        {/* View Counter */}
+                                        <div 
+                                            className="flex items-center justify-center gap-2 px-4 py-2"
+                                            style={{
+                                                color: `${currentTheme.foreground}60`
+                                            }}
+                                        >
+                                            <EyeIcon className="w-4 h-4" />
+                                            <span className="text-sm font-medium">{formatNumber(series.views)}</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -574,40 +599,47 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                     {chapter.title}
                                                                 </h3>
                                                             </div>
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex items-center gap-1">
-                                                                    <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
-                                                                    <span 
-                                                                        className="text-sm"
-                                                                        style={{ color: `${currentTheme.foreground}60` }}
-                                                                    >
-                                                                        {formatDate(chapter.created_at)}
-                                                                    </span>
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
+                                                                        <span 
+                                                                            className="text-sm"
+                                                                            style={{ color: `${currentTheme.foreground}60` }}
+                                                                        >
+                                                                            {formatDate(chapter.created_at)}
+                                                                        </span>
+                                                                    </div>
+                                                                    {chapter.is_premium && (
+                                                                        <span 
+                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
+                                                                            style={{
+                                                                                backgroundColor: '#fef3c7',
+                                                                                color: '#d97706'
+                                                                            }}
+                                                                        >
+                                                                            <LockIcon size={12} color="#d97706" />
+                                                                            {chapter.coin_price}
+                                                                        </span>
+                                                                    )}
+                                                                    {chapter.is_owned && (
+                                                                        <span 
+                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
+                                                                            style={{
+                                                                                backgroundColor: '#d1fae5',
+                                                                                color: '#059669'
+                                                                            }}
+                                                                        >
+                                                                            <CheckIcon size={12} color="#059669" />
+                                                                            Owned
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                                {chapter.is_premium && (
-                                                                    <span 
-                                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                        style={{
-                                                                            backgroundColor: '#fef3c7',
-                                                                            color: '#d97706'
-                                                                        }}
-                                                                    >
-                                                                        <LockIcon size={12} color="#d97706" />
-                                                                        {chapter.coin_price}
-                                                                    </span>
-                                                                )}
-                                                                {chapter.is_owned && (
-                                                                    <span 
-                                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                        style={{
-                                                                            backgroundColor: '#d1fae5',
-                                                                            color: '#059669'
-                                                                        }}
-                                                                    >
-                                                                        <CheckIcon size={12} color="#059669" />
-                                                                        Owned
-                                                                    </span>
-                                                                )}
+                                                                {/* View Counter - Aligned Right */}
+                                                                <div className="flex items-center gap-1" style={{ color: `${currentTheme.foreground}60` }}>
+                                                                    <EyeIcon className="w-3 h-3" />
+                                                                    <span className="text-xs">{formatNumber(chapter.views)}</span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center" style={{ color: `${currentTheme.foreground}40` }}>
@@ -663,24 +695,31 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                 )}
                                                             </div>
                                                             
-                                                            {/* Date and Owned Badge */}
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
-                                                                    <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
-                                                                    {formatDate(chapter.created_at)}
+                                                            {/* Date, View Counter, and Owned Badge */}
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
+                                                                        <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
+                                                                        {formatDate(chapter.created_at)}
+                                                                    </div>
+                                                                    {chapter.is_owned && (
+                                                                        <span 
+                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
+                                                                            style={{
+                                                                                backgroundColor: '#d1fae5',
+                                                                                color: '#059669'
+                                                                            }}
+                                                                        >
+                                                                            <CheckIcon size={12} color="#059669" />
+                                                                            Owned
+                                                                        </span>
+                                                                    )}
                                                                 </div>
-                                                                {chapter.is_owned && (
-                                                                    <span 
-                                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                        style={{
-                                                                            backgroundColor: '#d1fae5',
-                                                                            color: '#059669'
-                                                                        }}
-                                                                    >
-                                                                        <CheckIcon size={12} color="#059669" />
-                                                                        Owned
-                                                                    </span>
-                                                                )}
+                                                                {/* View Counter - Aligned Right */}
+                                                                <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
+                                                                    <EyeIcon className="w-3 h-3" />
+                                                                    {formatNumber(chapter.views)}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}40` }}>

@@ -19,10 +19,13 @@ class UserSeriesController extends Controller
             ->withCount('chapters')
             ->firstOrFail();
 
+        // Increment views
+        $series->increment('views');
+
         $chapters = Chapter::where('series_id', $series->id)
             ->orderBy('volume')
             ->orderBy('chapter_number')
-            ->get(['id', 'title', 'chapter_number', 'volume', 'is_premium', 'coin_price', 'created_at']);
+            ->get(['id', 'title', 'chapter_number', 'volume', 'is_premium', 'coin_price', 'created_at', 'views']);
 
         // Add ownership information if user is authenticated
         $isBookmarked = false;
