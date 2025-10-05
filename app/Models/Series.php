@@ -25,6 +25,8 @@ class Series extends Model
         'status',
         'native_language_id',
         'views',
+        'bookmarks_count',
+        'comments_count',
     ];
 
     protected $casts = [

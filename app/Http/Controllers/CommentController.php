@@ -89,6 +89,11 @@ class CommentController extends Controller
             'content' => $validated['content'],
         ]);
 
+        // Increment comments_count for series only (not for replies)
+        if ($type === 'series' && !isset($validated['parent_id'])) {
+            $commentable->increment('comments_count');
+        }
+
         // Load relationships
         $comment->load(['user', 'reactions']);
         $comment->user_reaction = null;
@@ -158,6 +163,12 @@ class CommentController extends Controller
         // Check if user owns the comment or is admin
         if ($comment->user_id !== Auth::id() && Auth::user()->role !== 'administrator') {
             return response()->json(['error' => 'Forbidden'], 403);
+        }
+
+        // Decrement comments_count for series only (not for replies)
+        $commentable = $comment->commentable;
+        if ($commentable instanceof Series && !$comment->parent_id) {
+            $commentable->decrement('comments_count');
         }
 
         $comment->delete();

@@ -65,6 +65,9 @@ class BookmarkController extends Controller
             'note' => $validated['note'] ?? null,
         ]);
 
+        // Increment bookmarks_count
+        $series->increment('bookmarks_count');
+
         return response()->json([
             'message' => 'Series bookmarked successfully',
             'bookmarked' => true
@@ -87,6 +90,9 @@ class BookmarkController extends Controller
         }
 
         $bookmark->delete();
+
+        // Decrement bookmarks_count
+        $series->decrement('bookmarks_count');
 
         return response()->json([
             'message' => 'Bookmark removed successfully',

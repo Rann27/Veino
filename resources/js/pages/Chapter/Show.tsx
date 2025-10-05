@@ -6,6 +6,25 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import CommentSection from '@/Components/CommentSection';
 import ReactionBar from '@/Components/ReactionBar';
 
+// Sanitize HTML to remove conflicting color styles
+const sanitizeColorStyles = (html: string): string => {
+    if (!html) return '';
+    
+    // Remove inline color styles that conflict with theme
+    return html
+        .replace(/style="[^"]*color:\s*[^;"]+;?[^"]*"/gi, (match) => {
+            // Remove only color property, keep other styles
+            const styleContent = match.match(/style="([^"]*)"/i)?.[1] || '';
+            const filteredStyles = styleContent
+                .split(';')
+                .filter(style => !style.trim().startsWith('color'))
+                .filter(style => style.trim().length > 0)
+                .join(';');
+            return filteredStyles ? `style="${filteredStyles}"` : '';
+        })
+        .replace(/color:\s*[^;"]+;?/gi, ''); // Remove any remaining color declarations
+};
+
 interface Series {
     id: number;
     title: string;
@@ -476,6 +495,9 @@ function ChapterShowContent({
                                     if (hasHtmlTags) {
                                         // Content already has HTML structure, apply reader settings
                                         let processedContent = content;
+                                        
+                                        // First, remove color styles that conflict with theme
+                                        processedContent = sanitizeColorStyles(processedContent);
                                         
                                         // Remove font-family and font-size from inline styles to allow reader settings
                                         processedContent = processedContent.replace(

@@ -5,6 +5,8 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import CommentSection from '@/Components/CommentSection';
 import ReactionBar from '@/Components/ReactionBar';
 import EyeIcon from '@/Components/Icons/EyeIcon';
+import BookmarkIcon from '@/Components/Icons/BookmarkIcon';
+import CommentIcon from '@/Components/Icons/CommentIcon';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -105,6 +107,8 @@ interface Series {
     genres: Genre[];
     native_language: NativeLanguage;
     views: number;
+    bookmarks_count: number;
+    comments_count: number;
 }
 
 interface Props {
@@ -129,6 +133,37 @@ const formatNumber = (num: number): string => {
         return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     }
     return num.toString();
+};
+
+// Sanitize HTML content to remove conflicting inline styles and preserve line breaks
+const sanitizeContent = (html: string): string => {
+    if (!html) return '';
+    
+    // Check if content has HTML tags
+    const hasHTMLTags = /<[^>]+>/.test(html);
+    
+    if (!hasHTMLTags) {
+        // For plain text content (old entries), convert line breaks to <br> tags
+        return html
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .join('<br><br>');
+    }
+    
+    // For HTML content, remove inline color styles that conflict with theme
+    return html
+        .replace(/style="[^"]*color:\s*[^;"]+;?[^"]*"/gi, (match) => {
+            // Remove only color property, keep other styles
+            const styleContent = match.match(/style="([^"]*)"/i)?.[1] || '';
+            const filteredStyles = styleContent
+                .split(';')
+                .filter(style => !style.trim().startsWith('color'))
+                .filter(style => style.trim().length > 0)
+                .join(';');
+            return filteredStyles ? `style="${filteredStyles}"` : '';
+        })
+        .replace(/color:\s*[^;"]+;?/gi, ''); // Remove any remaining color declarations
 };
 
 function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false, auth }: Props) {
@@ -347,15 +382,34 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             {bookmarked ? 'Bookmarked' : 'Bookmark'}
                                         </button>
                                         
-                                        {/* View Counter */}
+                                        {/* Counters */}
                                         <div 
-                                            className="flex items-center justify-center gap-2 px-4 py-2"
+                                            className="flex items-center justify-center gap-3 px-4 py-2"
                                             style={{
                                                 color: `${currentTheme.foreground}60`
                                             }}
                                         >
-                                            <EyeIcon className="w-4 h-4" />
-                                            <span className="text-sm font-medium">{formatNumber(series.views)}</span>
+                                            {/* Bookmark Counter */}
+                                            <div className="flex items-center gap-1.5">
+                                                <BookmarkIcon className="w-4 h-4" />
+                                                <span className="text-sm font-medium">{formatNumber(series.bookmarks_count)}</span>
+                                            </div>
+                                            
+                                            <span className="text-xs">•</span>
+                                            
+                                            {/* View Counter */}
+                                            <div className="flex items-center gap-1.5">
+                                                <EyeIcon className="w-4 h-4" />
+                                                <span className="text-sm font-medium">{formatNumber(series.views)}</span>
+                                            </div>
+                                            
+                                            <span className="text-xs">•</span>
+                                            
+                                            {/* Comment Counter */}
+                                            <div className="flex items-center gap-1.5">
+                                                <CommentIcon className="w-4 h-4" />
+                                                <span className="text-sm font-medium">{formatNumber(series.comments_count)}</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -428,7 +482,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     color: `${currentTheme.foreground}90`
                                                 }}
                                                 dangerouslySetInnerHTML={{
-                                                    __html: series.synopsis || 'No synopsis available.'
+                                                    __html: sanitizeContent(series.synopsis) || 'No synopsis available.'
                                                 }}
                                             />
                                             
