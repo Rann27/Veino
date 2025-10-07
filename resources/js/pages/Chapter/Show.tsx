@@ -269,23 +269,21 @@ function ChapterShowContent({
                     <div className="flex items-center justify-between h-16">
                         {/* Left Section */}
                         <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
-                            <Link
-                                href={route('series.show', series.slug)}
-                                className="font-medium transition-colors hover:opacity-70 text-sm sm:text-base"
-                                style={{ color: '#3b82f6' }}
-                            >
-                                <span className="hidden sm:inline">← Back to Series</span>
-                                <span className="sm:hidden">← Back</span>
-                            </Link>
-                            
-                            {/* Hide chapter title on mobile */}
+                        <Link
+                            href={route('series.show', series.slug)}
+                            className="font-medium transition-all reading-bar-btn px-3 py-1.5 rounded-lg text-sm sm:text-base"
+                            style={{ color: `${currentTheme.foreground}80` }}
+                        >
+                            <span className="hidden sm:inline">← Back to Series</span>
+                            <span className="sm:hidden">← Back</span>
+                        </Link>                            {/* Hide chapter title on mobile */}
                             <div 
                                 className="border-l pl-4 hidden sm:block"
                                 style={{ borderColor: `${currentTheme.foreground}30` }}
                             >
                                 <h1 
                                     className="font-semibold truncate max-w-xs"
-                                    style={{ color: currentTheme.foreground }}
+                                    style={{ color: `${currentTheme.foreground}90` }}
                                 >
                                     {series.title}
                                 </h1>
@@ -303,7 +301,7 @@ function ChapterShowContent({
                             {prevChapter && (
                                 <Link
                                     href={route('chapters.show', [series.slug, prevChapter.chapter_number])}
-                                    className="p-2 rounded transition-colors hover:opacity-70"
+                                    className="p-2 rounded transition-all reading-bar-btn"
                                     style={{ color: currentTheme.foreground }}
                                     title={`Previous: ${prevChapter.title}`}
                                 >
@@ -317,7 +315,7 @@ function ChapterShowContent({
                                 {/* Both Mobile and Desktop: Simple burger menu for chapter list */}
                                 <button
                                     onClick={() => setShowChapterList(!showChapterList)}
-                                    className="p-2 rounded transition-colors hover:opacity-70"
+                                    className="p-2 rounded transition-all reading-bar-btn"
                                     style={{
                                         color: currentTheme.foreground
                                     }}
@@ -364,7 +362,7 @@ function ChapterShowContent({
                             {nextChapter && (
                                 <Link
                                     href={route('chapters.show', [series.slug, nextChapter.chapter_number])}
-                                    className="p-2 rounded transition-colors hover:opacity-70"
+                                    className="p-2 rounded transition-all reading-bar-btn"
                                     style={{ color: currentTheme.foreground }}
                                     title={`Next: ${nextChapter.title}`}
                                 >
@@ -381,7 +379,7 @@ function ChapterShowContent({
                             <button
                                 ref={readerSettingsButtonRef}
                                 onClick={() => setShowReaderSettings(true)}
-                                className="p-2 rounded transition-colors hover:opacity-70"
+                                className="p-2 rounded transition-all reading-bar-btn"
                                 style={{ color: currentTheme.foreground }}
                                 title="Reader settings"
                             >

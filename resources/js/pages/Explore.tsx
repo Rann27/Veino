@@ -191,7 +191,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                             {/* Filter Toggle */}
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="px-4 py-2 border rounded-lg transition-colors flex items-center gap-2"
+                                className="btn-ripple interactive-scale px-4 py-2 border rounded-lg focus-ring flex items-center gap-2"
                                 style={{
                                     backgroundColor: showFilters ? currentTheme.foreground : 'transparent',
                                     borderColor: `${currentTheme.foreground}30`,
@@ -207,7 +207,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                             {/* Search Button */}
                             <button
                                 onClick={handleSearch}
-                                className="px-6 py-2 rounded-lg transition-colors"
+                                className="btn-ripple interactive-scale px-6 py-2 rounded-lg focus-ring"
                                 style={{
                                     backgroundColor: currentTheme.foreground,
                                     color: currentTheme.background
@@ -220,7 +220,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                         {/* Expanded Filters */}
                         {showFilters && (
                             <div 
-                                className="mt-6 pt-6 border-t"
+                                className="animate-in fade-in-up mt-6 pt-6 border-t"
                                 style={{ borderColor: `${currentTheme.foreground}20` }}
                             >
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -330,14 +330,14 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
 
                     {/* Series Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5 mb-8">
-                        {series.data.map((item) => (
+                        {series.data.map((item, index) => (
                             <Link
                                 key={item.id}
                                 href={route('series.show', item.slug)}
-                                className="group"
+                                className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 6)}`}
                             >
                                 <div 
-                                    className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
+                                    className="card-hover rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
                                     style={{
                                         backgroundColor: currentTheme.name === 'Light' 
                                             ? 'rgba(248, 250, 252, 0.8)' 
@@ -352,7 +352,8 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                             : currentTheme.name === 'Solarized'
                                             ? 'rgba(253, 246, 227, 0.6)'
                                             : 'rgba(30, 41, 59, 0.6)',
-                                        border: `1px solid ${currentTheme.foreground}10`
+                                        border: `1px solid ${currentTheme.foreground}10`,
+                                        boxShadow: `0 1px 3px ${currentTheme.foreground}10`
                                     }}
                                 >
                                     <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
@@ -388,9 +389,9 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                     
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className="flex items-center">
-                                            <span className="text-yellow-400">★</span>
+                                            <span className="star-icon text-yellow-400 inline-block">★</span>
                                             <span 
-                                                className="text-xs ml-1"
+                                                className="text-xs ml-1 font-medium"
                                                 style={{ color: `${currentTheme.foreground}80` }}
                                             >
                                                 {item.rating || 'N/A'}

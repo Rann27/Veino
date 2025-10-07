@@ -243,6 +243,16 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     const displayedChapters = sortedChapters;
 
     const handleBookmarkToggle = async () => {
+        // Check if user is logged in first - Show message instead of redirect
+        if (!auth?.user) {
+            setNotificationMessage('Please log in to bookmark this series');
+            setShowNotification(true);
+            setTimeout(() => {
+                setShowNotification(false);
+            }, 3000);
+            return;
+        }
+
         try {
             const url = route(bookmarked ? 'bookmarks.destroy' : 'bookmarks.store', series.slug);
             const method = bookmarked ? 'DELETE' : 'POST';
@@ -262,6 +272,14 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                 setShowNotification(true);
                 
                 // Hide notification after 3 seconds
+                setTimeout(() => {
+                    setShowNotification(false);
+                }, 3000);
+            } else {
+                // Handle error responses from server
+                const errorData = await response.json().catch(() => ({}));
+                setNotificationMessage(errorData.message || 'An error occurred. Please try again.');
+                setShowNotification(true);
                 setTimeout(() => {
                     setShowNotification(false);
                 }, 3000);
@@ -359,7 +377,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                     <div className="flex flex-col gap-3">
                                         <Link
                                             href={route('chapters.show', [series.slug, 1])}
-                                            className="px-6 py-3 rounded-lg font-medium transition-colors hover:opacity-90 text-center"
+                                            className="px-6 py-3 rounded-lg font-medium transition-all interactive-scale text-center"
                                             style={{
                                                 backgroundColor: currentTheme.foreground,
                                                 color: currentTheme.background
@@ -368,11 +386,11 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             Read First Chapter
                                         </Link>
                                         <button 
-                                            className="px-6 py-3 border rounded-lg font-medium transition-colors hover:opacity-70 flex items-center justify-center gap-2"
+                                            className="px-6 py-3 border rounded-lg font-medium transition-all interactive-scale flex items-center justify-center gap-2"
                                             style={{
-                                                borderColor: bookmarked ? '#3B82F6' : `${currentTheme.foreground}30`,
-                                                color: bookmarked ? '#3B82F6' : currentTheme.foreground,
-                                                backgroundColor: bookmarked ? '#3B82F610' : 'transparent'
+                                                borderColor: bookmarked ? currentTheme.foreground : `${currentTheme.foreground}30`,
+                                                color: currentTheme.foreground,
+                                                backgroundColor: bookmarked ? `${currentTheme.foreground}10` : 'transparent'
                                             }}
                                             onClick={handleBookmarkToggle}
                                         >
@@ -631,7 +649,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                 <Link
                                                     key={chapter.id}
                                                     href={route('chapters.show', [series.slug, chapter.chapter_number])}
-                                                    className="block p-4 transition-colors hover:opacity-70"
+                                                    className="block p-4 transition-all chapter-item rounded-lg"
                                                     style={{ borderBottomColor: `${currentTheme.foreground}10` }}
                                                 >
                                                     <div className="flex items-center justify-between">
@@ -825,7 +843,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                 <Link
                                                     key={related.id}
                                                     href={route('series.show', related.slug)}
-                                                    className="flex gap-3 p-2 rounded-lg transition-colors hover:opacity-70"
+                                                    className="flex gap-3 p-2 rounded-lg transition-all recommendation-card"
                                                 >
                                                     <div className="w-16 h-20 flex-shrink-0">
                                                         {related.cover_url ? (

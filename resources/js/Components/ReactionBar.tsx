@@ -146,7 +146,7 @@ export default function ReactionBar({
     }
 
     return (
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-6 animate-in fade-in-up">
             {/* Total Reactions Count */}
             <div 
                 className="text-lg font-semibold"
@@ -166,9 +166,9 @@ export default function ReactionBar({
                             key={type}
                             onClick={() => handleReaction(type)}
                             disabled={isSubmitting}
-                            className={`flex flex-col items-center gap-2 transition-all ${
-                                isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-110'
-                            } ${isActive ? 'scale-110' : ''}`}
+                            className={`reaction-btn flex flex-col items-center gap-2 ${
+                                isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                            } ${isActive ? 'reacted' : ''}`}
                         >
                             {/* Reaction Image with Badge */}
                             <div className="relative">
@@ -179,7 +179,6 @@ export default function ReactionBar({
                                     style={{ 
                                         width: imageSize, 
                                         height: imageSize,
-                                        filter: isActive ? 'drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))' : 'none',
                                     }}
                                 />
 
@@ -188,8 +187,8 @@ export default function ReactionBar({
                                     <div 
                                         className="absolute -top-1 -right-1 min-w-[20px] h-5 flex items-center justify-center rounded-full text-[11px] font-bold px-1.5"
                                         style={{
-                                            backgroundColor: '#3b82f6',
-                                            color: '#ffffff',
+                                            backgroundColor: currentTheme.foreground,
+                                            color: currentTheme.background,
                                             boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
                                         }}
                                     >
@@ -202,7 +201,7 @@ export default function ReactionBar({
                             <span 
                                 className={`text-xs font-medium ${currentSize.text}`}
                                 style={{ 
-                                    color: isActive ? '#3b82f6' : `${currentTheme.foreground}80`,
+                                    color: isActive ? currentTheme.foreground : `${currentTheme.foreground}80`,
                                 }}
                             >
                                 {reactionLabels[type as keyof typeof reactionLabels]}

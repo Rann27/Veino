@@ -84,17 +84,57 @@
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-/* Animation utilities */
+/* ===== PERFORMANCE-OPTIMIZED ANIMATIONS ===== */
+/* Using transform and opacity only for 60fps animations */
+
 @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-@keyframes zoom-in {
-    from { transform: scale(0.95); }
-    to { transform: scale(1); }
+@keyframes fade-in-up {
+    from { 
+        opacity: 0; 
+        transform: translateY(10px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0);
+    }
 }
 
+@keyframes zoom-in {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes slide-in-right {
+    from { 
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounce-subtle {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+@keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* Base animation class */
 .animate-in {
     animation-duration: 200ms;
     animation-timing-function: ease-out;
@@ -105,9 +145,286 @@
     animation-name: fade-in;
 }
 
+.fade-in-up {
+    animation-name: fade-in-up;
+}
+
 .zoom-in-95 {
     animation-name: zoom-in;
 }
+
+.slide-in-right {
+    animation-name: slide-in-right;
+}
+
+/* ========================================
+   HOVER INVERT EFFECTS - VeiNovel Signature Style
+   ======================================== */
+
+/* Card hover invert - Background and foreground swap */
+.card-hover:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+    border-color: var(--theme-fg) !important;
+}
+
+.card-hover:hover h1,
+.card-hover:hover h2,
+.card-hover:hover h3,
+.card-hover:hover h4,
+.card-hover:hover h5,
+.card-hover:hover h6,
+.card-hover:hover p,
+.card-hover:hover span,
+.card-hover:hover div {
+    color: var(--theme-bg) !important;
+}
+
+.card-hover:hover img {
+    filter: brightness(0.95);
+}
+
+/* Interactive elements - buttons, links, tags */
+.interactive-scale:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+    border-color: var(--theme-fg) !important;
+}
+
+.interactive-scale:hover svg {
+    color: var(--theme-bg) !important;
+}
+
+/* Button ripple effect with color invert */
+.btn-ripple:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+.btn-ripple:hover span,
+.btn-ripple:hover svg {
+    color: var(--theme-bg) !important;
+}
+
+/* Genre tags hover */
+.genre-tag:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+/* Navbar links hover */
+.nav-link:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+/* Chapter list item hover */
+.chapter-item:hover {
+    background-color: var(--theme-fg) !important;
+}
+
+.chapter-item:hover * {
+    color: var(--theme-bg) !important;
+}
+
+/* Recommendation card hover */
+.recommendation-card:hover {
+    background-color: var(--theme-fg) !important;
+}
+
+.recommendation-card:hover h3,
+.recommendation-card:hover p,
+.recommendation-card:hover span,
+.recommendation-card:hover div {
+    color: var(--theme-bg) !important;
+}
+
+.recommendation-card:hover img {
+    filter: brightness(0.95);
+}
+
+/* Reading bar buttons hover */
+.reading-bar-btn:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+.reading-bar-btn:hover svg {
+    color: var(--theme-bg) !important;
+}
+
+/* Reaction bar - Outer glow instead of background */
+.reaction-btn {
+    transition: all 0.2s ease;
+}
+
+.reaction-btn:hover {
+    filter: drop-shadow(0 0 12px var(--theme-fg));
+    transform: scale(1.15);
+}
+
+.reaction-btn.reacted {
+    filter: drop-shadow(0 0 8px var(--theme-fg));
+}
+
+.card-hover-subtle {
+    transition: transform 0.15s ease-out,
+                background-color 0.2s ease-out,
+                color 0.2s ease-out;
+    will-change: transform;
+}
+
+.card-hover-subtle:hover {
+    transform: translateY(-2px);
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+/* ===== INTERACTIVE ELEMENTS WITH INVERT ===== */
+.interactive-scale {
+    transition: transform 0.15s ease-out,
+                background-color 0.2s ease-out,
+                color 0.2s ease-out,
+                border-color 0.2s ease-out;
+    will-change: transform;
+}
+
+.interactive-scale:active {
+    transform: scale(0.97);
+}
+
+.interactive-scale:hover {
+    transform: scale(1.02);
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+}
+
+.interactive-scale:hover span,
+.interactive-scale:hover svg {
+    color: var(--theme-bg) !important;
+}
+
+/* ===== SKELETON LOADING (LIGHTWEIGHT) ===== */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        rgba(var(--theme-fg-rgb, 0, 0, 0), 0.05) 25%,
+        rgba(var(--theme-fg-rgb, 0, 0, 0), 0.1) 50%,
+        rgba(var(--theme-fg-rgb, 0, 0, 0), 0.05) 75%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+}
+
+/* ===== ENHANCED FOCUS STATES (ACCESSIBILITY) ===== */
+.focus-ring:focus {
+    outline: 2px solid var(--theme-fg);
+    outline-offset: 2px;
+    opacity: 0.5;
+}
+
+.focus-ring:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* ===== BACKDROP BLUR (MODERN BROWSERS ONLY) ===== */
+@supports (backdrop-filter: blur(10px)) {
+    .backdrop-blur-theme {
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+}
+
+/* ===== SMOOTH REVEAL ON SCROLL ===== */
+.reveal-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.reveal-on-scroll.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ===== GENRE TAG ENHANCEMENTS WITH INVERT ===== */
+.genre-tag {
+    transition: all 0.2s ease-out;
+    will-change: transform, background-color;
+}
+
+.genre-tag:hover {
+    transform: translateY(-1px);
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+    border: 1px solid var(--theme-fg) !important;
+}
+
+/* ===== BUTTON RIPPLE EFFECT WITH INVERT ===== */
+.btn-ripple {
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.2s ease-out,
+                color 0.2s ease-out,
+                border-color 0.2s ease-out;
+}
+
+.btn-ripple:hover {
+    background-color: var(--theme-fg) !important;
+    color: var(--theme-bg) !important;
+    border-color: var(--theme-fg) !important;
+}
+
+.btn-ripple:hover svg {
+    color: var(--theme-bg) !important;
+}
+
+.btn-ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-ripple:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* ===== RATING STARS ===== */
+.star-icon {
+    transition: transform 0.2s ease-out, fill 0.2s ease-out;
+}
+
+.star-icon:hover {
+    transform: scale(1.2) rotate(12deg);
+}
+
+/* ===== DIVIDER WITH THEME ===== */
+.divider-theme {
+    height: 1px;
+    background: linear-gradient(
+        to right,
+        transparent,
+        var(--theme-fg),
+        transparent
+    );
+    opacity: 0.1;
+}
+
+/* ===== STAGGER ANIMATION DELAYS ===== */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
 
 /* Chapter Content Styling */
 .chapter-content {

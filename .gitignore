@@ -26,3 +26,9 @@ yarn-error.log
 # Ignore all markdown files except README
 *.md
 !README.md
+
+# Ignore deployment archives
+*.zip
+*.rar
+*.7z
+*.tar.gz

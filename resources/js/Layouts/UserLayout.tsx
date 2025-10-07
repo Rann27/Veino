@@ -224,7 +224,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
             <div className="flex-shrink-0">
               <Link 
                 href="/" 
-                className="flex items-center space-x-3 text-2xl font-semibold" 
+                className="flex items-center space-x-3 text-2xl font-semibold nav-link rounded-lg px-3 py-2" 
                 style={{ 
                   fontFamily: 'Poppins, sans-serif',
                   color: currentTheme.foreground
@@ -239,21 +239,21 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               <div className="ml-10 flex items-baseline space-x-8">
                 <Link 
                   href="/" 
-                  className="px-3 py-2 text-sm font-medium transition-colors hover:opacity-70"
+                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
                   Home
                 </Link>
                 <Link 
                   href="/explore" 
-                  className="px-3 py-2 text-sm font-medium transition-colors hover:opacity-70"
+                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
                   Explore
                 </Link>
                 <Link 
                   href="/buy-coins" 
-                  className="px-3 py-2 text-sm font-medium transition-colors hover:opacity-70"
+                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
                   Buy Coins
@@ -275,7 +275,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               {/* Search Button */}
               <button
                 onClick={toggleSearch}
-                className="p-2 transition-colors hover:opacity-70"
+                className="btn-ripple interactive-scale p-2 rounded-lg focus-ring"
                 style={{ color: currentTheme.foreground }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +287,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               <div className="md:hidden">
                 <button
                   onClick={toggleMobileSidebar}
-                  className="p-2 transition-colors hover:opacity-70"
+                  className="btn-ripple interactive-scale p-2 rounded-lg focus-ring"
                   style={{ color: currentTheme.foreground }}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

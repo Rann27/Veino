@@ -299,7 +299,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                   {heroSeries[currentHero].genres.slice(0, 3).map((genre) => (
                     <span
                       key={genre.id}
-                      className="px-2 py-1 text-xs font-medium rounded-full"
+                      className="genre-tag px-2 py-1 text-xs font-medium rounded-full cursor-default"
                       style={{
                         backgroundColor: currentTheme.name.toLowerCase() === 'light' 
                           ? 'rgba(45, 55, 72, 0.15)' 
@@ -389,14 +389,14 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
             Popular Series
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
-            {popularSeries.map((series) => (
+            {popularSeries.map((series, index) => (
               <Link
                 key={series.id}
                 href={`/series/${series.slug}`}
-                className="group"
+                className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 6)}`}
               >
                 <div 
-                  className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
+                  className="card-hover rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
                   style={{
                     backgroundColor: currentTheme.name === 'Light' 
                       ? 'rgba(248, 250, 252, 0.8)' 
@@ -411,7 +411,8 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                       : currentTheme.name === 'Solarized'
                       ? 'rgba(253, 246, 227, 0.6)'
                       : 'rgba(30, 41, 59, 0.6)',
-                    border: `1px solid ${currentTheme.foreground}10`
+                    border: `1px solid ${currentTheme.foreground}10`,
+                    boxShadow: `0 1px 3px ${currentTheme.foreground}10`
                   }}
                 >
                   <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
@@ -453,7 +454,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                           .map((c: any, idx: number) => (
                             <div
                               key={`fallback-${idx}`}
-                              className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                              className="interactive-scale flex items-center justify-between gap-2 p-1.5 rounded transition-all cursor-pointer"
                               style={{ backgroundColor: `${currentTheme.foreground}05` }}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -504,9 +505,9 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
 
                   {/* Rating */}
                   <div className="flex items-center mt-auto">
-                    <span className="text-yellow-500 text-sm">★</span>
+                    <span className="star-icon text-yellow-500 text-sm inline-block">★</span>
                     <span 
-                      className="text-sm ml-1"
+                      className="text-sm ml-1 font-medium"
                       style={{ color: `${currentTheme.foreground}80` }}
                     >
                       {series.rating}
@@ -532,14 +533,14 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
             Latest Updates
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
-            {latestUpdates.map((series) => (
+            {latestUpdates.map((series, index) => (
               <Link
                 key={series.id}
                 href={`/series/${series.slug}`}
-                className="group"
+                className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 6)}`}
               >
                 <div 
-                  className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
+                  className="card-hover rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
                   style={{
                     backgroundColor: currentTheme.name === 'Light' 
                       ? 'rgba(248, 250, 252, 0.8)' 
@@ -554,7 +555,8 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                       : currentTheme.name === 'Solarized'
                       ? 'rgba(253, 246, 227, 0.6)'
                       : 'rgba(30, 41, 59, 0.6)',
-                    border: `1px solid ${currentTheme.foreground}10`
+                    border: `1px solid ${currentTheme.foreground}10`,
+                    boxShadow: `0 1px 3px ${currentTheme.foreground}10`
                   }}
                 >
                   <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
@@ -674,14 +676,14 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
             New Series
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
-            {newSeries.map((series) => (
+            {newSeries.map((series, index) => (
               <Link
                 key={series.id}
                 href={`/series/${series.slug}`}
-                className="group"
+                className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 6)}`}
               >
                 <div 
-                  className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
+                  className="card-hover rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
                   style={{
                     backgroundColor: currentTheme.name === 'Light' 
                       ? 'rgba(248, 250, 252, 0.8)' 
@@ -696,7 +698,8 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
                       : currentTheme.name === 'Solarized'
                       ? 'rgba(253, 246, 227, 0.6)'
                       : 'rgba(30, 41, 59, 0.6)',
-                    border: `1px solid ${currentTheme.foreground}10`
+                    border: `1px solid ${currentTheme.foreground}10`,
+                    boxShadow: `0 1px 3px ${currentTheme.foreground}10`
                   }}
                 >
                   <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
