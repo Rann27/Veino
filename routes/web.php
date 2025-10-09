@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\SeriesController;
 use App\Http\Controllers\Admin\TransactionHistoryController;
+use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Auth;
@@ -73,12 +74,22 @@ Route::post('/logout', function (Illuminate\Http\Request $request) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore');
 
-// Buy Coins route
+// Membership routes
+Route::middleware('auth')->group(function () {
+    Route::get('/membership', [MembershipController::class, 'index'])->name('membership.index');
+    Route::post('/membership/purchase', [MembershipController::class, 'purchase'])->name('membership.purchase');
+    Route::get('/membership/status/{history}', [MembershipController::class, 'status'])->name('membership.status');
+    
+    // Simulation endpoint for testing (only in local environment)
+    Route::get('/membership/simulate/{history}', [MembershipController::class, 'simulateSuccess'])->name('membership.simulate');
+});
+
+// Membership webhooks (public)
+Route::post('/membership/webhook/{provider}', [MembershipController::class, 'webhook'])->name('membership.webhook');
+
+// Buy Coins route (kept for backward compatibility)
 Route::get('/buy-coins', function () {
-    $coinPackages = \App\Models\CoinPackage::orderBy('coin_amount')->get();
-    return Inertia::render('BuyCoins', [
-        'coinPackages' => $coinPackages
-    ]);
+    return redirect()->route('membership');
 })->name('buy-coins');
 
 // Search routes

@@ -20,14 +20,14 @@ class PayPalService
         $this->clientSecret = config('services.paypal.client_secret');
         $this->mode = config('services.paypal.mode', 'sandbox');
         
-        // Validate required configuration
-        if (!$this->clientId || !$this->clientSecret) {
-            throw new \Exception('PayPal configuration missing. Please set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in .env file.');
-        }
-        
         $this->baseUrl = $this->mode === 'live' 
             ? 'https://api.paypal.com'
             : 'https://api.sandbox.paypal.com';
+    }
+
+    public function isConfigured(): bool
+    {
+        return !empty($this->clientId) && !empty($this->clientSecret);
     }
 
     private function getAccessToken()
@@ -202,6 +202,7 @@ class PayPalService
                 
                 return [
                     'success' => true,
+                    'status' => $result['status'] ?? 'COMPLETED',
                     'capture_id' => $result['purchase_units'][0]['payments']['captures'][0]['id'] ?? null,
                     'data' => $result
                 ];
@@ -270,10 +271,5 @@ class PayPalService
             }
         }
         return null;
-    }
-
-    public function isConfigured()
-    {
-        return !empty($this->clientId) && !empty($this->clientSecret);
     }
 }

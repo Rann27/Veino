@@ -1,0 +1,107 @@
+                                {purchase.payment_method}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between">
+                            <span 
+                                className="opacity-70"
+                                style={{ color: currentTheme.foreground }}
+                            >
+                                Status:
+                            </span>
+                            <span 
+                                className="font-semibold capitalize px-3 py-1 rounded-full text-sm"
+                                style={{ 
+                                    backgroundColor: `${getStatusColor()}20`,
+                                    color: getStatusColor()
+                                }}
+                            >
+                                {purchase.status}
+                            </span>
+                        </div>
+
+                        {purchase.transaction_id && (
+                            <div className="flex justify-between">
+                                <span 
+                                    className="opacity-70"
+                                    style={{ color: currentTheme.foreground }}
+                                >
+                                    Payment ID:
+                                </span>
+                                <span 
+                                    className="font-mono text-sm"
+                                    style={{ color: currentTheme.foreground }}
+                                >
+                                    {purchase.transaction_id}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="space-y-3">
+                        {purchase.status === 'pending' && paymentUrl && (
+                            <a
+                                href={paymentUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full py-3 rounded-lg font-semibold text-center transition-all"
+                                style={{ 
+                                    backgroundColor: SHINY_PURPLE,
+                                    color: '#fff'
+                                }}
+                            >
+                                Complete Payment
+                            </a>
+                        )}
+
+                        {purchase.status === 'completed' && (
+                            <div 
+                                className="text-center p-4 rounded-lg"
+                                style={{ backgroundColor: `${SHINY_PURPLE}15` }}
+                            >
+                                <p 
+                                    className="text-sm"
+                                    style={{ color: currentTheme.foreground }}
+                                >
+                                    Redirecting in <span 
+                                        className="font-bold text-xl"
+                                        style={{ color: SHINY_PURPLE }}
+                                    >
+                                        {countdown}
+                                    </span> seconds...
+                                </p>
+                            </div>
+                        )}
+
+                        <button
+                            onClick={() => router.visit('/membership' + (purchase.status === 'completed' ? '?success=true' : ''))}
+                            className="w-full py-3 rounded-lg font-semibold transition-all border-2"
+                            style={{
+                                backgroundColor: 'transparent',
+                                borderColor: currentTheme.foreground,
+                                color: currentTheme.foreground
+                            }}
+                        >
+                            {purchase.status === 'completed' ? 'Go to Membership' : 'Back to Membership'}
+                        </button>
+                    </div>
+
+                    {/* Help Text */}
+                    {purchase.status === 'pending' && (
+                        <p 
+                            className="text-center text-sm mt-6 opacity-70"
+                            style={{ color: currentTheme.foreground }}
+                        >
+                            Having trouble? Contact our support team for assistance.
+                        </p>
+                    )}
+                </div>
+            </div>
+        </>
+    );
+}
+
+export default function MembershipStatus(props: Props) {
+    return <MembershipStatusContent {...props} />;
+}

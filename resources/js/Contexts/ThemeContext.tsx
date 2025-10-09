@@ -9,6 +9,9 @@ export interface ThemePreset {
     description: string;
 }
 
+// Universal color for Premium features
+export const SHINY_PURPLE = '#a78bfa';
+
 export interface ReaderSettings {
     fontFamily: string;
     fontSize: number;

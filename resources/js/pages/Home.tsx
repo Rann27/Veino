@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
-import { useTheme } from '@/Contexts/ThemeContext';
+import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 
 interface Genre {
   id: number;
@@ -56,7 +56,19 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
   const [startX, setStartX] = useState(0);
   const [currentX, setCurrentX] = useState(0);
   const [hasMovedMouse, setHasMovedMouse] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const { currentTheme } = useTheme();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('premium') === 'activated') {
+      setShowPremiumModal(true);
+      params.delete('premium');
+      const newSearch = params.toString();
+      const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   // Helper function to format chapter display
   const formatChapterDisplay = (chapter: Chapter): string => {
@@ -239,6 +251,105 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
         <meta name="author" content="VeiNovel" />
         <link rel="canonical" href="https://veinovel.com" />
       </Head>
+
+      {showPremiumModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}
+          onClick={() => setShowPremiumModal(false)}
+        >
+          <div
+            className="relative max-w-lg w-full rounded-3xl overflow-hidden border-2 shadow-3xl"
+            style={{
+              borderColor: `${SHINY_PURPLE}80`,
+              background: `linear-gradient(155deg, ${SHINY_PURPLE}33 0%, rgba(17, 24, 39, 0.9) 100%)`,
+              boxShadow: `0 20px 60px ${SHINY_PURPLE}50`
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute inset-0 pointer-events-none">
+              <svg className="absolute inset-0 w-full h-full opacity-40" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <radialGradient id="premiumGlow" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor={`${SHINY_PURPLE}`} stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </radialGradient>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#premiumGlow)" />
+              </svg>
+            </div>
+
+            <div className="relative p-8 sm:p-10 text-center space-y-6">
+              <div className="flex justify-center">
+                <div
+                  className="relative w-24 h-24 rounded-full flex items-center justify-center"
+                  style={{
+                    background: `${SHINY_PURPLE}26`,
+                    boxShadow: `0 0 40px ${SHINY_PURPLE}6b`
+                  }}
+                >
+                  <svg className="w-14 h-14" viewBox="0 0 64 64" fill="none">
+                    <defs>
+                      <linearGradient id="premiumDiamond" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f0abfc" />
+                        <stop offset="50%" stopColor="#c084fc" />
+                        <stop offset="100%" stopColor="#a855f7" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M32 4L8 24l24 36 24-36L32 4z" fill="url(#premiumDiamond)" />
+                  </svg>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="text-3xl sm:text-4xl font-black tracking-tight" style={{ color: '#fdf2ff' }}>
+                  Congratulations!
+                </h2>
+                <p className="text-lg" style={{ color: '#efe7ff' }}>
+                  Your Premium membership is now active. Enjoy uninterrupted reading & exclusive perks.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                {[
+                  'Unlimited access to all premium chapters',
+                  'Ad-free immersive reading experience',
+                  'Exclusive badge and early releases'
+                ].map((feature, index) => (
+                  <div
+                    key={index}
+                    className="rounded-2xl p-4 border"
+                    style={{
+                      borderColor: `${SHINY_PURPLE}55`,
+                      backgroundColor: `${SHINY_PURPLE}10`,
+                      color: '#f8f5ff'
+                    }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 mt-0.5" fill="#bbf7d0" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm leading-relaxed">{feature}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowPremiumModal(false)}
+                className="w-full py-3 mt-2 rounded-xl font-semibold transition-transform transform hover:-translate-y-0.5"
+                style={{
+                  background: `linear-gradient(120deg, ${SHINY_PURPLE} 0%, #a855f7 100%)`,
+                  color: '#ffffff',
+                  boxShadow: `0 12px 30px ${SHINY_PURPLE}55`
+                }}
+              >
+                Start Exploring Premium Stories
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Hero Slider */}
       {heroSeries.length > 0 && (
