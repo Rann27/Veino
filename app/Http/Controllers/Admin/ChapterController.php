@@ -97,8 +97,7 @@ class ChapterController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_premium' => 'required|in:0,1,true,false', // Accept multiple formats
-            'coin_price' => 'nullable|integer|min:0', // Changed from min:1 to min:0
+            'is_premium' => 'required|boolean',
             'volume' => 'nullable|numeric|min:0',
             'chapter_number' => 'nullable|numeric|min:0',
             'use_volume' => 'nullable|boolean',
@@ -106,18 +105,12 @@ class ChapterController extends Controller
 
         $validated['series_id'] = $series->id;
         
-        // Ensure is_premium is treated as boolean regardless of input format
-        $validated['is_premium'] = in_array($validated['is_premium'], [1, '1', true, 'true']);
+        // Ensure is_premium is treated as boolean
+        $validated['is_premium'] = (bool) $validated['is_premium'];
         $validated['content'] = $this->sanitizeHtmlContent($validated['content']);
         
-        if (!$validated['is_premium']) {
-            $validated['coin_price'] = 0;
-        } else {
-            // For premium chapters, ensure coin_price is at least 1
-            if (!isset($validated['coin_price']) || $validated['coin_price'] < 1) {
-                $validated['coin_price'] = 45; // Default value
-            }
-        }
+        // Set coin_price to 0 (deprecated field, kept for backward compatibility)
+        $validated['coin_price'] = 0;
 
         // Use database transaction to prevent race conditions
         $maxRetries = 3;
@@ -183,25 +176,18 @@ class ChapterController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
-            'is_premium' => 'required|in:0,1,true,false', // Accept multiple formats
-            'coin_price' => 'nullable|integer|min:0', // Changed from min:1 to min:0
+            'is_premium' => 'required|boolean',
             'volume' => 'nullable|numeric|min:0',
             'chapter_number' => 'nullable|numeric|min:0',
             'use_volume' => 'nullable|boolean',
         ]);
 
-        // Ensure is_premium is treated as boolean regardless of input format
-        $validated['is_premium'] = in_array($validated['is_premium'], [1, '1', true, 'true']);
+        // Ensure is_premium is treated as boolean
+        $validated['is_premium'] = (bool) $validated['is_premium'];
         $validated['content'] = $this->sanitizeHtmlContent($validated['content']);
         
-        if (!$validated['is_premium']) {
-            $validated['coin_price'] = 0;
-        } else {
-            // For premium chapters, ensure coin_price is at least 1
-            if (!isset($validated['coin_price']) || $validated['coin_price'] < 1) {
-                $validated['coin_price'] = 45; // Default value
-            }
-        }
+        // Set coin_price to 0 (deprecated field, kept for backward compatibility)
+        $validated['coin_price'] = 0;
 
         // Handle volume/chapter_number logic for updates
         if (!empty($validated['volume'])) {

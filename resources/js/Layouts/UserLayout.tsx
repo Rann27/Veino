@@ -415,17 +415,35 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                       </div>
                       
                       <Link 
-                        href="/account/settings" 
-                        className="block px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        href="/account" 
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
                         style={{ color: currentTheme.foreground }}
                       >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="currentColor"/>
+                        </svg>
+                        Dashboard
+                      </Link>
+                      
+                      <Link 
+                        href="/account/settings" 
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+                        </svg>
                         Settings
                       </Link>
+                      
                       <Link 
                         href="/account/bookmarks" 
-                        className="block px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
                         style={{ color: currentTheme.foreground }}
                       >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z" fill="currentColor"/>
+                        </svg>
                         Bookmark
                       </Link>
                       
@@ -435,10 +453,13 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                           setShowThemeModal(true);
                           setShowAccountMenu(false);
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70"
                         style={{ color: currentTheme.foreground }}
                       >
-                        🎨 Theme Settings
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
+                        </svg>
+                        Theme Settings
                       </button>
                       
                       <div 
@@ -449,9 +470,12 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                           href="/logout"
                           method="post"
                           as="button"
-                          className="block w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70"
+                          className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70"
                           style={{ color: '#ef4444' }}
                         >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/>
+                          </svg>
                           Logout
                         </Link>
                       </div>
@@ -591,64 +615,113 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         {getUserInitials(auth.user.display_name)}
                       </div>
                     )}
-                    <div>
-                      <p className="font-medium" style={{ color: currentTheme.foreground }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate" style={{ color: currentTheme.foreground }}>
                         {auth.user.display_name}
                       </p>
-                      <p className="text-sm flex items-center gap-1" style={{ color: '#FFD700' }}>
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                        </svg>
-                        {auth.user.coins} Coins
-                      </p>
+                      {auth.user.membership_tier === 'premium' && auth.user.membership_expires_at && new Date(auth.user.membership_expires_at) > new Date() ? (
+                        <div className="text-xs flex items-center gap-1 mt-1" style={{ color: '#a78bfa' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <defs>
+                              <linearGradient id="diamondGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style={{ stopColor: '#c084fc', stopOpacity: 1 }} />
+                                <stop offset="50%" style={{ stopColor: '#e879f9', stopOpacity: 1 }} />
+                                <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+                              </linearGradient>
+                            </defs>
+                            <path 
+                              d="M12 2L3 9L12 22L21 9L12 2Z" 
+                              fill="url(#diamondGradientMobile)"
+                              stroke="#fff"
+                              strokeWidth="0.5"
+                            />
+                            <path 
+                              d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" 
+                              stroke="#fff" 
+                              strokeWidth="0.3" 
+                              opacity="0.6"
+                            />
+                          </svg>
+                          <span className="font-semibold">Premium Member</span>
+                        </div>
+                      ) : (
+                        <p className="text-xs mt-1" style={{ color: `${currentTheme.foreground}60` }}>
+                          Basic Member
+                        </p>
+                      )}
                     </div>
                   </div>
                   
                   <div className="space-y-2">
                     <Link
-                      href="/profile"
-                      className="block px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      href="/account"
+                      className="flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
                       style={{ 
                         color: currentTheme.foreground,
                         backgroundColor: `${currentTheme.foreground}05`
                       }}
                       onClick={toggleMobileSidebar}
                     >
-                      My Profile
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="currentColor"/>
+                      </svg>
+                      Dashboard
                     </Link>
                     <Link
-                      href="/bookmarks"
-                      className="block px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      href="/account/settings"
+                      className="flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
                       style={{ 
                         color: currentTheme.foreground,
                         backgroundColor: `${currentTheme.foreground}05`
                       }}
                       onClick={toggleMobileSidebar}
                     >
-                      My Bookmarks
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+                      </svg>
+                      Settings
+                    </Link>
+                    <Link
+                      href="/account/bookmarks"
+                      className="flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      style={{ 
+                        color: currentTheme.foreground,
+                        backgroundColor: `${currentTheme.foreground}05`
+                      }}
+                      onClick={toggleMobileSidebar}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z" fill="currentColor"/>
+                      </svg>
+                      Bookmark
                     </Link>
                     <button
                       onClick={() => {
                         setShowThemeModal(true);
                         toggleMobileSidebar();
                       }}
-                      className="block w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
                       style={{ 
                         color: currentTheme.foreground,
                         backgroundColor: `${currentTheme.foreground}05`
                       }}
                     >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
+                      </svg>
                       Theme Settings
                     </button>
                     <Link
                       href="/logout"
                       method="post"
                       as="button"
-                      className="block w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      className="flex items-center gap-3 w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
                       style={{ color: '#ef4444' }}
                       onClick={toggleMobileSidebar}
                     >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/>
+                      </svg>
                       Logout
                     </Link>
                   </div>

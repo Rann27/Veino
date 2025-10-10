@@ -73,7 +73,6 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     title: '',
     content: '',
     is_premium: false,
-    coin_price: 35,
     use_volume: false,
     volume: '',
     chapter_number: '',
@@ -131,7 +130,6 @@ export default function SeriesShow({ series }: SeriesShowProps) {
         title: chapter.title,
         content: chapter.content || '',
         is_premium: chapter.is_premium,
-        coin_price: chapter.coin_price,
         use_volume: !!chapter.volume,
         volume: chapter.volume ? chapter.volume.toString() : '',
         chapter_number: chapter.chapter_number.toString(),
@@ -142,7 +140,6 @@ export default function SeriesShow({ series }: SeriesShowProps) {
         title: '',
         content: '',
         is_premium: false,
-        coin_price: 35,
         use_volume: false,
         volume: '',
         chapter_number: '',
@@ -193,8 +190,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     const submitData = {
       title: chapterFormData.title,
       content: chapterFormData.content,
-      is_premium: chapterFormData.is_premium ? 1 : 0, // Convert boolean to integer
-      coin_price: chapterFormData.is_premium ? chapterFormData.coin_price : 0,
+      is_premium: chapterFormData.is_premium, // Send as boolean
       use_volume: chapterFormData.use_volume,
       volume: chapterFormData.use_volume && chapterFormData.volume ? parseFloat(chapterFormData.volume) : null,
       chapter_number: chapterFormData.chapter_number ? parseFloat(chapterFormData.chapter_number) : null,
@@ -516,8 +512,23 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                 {/* Type Badge */}
                 <div>
                   {chapter.is_premium ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                      🔒 {chapter.coin_price}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: '#a78bfa20', color: '#a78bfa' }}>
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none">
+                        <defs>
+                          <linearGradient id={`adminDiamond-${chapter.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style={{ stopColor: '#c084fc' }} />
+                            <stop offset="50%" style={{ stopColor: '#e879f9' }} />
+                            <stop offset="100%" style={{ stopColor: '#a78bfa' }} />
+                          </linearGradient>
+                        </defs>
+                        <path 
+                          d="M12 2L3 9L12 22L21 9L12 2Z" 
+                          fill={`url(#adminDiamond-${chapter.id})`}
+                          stroke="#fff"
+                          strokeWidth="0.5"
+                        />
+                      </svg>
+                      Premium
                     </span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -816,35 +827,50 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-4 p-3 bg-gray-50 rounded-md border border-gray-200">
-                  <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
-                    <input
-                      type="checkbox"
-                      checked={chapterFormData.is_premium}
-                      onChange={(e) => setChapterFormData(prev => ({
-                        ...prev,
-                        is_premium: e.target.checked,
-                        // If toggled ON and no price set (or 0), default to 35; if OFF, reset to 0
-                        coin_price: e.target.checked ? (prev.coin_price && prev.coin_price > 0 ? prev.coin_price : 35) : 0,
-                      }))}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                    />
-                    <span className="ml-2 text-sm text-gray-700 font-medium">Premium Chapter</span>
-                  </label>
-
-                  {chapterFormData.is_premium && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Coin Price</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={chapterFormData.coin_price}
-                        onChange={(e) => setChapterFormData(prev => ({ ...prev, coin_price: parseInt(e.target.value) }))}
-                        className="mt-1 block w-24 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                        placeholder="35"
+                {/* Premium Chapter Toggle */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-md border-2 border-purple-200">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                      <defs>
+                        <linearGradient id="premiumToggleDiamond" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#c084fc' }} />
+                          <stop offset="50%" style={{ stopColor: '#e879f9' }} />
+                          <stop offset="100%" style={{ stopColor: '#a78bfa' }} />
+                        </linearGradient>
+                      </defs>
+                      <path 
+                        d="M12 2L3 9L12 22L21 9L12 2Z" 
+                        fill="url(#premiumToggleDiamond)"
+                        stroke="#fff"
+                        strokeWidth="0.5"
                       />
+                      <path 
+                        d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" 
+                        stroke="#fff" 
+                        strokeWidth="0.3" 
+                        opacity="0.6"
+                      />
+                    </svg>
+                    <div>
+                      <span className="text-sm font-bold text-gray-900">Premium Chapter</span>
+                      <p className="text-xs text-gray-600">Requires Premium Membership to unlock</p>
                     </div>
-                  )}
+                  </div>
+                  
+                  {/* Toggle Switch */}
+                  <button
+                    type="button"
+                    onClick={() => setChapterFormData(prev => ({ ...prev, is_premium: !prev.is_premium }))}
+                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                      chapterFormData.is_premium ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform ${
+                        chapterFormData.is_premium ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

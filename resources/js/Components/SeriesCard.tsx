@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import PremiumDiamond from '@/Components/PremiumDiamond';
 
 interface Genre {
   id: number;
@@ -124,9 +125,7 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
                       {formatChapterDisplay(c)}
                     </span>
                     {c.is_premium && (
-                      <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                      </svg>
+                      <PremiumDiamond size={16} className="flex-shrink-0" />
                     )}
                   </div>
                 ));
@@ -153,9 +152,7 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
                   {formatChapterDisplay(c)}
                 </span>
                 {c.is_premium && (
-                  <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                  </svg>
+                  <PremiumDiamond size={16} className="flex-shrink-0" />
                 )}
               </div>
             ));

@@ -15,30 +15,58 @@ class AccountController extends Controller
     {
         $user = Auth::user();
         
-        // Mock data for now - in real implementation, you'd fetch from database
-        $recentReadings = [
-            // Example data structure
-            [
-                'series_slug' => 'example-series',
-                'series_title' => 'Example Series',
-                'chapter_number' => 5,
-                'chapter_title' => 'The Beginning',
-                'last_read' => now()->subHours(2)->toISOString(),
-                'progress' => 75
-            ]
+        // Get membership status
+        $membershipStatus = [
+            'is_premium' => $user->hasActiveMembership(),
+            'tier' => $user->hasActiveMembership() ? ucfirst($user->membership_tier) : null,
+            'expires_at' => $user->membership_expires_at ? $user->membership_expires_at->toISOString() : null,
         ];
         
-        $readingStats = [
-            'totalChaptersRead' => 42,
-            'totalSeriesFollowed' => 5,
-            'totalCoinsSpent' => 150,
-            'readingStreak' => 7
-        ];
+        // Get membership transactions (completed only)
+        $membershipTransactions = \App\Models\MembershipHistory::where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->orderBy('completed_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'invoice_number' => $transaction->invoice_number,
+                    'tier' => ucfirst($transaction->tier),
+                    'duration_days' => $transaction->duration_days,
+                    'amount_usd' => $transaction->amount_usd,
+                    'payment_method' => $transaction->payment_method,
+                    'status' => $transaction->status,
+                    'purchased_at' => $transaction->completed_at ? $transaction->completed_at->toISOString() : $transaction->created_at->toISOString(),
+                    'starts_at' => $transaction->starts_at ? $transaction->starts_at->toISOString() : null,
+                    'expires_at' => $transaction->expires_at ? $transaction->expires_at->toISOString() : null,
+                ];
+            });
         
-        return Inertia::render('Account/Dashboard', [
-            'user' => $user,
-            'recentReadings' => $recentReadings,
-            'readingStats' => $readingStats,
+        // Get reading history (last 10)
+        $readingHistory = \App\Models\ReadingHistory::where('user_id', $user->id)
+            ->with(['series', 'chapter'])
+            ->orderBy('last_read_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($history) {
+                return [
+                    'series_id' => $history->series_id,
+                    'series_title' => $history->series->title,
+                    'series_slug' => $history->series->slug,
+                    'series_cover_url' => $history->series->cover_image_url,
+                    'chapter_id' => $history->chapter_id,
+                    'chapter_number' => $history->chapter->chapter_number,
+                    'chapter_title' => $history->chapter->title,
+                    'last_read_at' => $history->last_read_at->toISOString(),
+                ];
+            });
+        
+        return Inertia::render('Account/UserDashboard', [
+            'user' => $user->append('avatar_url'),
+            'membershipStatus' => $membershipStatus,
+            'membershipTransactions' => $membershipTransactions,
+            'readingHistory' => $readingHistory,
         ]);
     }
     

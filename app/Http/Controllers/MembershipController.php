@@ -50,7 +50,6 @@ class MembershipController extends Controller
         $request->validate([
             'package_id' => 'required|exists:membership_packages,id',
             'payment_method' => 'required|in:paypal,cryptomus',
-            'email' => 'required|email',
         ]);
 
     $user = Auth::user();

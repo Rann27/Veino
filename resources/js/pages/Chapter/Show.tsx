@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ReaderSettingsModal from '@/Components/ReaderSettingsModal';
-import { useTheme } from '@/Contexts/ThemeContext';
+import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import CommentSection from '@/Components/CommentSection';
 import ReactionBar from '@/Components/ReactionBar';
+import PremiumDiamond from '@/Components/PremiumDiamond';
 
 // Sanitize HTML to remove conflicting color styles
 const sanitizeColorStyles = (html: string): string => {
@@ -55,8 +56,7 @@ interface Props {
     series: Series;
     chapter: Chapter;
     canAccess: boolean;
-    hasPurchased: boolean;
-    userCoins: number;
+    isPremiumMember: boolean;
     prevChapter: NavigationChapter | null;
     nextChapter: NavigationChapter | null;
     allChapters: ChapterOption[];
@@ -71,9 +71,8 @@ interface Props {
 function ChapterShowContent({ 
     series, 
     chapter, 
-    canAccess, 
-    hasPurchased,
-    userCoins,
+    canAccess,
+    isPremiumMember,
     prevChapter, 
     nextChapter, 
     allChapters,
@@ -129,118 +128,142 @@ function ChapterShowContent({
         };
     }, []);
 
-    // Ensure numeric values for calculations to prevent type coercion issues
-    const userCoinsNum = parseInt(String(userCoins)) || 0;
-    const coinPriceNum = parseInt(String(chapter.coin_price)) || 0;
-    const hasEnoughCoins = userCoinsNum >= coinPriceNum;
-    const coinsNeeded = Math.max(0, coinPriceNum - userCoinsNum);
-
-    const handlePurchase = () => {
-        // Double check with our pre-calculated values
-        if (!hasEnoughCoins) {
-            alert(`Insufficient coins! You need ${coinsNeeded} more coins.`);
-            return;
-        }
-        
-        router.post(route('chapters.purchase', [series.slug, chapter.chapter_number]), {}, {
-            onSuccess: () => {
-                // Reload the page to update the access status
-                router.reload();
-            },
-            onError: (errors) => {
-                console.error('Purchase failed:', errors);
-                alert('Purchase failed. Please try again.');
-            }
-        });
-    };
-
     const jumpToChapter = (chapterNumber: number) => {
         router.get(route('chapters.show', [series.slug, chapterNumber]));
         setShowChapterList(false);
     };
 
     if (!canAccess && chapter.is_premium) {
+        const SHINY_PURPLE = '#a78bfa';
+        
         return (
             <UserLayout>
-               
                 <div 
-                    className="min-h-screen pt-20"
+                    className="min-h-screen pt-20 relative overflow-hidden"
                     style={{ backgroundColor: currentTheme.background }}
                 >
-                    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {/* Premium Background Effect */}
+                    <div className="absolute inset-0 opacity-10">
                         <div 
-                            className="rounded-lg shadow-sm border p-8 text-center"
+                            className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl"
+                            style={{ backgroundColor: SHINY_PURPLE }}
+                        />
+                        <div 
+                            className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl"
+                            style={{ backgroundColor: '#e879f9' }}
+                        />
+                    </div>
+                    
+                    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+                        <div 
+                            className="rounded-2xl shadow-2xl border-2 p-10 text-center backdrop-blur-sm"
                             style={{
-                                backgroundColor: currentTheme.background,
-                                borderColor: `${currentTheme.foreground}20`
+                                backgroundColor: `${currentTheme.background}F5`,
+                                borderColor: SHINY_PURPLE,
+                                boxShadow: `0 0 40px ${SHINY_PURPLE}30`
                             }}
                         >
-                            <div className="mb-6">
-                                <svg 
-                                    className="w-16 h-16 mx-auto mb-4" 
-                                    fill="none" 
-                                    stroke="#f59e0b" 
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            {/* Premium Diamond Icon */}
+                            <div className="mb-6 flex justify-center">
+                                <svg className="w-24 h-24 animate-pulse" viewBox="0 0 24 24" fill="none">
+                                    <defs>
+                                        <linearGradient id="paywallDiamond" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style={{ stopColor: '#c084fc' }} />
+                                            <stop offset="50%" style={{ stopColor: '#e879f9' }} />
+                                            <stop offset="100%" style={{ stopColor: '#a78bfa' }} />
+                                        </linearGradient>
+                                        <radialGradient id="diamondGlow" cx="50%" cy="50%" r="50%">
+                                            <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.8 }} />
+                                            <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 0 }} />
+                                        </radialGradient>
+                                    </defs>
+                                    <circle cx="12" cy="12" r="10" fill="url(#diamondGlow)" opacity="0.3" />
+                                    <path 
+                                        d="M12 2L3 9L12 22L21 9L12 2Z" 
+                                        fill="url(#paywallDiamond)"
+                                        stroke="#fff"
+                                        strokeWidth="0.5"
+                                    />
+                                    <path 
+                                        d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" 
+                                        stroke="#fff" 
+                                        strokeWidth="0.3" 
+                                        opacity="0.6"
+                                    />
                                 </svg>
-                                <h1 
-                                    className="text-2xl font-bold mb-2"
+                            </div>
+                            
+                            <h1 
+                                className="text-3xl font-bold mb-3"
+                                style={{ 
+                                    color: SHINY_PURPLE,
+                                    textShadow: `0 0 20px ${SHINY_PURPLE}50`
+                                }}
+                            >
+                                Premium Chapter
+                            </h1>
+                            
+                            <p 
+                                className="text-lg mb-6"
+                                style={{ color: `${currentTheme.foreground}90` }}
+                            >
+                                This chapter is available exclusively for Premium Members
+                            </p>
+                            
+                            <div 
+                                className="mb-8 p-6 rounded-xl border"
+                                style={{
+                                    backgroundColor: `${SHINY_PURPLE}10`,
+                                    borderColor: `${SHINY_PURPLE}30`
+                                }}
+                            >
+                                <h3 
+                                    className="font-semibold text-lg mb-3"
                                     style={{ color: currentTheme.foreground }}
                                 >
-                                    Premium Chapter
-                                </h1>
-                                <p 
-                                    className="mb-2"
-                                    style={{ color: `${currentTheme.foreground}80` }}
-                                >
-                                    This chapter requires {coinPriceNum} coins to unlock
-                                </p>
-                                <p 
-                                    className="text-sm"
-                                    style={{ color: `${currentTheme.foreground}60` }}
-                                >
-                                    Your balance: {userCoinsNum} coins
-                                </p>
+                                    Unlock with Premium Membership
+                                </h3>
+                                <ul className="text-sm space-y-2 text-left max-w-sm mx-auto">
+                                    {[
+                                        'Unlimited access to all premium chapters',
+                                        'Ad-free reading experience',
+                                        'Early access to new chapters',
+                                        'Exclusive member perks'
+                                    ].map((benefit, index) => (
+                                        <li 
+                                            key={index}
+                                            className="flex items-start gap-2"
+                                            style={{ color: `${currentTheme.foreground}80` }}
+                                        >
+                                            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill={SHINY_PURPLE}>
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                            {benefit}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                             
                             <div className="space-y-4">
-                                {hasEnoughCoins ? (
-                                    <button
-                                        onClick={handlePurchase}
-                                        className="px-6 py-3 font-semibold rounded-lg transition-colors"
-                                        style={{
-                                            backgroundColor: '#f59e0b',
-                                            color: '#ffffff'
-                                        }}
-                                    >
-                                        Unlock for {coinPriceNum} Coins
-                                    </button>
-                                ) : (
-                                    <div className="space-y-3">
-                                        <p className="font-medium" style={{ color: '#ef4444' }}>
-                                            Insufficient coins! You need {coinsNeeded} more coins.
-                                        </p>
-                                        <Link
-                                            href="/buy-coins"
-                                            className="inline-block px-6 py-3 font-semibold rounded-lg transition-colors"
-                                            style={{
-                                                backgroundColor: currentTheme.foreground,
-                                                color: currentTheme.background
-                                            }}
-                                        >
-                                            Buy More Coins
-                                        </Link>
-                                    </div>
-                                )}
+                                <Link
+                                    href="/membership"
+                                    className="inline-block px-8 py-4 font-bold text-lg rounded-xl transition-all hover:scale-105 hover:shadow-xl"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #e879f9 100%)`,
+                                        color: '#ffffff',
+                                        boxShadow: `0 4px 20px ${SHINY_PURPLE}50`
+                                    }}
+                                >
+                                    Get Premium Membership
+                                </Link>
                                 
                                 <div className="text-sm">
                                     <Link 
-                                        href="/buy-coins" 
+                                        href={`/series/${series.slug}`}
                                         className="transition-colors hover:opacity-70"
-                                        style={{ color: '#3b82f6' }}
+                                        style={{ color: currentTheme.foreground }}
                                     >
-                                        Get more coins
+                                        ← Back to Series
                                     </Link>
                                 </div>
                             </div>
@@ -351,7 +374,9 @@ function ChapterShowContent({
                                                     {ch.chapter_number}: {ch.title}
                                                 </span>
                                                 {ch.is_premium && (
-                                                    <span className="text-xs ml-2 flex-shrink-0" style={{ color: '#f59e0b' }}>Premium</span>
+                                                    <span className="ml-2 flex-shrink-0">
+                                                        <PremiumDiamond size={16} />
+                                                    </span>
                                                 )}
                                             </button>
                                         ))}
@@ -425,13 +450,12 @@ function ChapterShowContent({
                                 <span 
                                     className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full"
                                     style={{
-                                        backgroundColor: '#fef3c7',
-                                        color: '#92400e'
+                                        backgroundColor: `${SHINY_PURPLE}15`,
+                                        color: SHINY_PURPLE,
+                                        border: `1px solid ${SHINY_PURPLE}40`
                                     }}
                                 >
-                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
+                                    <PremiumDiamond size={16} className="mr-1.5" />
                                     Premium Chapter
                                 </span>
                             </div>

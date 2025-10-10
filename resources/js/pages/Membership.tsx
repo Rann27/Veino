@@ -39,7 +39,6 @@ const getOriginalPrice = (price: number, discount: number): string => {
 function MembershipContent({ packages, flash, errors }: Props) {
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
     const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
-    const [email, setEmail] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(flash?.error ?? null);
@@ -95,8 +94,8 @@ function MembershipContent({ packages, flash, errors }: Props) {
         e.preventDefault();
         e.stopPropagation();
         
-        if (!selectedPackage || !selectedPayment || !email) {
-            setErrorMessage('Please choose a membership package, select a payment method, and enter your email.');
+        if (!selectedPackage || !selectedPayment) {
+            setErrorMessage('Please choose a membership package and select a payment method.');
             return;
         }
 
@@ -104,7 +103,6 @@ function MembershipContent({ packages, flash, errors }: Props) {
         router.post(route('membership.purchase'), {
             package_id: selectedPackage,
             payment_method: selectedPayment,
-            email,
         }, {
             preserveScroll: true,
             onStart: () => {
@@ -114,7 +112,6 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 const message =
                     extractMessage(formErrors.membership) ||
                     extractMessage(formErrors.error) ||
-                    extractMessage(formErrors.email) ||
                     extractMessage(Object.values(formErrors)[0]) ||
                     'We could not start the payment. Please try again.';
 
@@ -140,8 +137,6 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 setSelectedPackage={setSelectedPackage}
                 selectedPayment={selectedPayment}
                 setSelectedPayment={setSelectedPayment}
-                email={email}
-                setEmail={setEmail}
                 isProcessing={isProcessing}
                 showSuccess={showSuccess}
                 setShowSuccess={setShowSuccess}
@@ -161,8 +156,6 @@ function MembershipInner({
     setSelectedPackage,
     selectedPayment,
     setSelectedPayment,
-    email,
-    setEmail,
     isProcessing,
     showSuccess,
     setShowSuccess,
@@ -517,62 +510,15 @@ function MembershipInner({
                             </div>
                         </div>
 
-                        {/* Step 3: Email */}
-                        <div 
-                            className="rounded-xl p-6 border"
-                            style={{ 
-                                backgroundColor: `${currentTheme.foreground}05`,
-                                borderColor: `${currentTheme.foreground}20`
-                            }}
-                        >
-                            <div className="flex items-center gap-3 mb-6">
-                                <div 
-                                    className="w-8 h-8 rounded-full flex items-center justify-center font-bold"
-                                    style={{ 
-                                        backgroundColor: SHINY_PURPLE,
-                                        color: '#fff'
-                                    }}
-                                >
-                                    3
-                                </div>
-                                <h2 
-                                    className="text-xl font-semibold"
-                                    style={{ color: currentTheme.foreground }}
-                                >
-                                    Enter Your Email
-                                </h2>
-                            </div>
-
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="your.email@example.com"
-                                required
-                                className="w-full px-4 py-3 rounded-lg border-2 transition-all focus:outline-none"
-                                style={{
-                                    backgroundColor: currentTheme.background,
-                                    borderColor: `${currentTheme.foreground}20`,
-                                    color: currentTheme.foreground
-                                }}
-                            />
-                            <p 
-                                className="text-sm mt-2 opacity-70"
-                                style={{ color: currentTheme.foreground }}
-                            >
-                                We'll send your purchase confirmation and receipt to this email
-                            </p>
-                        </div>
-
                         {/* Buy Button */}
                         <button
                             type="submit"
-                            disabled={!selectedPackage || !selectedPayment || !email || isProcessing}
+                            disabled={!selectedPackage || !selectedPayment || isProcessing}
                             className="w-full py-4 rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{
                                 backgroundColor: SHINY_PURPLE,
                                 color: '#fff',
-                                boxShadow: selectedPackage && selectedPayment && email 
+                                boxShadow: selectedPackage && selectedPayment 
                                     ? `0 0 30px ${SHINY_PURPLE}60` 
                                     : 'none'
                             }}

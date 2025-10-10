@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
-import { useTheme } from '@/Contexts/ThemeContext';
+import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import CommentSection from '@/Components/CommentSection';
 import ReactionBar from '@/Components/ReactionBar';
 import EyeIcon from '@/Components/Icons/EyeIcon';
 import BookmarkIcon from '@/Components/Icons/BookmarkIcon';
 import CommentIcon from '@/Components/Icons/CommentIcon';
+import PremiumDiamond from '@/Components/PremiumDiamond';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -686,12 +687,12 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                         <span 
                                                                             className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
                                                                             style={{
-                                                                                backgroundColor: '#fef3c7',
-                                                                                color: '#d97706'
+                                                                                backgroundColor: `${SHINY_PURPLE}15`,
+                                                                                color: SHINY_PURPLE
                                                                             }}
                                                                         >
-                                                                            <LockIcon size={12} color="#d97706" />
-                                                                            {chapter.coin_price}
+                                                                            <PremiumDiamond size={14} />
+                                                                            <span className="font-semibold">Premium</span>
                                                                         </span>
                                                                     )}
                                                                     {chapter.is_owned && (
@@ -757,12 +758,12 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                     <span 
                                                                         className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
                                                                         style={{
-                                                                            backgroundColor: '#fef3c7',
-                                                                            color: '#d97706'
+                                                                            backgroundColor: `${SHINY_PURPLE}15`,
+                                                                            color: SHINY_PURPLE
                                                                         }}
                                                                     >
-                                                                        <LockIcon size={12} color="#d97706" />
-                                                                        {chapter.coin_price}
+                                                                        <PremiumDiamond size={14} />
+                                                                        <span className="font-semibold">Premium</span>
                                                                     </span>
                                                                 )}
                                                             </div>

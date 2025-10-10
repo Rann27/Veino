@@ -26,19 +26,26 @@ class UserChapterController extends Controller
         // Check if user can access this chapter
         $canAccess = true;
         $user = Auth::user();
-        $hasPurchased = false;
+        $isPremiumMember = false;
+        
+        // Log reading history for authenticated users
+        if ($user) {
+            \App\Models\ReadingHistory::updateOrCreateHistory(
+                $user->id,
+                $series->id,
+                $chapter->id
+            );
+        }
         
         if ($chapter->is_premium) {
             if (!$user) {
                 $canAccess = false;
             } else {
-                // Check if user has already purchased this chapter
-                $hasPurchased = ChapterPurchase::where('user_id', $user->id)
-                    ->where('chapter_id', $chapter->id)
-                    ->exists();
+                // Check if user has active premium membership
+                $isPremiumMember = $user->hasActiveMembership();
                 
-                // User can access if they have purchased the chapter
-                $canAccess = $hasPurchased;
+                // User can access if they have premium membership
+                $canAccess = $isPremiumMember;
             }
         }
 
@@ -62,57 +69,26 @@ class UserChapterController extends Controller
             'series' => $series,
             'chapter' => $chapter,
             'canAccess' => $canAccess,
-            'hasPurchased' => $hasPurchased,
-            'userCoins' => (int) ($user ? $user->coins : 0),
+            'isPremiumMember' => $isPremiumMember,
             'prevChapter' => $prevChapter,
             'nextChapter' => $nextChapter,
             'allChapters' => $allChapters,
         ]);
     }
 
+    /**
+     * Deprecated: Chapter purchases now handled through premium membership
+     * Redirects users to membership page
+     */
     public function purchase(Request $request, $seriesSlug, $chapterNumber)
     {
         $user = Auth::user();
         if (!$user) {
-            return back()->with('error', 'Please log in to purchase chapters.');
+            return redirect()->route('login')->with('error', 'Please log in to access premium chapters.');
         }
 
-        $series = Series::where('slug', $seriesSlug)->firstOrFail();
-        $chapter = Chapter::where('series_id', $series->id)
-            ->where('chapter_number', $chapterNumber)
-            ->firstOrFail();
-
-        if (!$chapter->is_premium) {
-            return back()->with('error', 'This chapter is free to read.');
-        }
-
-        // Check if already purchased
-        $hasPurchased = ChapterPurchase::where('user_id', $user->id)
-            ->where('chapter_id', $chapter->id)
-            ->exists();
-            
-        if ($hasPurchased) {
-            return back()->with('info', 'You have already purchased this chapter.');
-        }
-
-        if ($user->coins < $chapter->coin_price) {
-            $neededCoins = $chapter->coin_price - $user->coins;
-            return back()->with('error', "Insufficient coins. You need {$neededCoins} more coins to purchase this chapter.");
-        }
-
-        // Start transaction
-        \DB::transaction(function () use ($user, $chapter) {
-            // Deduct coins
-            $user->decrement('coins', $chapter->coin_price);
-            
-            // Record the purchase
-            ChapterPurchase::create([
-                'user_id' => $user->id,
-                'chapter_id' => $chapter->id,
-                'coin_price' => $chapter->coin_price,
-            ]);
-        });
-
-        return back()->with('success', 'Chapter purchased successfully!');
+        // Redirect to membership page
+        return redirect()->route('membership.index')
+            ->with('info', 'Premium chapters are now unlocked with Premium Membership. Get unlimited access to all premium content!');
     }
 }
