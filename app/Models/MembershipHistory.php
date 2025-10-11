@@ -64,6 +64,12 @@ class MembershipHistory extends Model
         return $this->belongsTo(MembershipPackage::class, 'membership_package_id');
     }
 
+    // Alias for package relationship (for consistency)
+    public function membershipPackage(): BelongsTo
+    {
+        return $this->package();
+    }
+
     /**
      * Scopes
      */

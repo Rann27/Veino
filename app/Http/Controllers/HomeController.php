@@ -57,11 +57,23 @@ class HomeController extends Controller
             ->take(12)
             ->get();
 
+        // Check if user should see premium congratulations modal
+        $showPremiumCongrats = false;
+        if (auth()->check()) {
+            $userId = auth()->id();
+            if (cache()->has("show_premium_congratulations_{$userId}")) {
+                $showPremiumCongrats = true;
+                // Remove the cache flag after showing once
+                cache()->forget("show_premium_congratulations_{$userId}");
+            }
+        }
+
         return Inertia::render('Home', [
             'heroSeries' => $heroSeries,
             'popularSeries' => $popularSeries,
             'latestUpdates' => $latestUpdates,
             'newSeries' => $newSeries,
+            'showPremiumCongrats' => $showPremiumCongrats,
         ]);
     }
 }

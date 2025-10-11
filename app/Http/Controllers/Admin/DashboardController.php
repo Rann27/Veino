@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Chapter;
 use App\Models\Series;
 use App\Models\User;
-use App\Models\CoinPurchase;
-use App\Models\ChapterPurchase;
+use App\Models\MembershipHistory;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
@@ -15,17 +14,17 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Calculate income statistics
+        // Calculate income statistics from membership purchases
         $currentMonth = Carbon::now()->startOfMonth();
         
-        // Monthly income from coin purchases (completed only)
-        $monthlyIncome = CoinPurchase::where('status', 'completed')
+        // Monthly income from membership purchases (completed only)
+        $monthlyIncome = MembershipHistory::where('status', 'completed')
             ->where('created_at', '>=', $currentMonth)
-            ->sum('price_usd');
+            ->sum('amount_usd');
         
-        // Total income from coin purchases (completed only)
-        $totalIncome = CoinPurchase::where('status', 'completed')
-            ->sum('price_usd');
+        // Total income from membership purchases (completed only)
+        $totalIncome = MembershipHistory::where('status', 'completed')
+            ->sum('amount_usd');
 
         $stats = [
             'total_users' => User::count(),

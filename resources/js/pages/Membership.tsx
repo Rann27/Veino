@@ -8,6 +8,7 @@ interface MembershipPackage {
     name: string;
     tier: string;
     price_usd: string;
+    gimmick_price?: string | null;
     duration_days: number;
     features: {
         unlock_premium_chapters?: boolean;
@@ -322,7 +323,13 @@ function MembershipInner({
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {packages.map((pkg: MembershipPackage) => {
-                                    const originalPrice = getOriginalPrice(parseFloat(pkg.price_usd), pkg.discount_percentage);
+                                    // Use gimmick_price if available, otherwise calculate from discount
+                                    const gimmickPrice = pkg.gimmick_price ? parseFloat(pkg.gimmick_price) : null;
+                                    const realPrice = parseFloat(pkg.price_usd);
+                                    const originalPrice = gimmickPrice && gimmickPrice > realPrice 
+                                        ? gimmickPrice.toFixed(2) 
+                                        : (pkg.discount_percentage > 0 ? getOriginalPrice(realPrice, pkg.discount_percentage) : null);
+                                    
                                     const isSelected = selectedPackage === pkg.id;
                                     const isBestValue = pkg.duration_days === 365;
 

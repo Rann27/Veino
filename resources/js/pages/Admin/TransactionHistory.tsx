@@ -1,41 +1,28 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head } from '@inertiajs/react';
-import { useState } from 'react';
 
-interface CoinPurchase {
+interface MembershipPurchase {
   id: number;
   user: {
     id: number;
     name: string;
+    display_name: string;
+    email: string;
   };
-  coin_package: {
+  membership_package: {
     id: number;
     name: string;
-    coin_amount: number;
+    price_usd: string | number;
+    duration_days: number;
   };
-  price_usd: number | string;
+  invoice_number: string;
+  tier: string;
+  duration_days: number;
+  amount_usd: number | string;
+  payment_method: string;
   status: string;
   created_at: string;
-}
-
-interface ChapterPurchase {
-  id: number;
-  user: {
-    id: number;
-    name: string;
-  };
-  chapter: {
-    id: number;
-    title: string;
-    chapter_number: number;
-    series: {
-      id: number;
-      title: string;
-      slug: string;
-    };
-  };
-  coin_price: number;
-  created_at: string;
+  updated_at: string;
 }
 
 interface PaginatedData<T> {
@@ -47,13 +34,10 @@ interface PaginatedData<T> {
 }
 
 interface TransactionHistoryProps {
-  coinPurchases: PaginatedData<CoinPurchase>;
-  chapterPurchases: PaginatedData<ChapterPurchase>;
+  membershipPurchases: PaginatedData<MembershipPurchase>;
 }
 
-export default function TransactionHistory({ coinPurchases, chapterPurchases }: TransactionHistoryProps) {
-  const [activeTab, setActiveTab] = useState<'coins' | 'chapters'>('coins');
-
+export default function TransactionHistory({ membershipPurchases }: TransactionHistoryProps) {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -66,17 +50,35 @@ export default function TransactionHistory({ coinPurchases, chapterPurchases }: 
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
-      completed: 'bg-green-100 text-green-800',
-      pending: 'bg-yellow-100 text-yellow-800',
-      failed: 'bg-red-100 text-red-800',
-      refunded: 'bg-gray-100 text-gray-800'
+      completed: 'bg-green-100 text-green-800 border-green-200',
+      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      failed: 'bg-red-100 text-red-800 border-red-200',
+      refunded: 'bg-gray-100 text-gray-800 border-gray-200'
     };
 
     return (
-      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
+  };
+
+  const getPaymentMethodBadge = (method: string) => {
+    const methodColors = {
+      paypal: 'bg-blue-50 text-blue-700 border-blue-200',
+      cryptomus: 'bg-purple-50 text-purple-700 border-purple-200',
+    };
+
+    return (
+      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${methodColors[method.toLowerCase() as keyof typeof methodColors] || 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+        {method.charAt(0).toUpperCase() + method.slice(1)}
+      </span>
+    );
+  };
+
+  const formatAmount = (amount: string | number) => {
+    const numAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
+    return numAmount.toFixed(2);
   };
 
   return (
@@ -84,90 +86,119 @@ export default function TransactionHistory({ coinPurchases, chapterPurchases }: 
       <Head title="Transaction History - Admin" />
 
       <div className="bg-white shadow rounded-lg">
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex">
-            <button
-              onClick={() => setActiveTab('coins')}
-              className={`whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm ${
-                activeTab === 'coins'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Coin Purchases ({coinPurchases.total})
-            </button>
-            <button
-              onClick={() => setActiveTab('chapters')}
-              className={`whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm ${
-                activeTab === 'chapters'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Chapter Purchases ({chapterPurchases.total})
-            </button>
-          </nav>
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Membership Purchase History</h2>
+              <p className="mt-1 text-sm text-gray-600">
+                Total {membershipPurchases.total} transactions
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Tab Content */}
+        {/* Transaction List */}
         <div className="p-6">
-          {activeTab === 'coins' && (
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Coin Purchase History</h3>
-              <div className="space-y-3">
-                {coinPurchases.data.length > 0 ? (
-                  coinPurchases.data.map((purchase) => (
-                    <div key={purchase.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-900">
-                          <span className="font-medium">{purchase.user.name}</span> has bought{' '}
-                          <span className="font-medium">{purchase.coin_package.name}</span>{' '}
-                          <span className="font-medium">${(typeof purchase.price_usd === 'number' ? purchase.price_usd : parseFloat(purchase.price_usd) || 0).toFixed(2)}</span> at{' '}
-                          <span className="text-gray-600">{formatDate(purchase.created_at)}</span>
-                        </p>
-                      </div>
-                      <div className="ml-4">
+          {membershipPurchases.data.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4">
+              {membershipPurchases.data.map((purchase) => (
+                <div 
+                  key={purchase.id} 
+                  className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white"
+                >
+                  {/* Header Row */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {purchase.user.display_name || purchase.user.name}
+                        </h3>
                         {getStatusBadge(purchase.status)}
                       </div>
+                      <p className="text-sm text-gray-600">{purchase.user.email}</p>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No coin purchases found.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'chapters' && (
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Chapter Purchase History</h3>
-              <div className="space-y-3">
-                {chapterPurchases.data.length > 0 ? (
-                  chapterPurchases.data.map((purchase) => (
-                    <div key={purchase.id} className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="text-sm text-gray-900">
-                          <span className="font-medium">{purchase.user.name}</span> has bought{' '}
-                          <span className="font-medium">Chapter {purchase.chapter.chapter_number}</span> of{' '}
-                          <span className="font-medium">{purchase.chapter.series.slug}</span> for{' '}
-                          <span className="font-medium">{purchase.coin_price} Coins</span> at{' '}
-                          <span className="text-gray-600">{formatDate(purchase.created_at)}</span>
-                        </p>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-purple-600">
+                        ${formatAmount(purchase.amount_usd)}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {formatDate(purchase.created_at)}
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    No chapter purchases found.
                   </div>
-                )}
-              </div>
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                    {/* Invoice */}
+                    <div>
+                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                        Invoice Number
+                      </div>
+                      <div className="text-sm font-mono font-semibold text-gray-900">
+                        {purchase.invoice_number}
+                      </div>
+                    </div>
+
+                    {/* Package */}
+                    <div>
+                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                        Membership Package
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        {purchase.membership_package.name}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-0.5">
+                        {purchase.duration_days} days
+                      </div>
+                    </div>
+
+                    {/* Payment Method */}
+                    <div>
+                      <div className="text-xs font-medium text-gray-500 uppercase mb-1">
+                        Payment Method
+                      </div>
+                      <div>
+                        {getPaymentMethodBadge(purchase.payment_method)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tier Badge */}
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700">
+                      {purchase.tier.toUpperCase()} Tier
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No transactions yet</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Membership purchase transactions will appear here.
+              </p>
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {membershipPurchases.last_page > 1 && (
+          <div className="px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-700">
+                Showing page {membershipPurchases.current_page} of {membershipPurchases.last_page}
+              </div>
+              <div className="flex gap-2">
+                {/* Add pagination buttons here if needed */}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

@@ -17,6 +17,7 @@ class MembershipPackageSeeder extends Seeder
             [
                 'name' => '1 Month Premium',
                 'tier' => 'premium',
+                'gimmick_price' => 10.00,
                 'price_usd' => 7.95,
                 'duration_days' => 30,
                 'features' => [
@@ -32,13 +33,14 @@ class MembershipPackageSeeder extends Seeder
             [
                 'name' => '3 Months Premium',
                 'tier' => 'premium',
+                'gimmick_price' => 29.99,
                 'price_usd' => 20.99,
                 'duration_days' => 90,
                 'features' => [
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 30, // $30 -> $20.99
+                'discount_percentage' => 30, // $29.99 -> $20.99
                 'is_active' => true,
                 'sort_order' => 2,
             ],
@@ -47,13 +49,14 @@ class MembershipPackageSeeder extends Seeder
             [
                 'name' => '6 Months Premium',
                 'tier' => 'premium',
+                'gimmick_price' => 59.63,
                 'price_usd' => 39.95,
                 'duration_days' => 180,
                 'features' => [
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 33, // $60 -> $39.95
+                'discount_percentage' => 33, // $59.63 -> $39.95
                 'is_active' => true,
                 'sort_order' => 3,
             ],
@@ -62,13 +65,14 @@ class MembershipPackageSeeder extends Seeder
             [
                 'name' => '12 Months Premium',
                 'tier' => 'premium',
+                'gimmick_price' => 119.33,
                 'price_usd' => 79.95,
                 'duration_days' => 365,
                 'features' => [
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 33, // $120 -> $79.95
+                'discount_percentage' => 33, // $119.33 -> $79.95
                 'is_active' => true,
                 'sort_order' => 4,
             ],

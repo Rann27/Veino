@@ -49,9 +49,10 @@ interface HomeProps {
   popularSeries: Series[];
   latestUpdates: Series[];
   newSeries: Series[];
+  showPremiumCongrats?: boolean;
 }
 
-function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: HomeProps) {
+function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, showPremiumCongrats }: HomeProps) {
   const [currentHero, setCurrentHero] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -61,6 +62,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
   const { currentTheme } = useTheme();
 
   useEffect(() => {
+    // Check for query parameter (from payment redirect)
     const params = new URLSearchParams(window.location.search);
     if (params.get('premium') === 'activated') {
       setShowPremiumModal(true);
@@ -69,7 +71,11 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries }: Ho
       const newUrl = newSearch ? `${window.location.pathname}?${newSearch}` : window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     }
-  }, []);
+    // Check for prop from admin grant
+    else if (showPremiumCongrats) {
+      setShowPremiumModal(true);
+    }
+  }, [showPremiumCongrats]);
 
   // Helper function to format chapter display
   const formatChapterDisplay = (chapter: Chapter): string => {

@@ -38,14 +38,34 @@ class UserController extends Controller
         return redirect()->back()->with('success', 'User unbanned successfully');
     }
 
-    public function addCoins(Request $request, User $user)
+    public function addMembership(Request $request, User $user)
     {
         $validated = $request->validate([
-            'coins' => 'required|integer|min:1',
+            'duration_days' => 'required|integer|min:1',
         ]);
 
-        $user->increment('coins', $validated['coins']);
+        $durationDays = $validated['duration_days'];
         
-        return redirect()->back()->with('success', "Added {$validated['coins']} coins to {$user->display_name}");
+        // Track if this is a new activation (not extension)
+        $isNewActivation = !($user->membership_tier === 'premium' && $user->membership_expires_at && $user->membership_expires_at->isFuture());
+        
+        // If user already has premium, extend it; otherwise set new expiry
+        if ($user->membership_tier === 'premium' && $user->membership_expires_at && $user->membership_expires_at->isFuture()) {
+            // Extend existing membership
+            $user->membership_expires_at = $user->membership_expires_at->addDays($durationDays);
+        } else {
+            // New membership or expired
+            $user->membership_tier = 'premium';
+            $user->membership_expires_at = now()->addDays($durationDays);
+        }
+        
+        $user->save();
+        
+        // Set cache flag for the user to show congratulations modal on next visit (expires in 24 hours)
+        if ($isNewActivation) {
+            cache()->put("show_premium_congratulations_{$user->id}", true, now()->addHours(24));
+        }
+        
+        return redirect()->back()->with('success', "Added {$durationDays} days of Premium membership to {$user->display_name}");
     }
 }

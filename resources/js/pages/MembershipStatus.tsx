@@ -292,7 +292,8 @@ function MembershipStatusInner({ history, hasRefreshed }: any) {
                         <button
                             onClick={() => {
                                 if (history.status === 'completed') {
-                                    window.location.href = '/';
+                                    // Redirect to home with premium activated parameter to show congratulations modal
+                                    window.location.href = '/?premium=activated';
                                 } else {
                                     router.visit('/membership');
                                 }
