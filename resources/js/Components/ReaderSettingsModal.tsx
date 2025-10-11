@@ -257,25 +257,19 @@ export default function ReaderSettingsModal({
                         </div>
                     </div>
 
-                    {/* Content Width (Desktop only) */}
+                    {/* Content Width */}
                     <div>
                         <label 
                             className="block text-sm font-medium mb-2"
                             style={{ color: currentTheme.foreground }}
                         >
                             Content Width: {settings.contentWidth}%
-                            <span 
-                                className="text-xs ml-1"
-                                style={{ color: `${currentTheme.foreground}60` }}
-                            >
-                                (Desktop only)
-                            </span>
                         </label>
                         <div className="space-y-2">
                             <input
                                 type="range"
                                 min="60"
-                                max="90"
+                                max="95"
                                 step="1"
                                 value={settings.contentWidth}
                                 onChange={(e) => handleSettingChange('contentWidth', parseInt(e.target.value))}
@@ -288,7 +282,7 @@ export default function ReaderSettingsModal({
                             >
                                 <span>60%</span>
                                 <span>75%</span>
-                                <span>90%</span>
+                                <span>95%</span>
                             </div>
                         </div>
                     </div>

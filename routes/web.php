@@ -74,6 +74,11 @@ Route::post('/logout', function (Illuminate\Http\Request $request) {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore');
 
+// Advertise page
+Route::get('/advertise', function () {
+    return Inertia::render('Advertise');
+})->name('advertise');
+
 // Membership routes
 Route::middleware('auth')->group(function () {
     Route::get('/membership', [MembershipController::class, 'index'])->name('membership.index');
@@ -170,6 +175,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Transaction History
     Route::get('/transaction-history', [TransactionHistoryController::class, 'index'])->name('transaction-history.index');
     
+    // Advertisement Management
+    Route::get('/advertisement-management', [App\Http\Controllers\Admin\AdvertisementController::class, 'index'])->name('advertisements.index');
+    Route::post('/advertisements', [App\Http\Controllers\Admin\AdvertisementController::class, 'store'])->name('advertisements.store');
+    Route::put('/advertisements/{advertisement}', [App\Http\Controllers\Admin\AdvertisementController::class, 'update'])->name('advertisements.update');
+    Route::delete('/advertisements/{advertisement}', [App\Http\Controllers\Admin\AdvertisementController::class, 'destroy'])->name('advertisements.destroy');
+    Route::post('/advertisements/{advertisement}/toggle-active', [App\Http\Controllers\Admin\AdvertisementController::class, 'toggleActive'])->name('advertisements.toggle-active');
+    
     // Monitoring (Comments & Reactions)
     Route::get('/monitoring', [App\Http\Controllers\Admin\MonitoringController::class, 'index'])->name('monitoring.index');
     Route::get('/monitoring/comments', [App\Http\Controllers\Admin\MonitoringController::class, 'getComments'])->name('monitoring.comments');
@@ -192,6 +204,13 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ReactionController;
 
 Route::prefix('api')->group(function () {
+    // Advertisement API (public)
+    Route::get('/ads/interstitial/random', [App\Http\Controllers\Api\AdController::class, 'getRandomInterstitial'])->name('api.ads.interstitial');
+    Route::get('/ads/banner/random', [App\Http\Controllers\Api\AdController::class, 'getRandomBanner'])->name('api.ads.banner');
+    Route::get('/ads/in-text/random', [App\Http\Controllers\Api\AdController::class, 'getRandomInTextLinks'])->name('api.ads.in-text');
+    Route::post('/ads/{advertisement}/track-impression', [App\Http\Controllers\Api\AdController::class, 'trackImpression'])->name('api.ads.track-impression');
+    Route::post('/ads/{advertisement}/track-click', [App\Http\Controllers\Api\AdController::class, 'trackClick'])->name('api.ads.track-click');
+    
     // Get comments (public)
     Route::get('/comments/{type}/{id}', [CommentController::class, 'index'])->name('comments.index');
     

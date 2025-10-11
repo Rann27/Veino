@@ -358,140 +358,156 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, show
         </div>
       )}
 
-      {/* Hero Slider */}
+      {/* Hero Container */}
       {heroSeries.length > 0 && (
-        <section 
-          className="relative h-72 sm:h-80 md:h-96 overflow-hidden cursor-pointer select-none"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onClick={handleHeroClick}
+        <div 
+          className="py-6 sm:py-8"
+          style={{ backgroundColor: currentTheme.background }}
         >
-          {/* Background Cover Image - Zoomed */}
-          {heroSeries[currentHero].cover_url && (
-            <div 
-              className="absolute inset-0 bg-cover bg-center"
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section 
+              className="relative h-64 sm:h-72 md:h-80 overflow-hidden cursor-pointer select-none rounded-xl border-4 shadow-lg"
               style={{
-                backgroundImage: `url(${heroSeries[currentHero].cover_url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                transform: 'scale(1.1)',
-                filter: 'blur(0px)'
+                borderColor: `${currentTheme.foreground}70`,
+                backgroundColor: currentTheme.background
               }}
-            />
-          )}
-          
-          {/* Background overlay with 20% opacity */}
-          <div 
-            className="absolute inset-0"
-            style={{
-              background: themeGradients.overlay,
-              opacity: 0.2
-            }}
-          />
-          
-          {/* Side fade gradients */}
-          <div 
-            className="absolute inset-y-0 left-0 w-32 sm:w-48 md:w-64"
-            style={{
-              background: `linear-gradient(to right, ${currentTheme.background} 0%, transparent 100%)`
-            }}
-          />
-          <div 
-            className="absolute inset-y-0 right-0 w-32 sm:w-48 md:w-64"
-            style={{
-              background: `linear-gradient(to left, ${currentTheme.background} 0%, transparent 100%)`
-            }}
-          />
-          
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-            <div className="w-full flex items-center justify-between gap-8">
-              {/* Content Left */}
-              <div className="flex-1 z-10" style={{ color: heroTextColor }}>
-                {/* Genre Tags */}
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {heroSeries[currentHero].genres.slice(0, 3).map((genre) => (
-                    <span
-                      key={genre.id}
-                      className="genre-tag px-2 py-1 text-xs font-medium rounded-full cursor-default"
-                      style={{
-                        backgroundColor: currentTheme.name.toLowerCase() === 'light' 
-                          ? 'rgba(45, 55, 72, 0.15)' 
-                          : 'rgba(255, 255, 255, 0.2)',
-                        color: heroTextColor
-                      }}
-                    >
-                      {genre.name}
-                    </span>
-                  ))}
-                </div>
-
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 leading-tight">
-                  {heroSeries[currentHero].title}
-                </h1>
-                
-                {heroSeries[currentHero].synopsis && (
-                  <p 
-                    className="text-sm sm:text-base mb-4 line-clamp-3 leading-relaxed max-w-2xl"
-                    style={{ 
-                      opacity: currentTheme.name.toLowerCase() === 'light' ? 0.7 : 0.9 
-                    }}
-                  >
-                    {heroSeries[currentHero].synopsis}
-                  </p>
-                )}
-                
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onClick={handleHeroClick}
+            >
+              {/* Background Cover Image - Zoomed */}
+              {heroSeries[currentHero].cover_url && (
                 <div 
-                  className="flex items-center gap-4 text-sm"
-                  style={{ 
-                    opacity: currentTheme.name.toLowerCase() === 'light' ? 0.6 : 0.8 
-                  }}
-                >
-                  <span>★ {heroSeries[currentHero].rating}</span>
-                  <span>•</span>
-                  <span>{heroSeries[currentHero].status}</span>
-                </div>
-              </div>
-
-              {/* Cover Image Right */}
-              <div className="hidden md:block">
-                {heroSeries[currentHero].cover_url && (
-                  <img
-                    src={heroSeries[currentHero].cover_url}
-                    alt={heroSeries[currentHero].title}
-                    className="w-32 h-44 lg:w-40 lg:h-56 object-cover rounded-lg shadow-lg"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Dots Indicator */}
-          {heroSeries.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
-              {heroSeries.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentHero(index);
-                  }}
-                  className="w-2 h-2 rounded-full transition-all duration-200"
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{
-                    backgroundColor: index === currentHero 
-                      ? currentTheme.background 
-                      : `${currentTheme.background}50`,
-                    boxShadow: `0 0 0 1px ${currentTheme.background}30`
+                    backgroundImage: `url(${heroSeries[currentHero].cover_url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    transform: 'scale(1.1)',
+                    filter: 'blur(0px)'
                   }}
                 />
-              ))}
-            </div>
-          )}
-        </section>
+              )}
+              
+              {/* Background overlay */}
+              <div 
+                className="absolute inset-0"
+                style={{
+                  background: themeGradients.overlay,
+                  opacity: 0.2
+                }}
+              />
+              
+              {/* Side fade gradients */}
+              <div 
+                className="absolute inset-y-0 left-0 w-24 sm:w-32 md:w-48"
+                style={{
+                  background: `linear-gradient(to right, ${currentTheme.background} 0%, transparent 100%)`
+                }}
+              />
+              <div 
+                className="absolute inset-y-0 right-0 w-24 sm:w-32 md:w-48"
+                style={{
+                  background: `linear-gradient(to left, ${currentTheme.background} 0%, transparent 100%)`
+                }}
+              />
+              
+              <div className="relative h-full flex items-center px-6 sm:px-8">
+                <div className="w-full flex items-center justify-between gap-6 sm:gap-8">
+                  {/* Content Left */}
+                  <div className="flex-1 z-10" style={{ color: currentTheme.foreground }}>
+                    {/* Genre Tags */}
+                    <div className="flex flex-wrap gap-2 mb-2 sm:mb-3">
+                      {heroSeries[currentHero].genres.slice(0, 3).map((genre) => (
+                        <span
+                          key={genre.id}
+                          className="genre-tag px-2 py-1 text-xs font-medium rounded-full cursor-default border"
+                          style={{
+                            backgroundColor: `${currentTheme.foreground}10`,
+                            borderColor: `${currentTheme.foreground}20`,
+                            color: currentTheme.foreground
+                          }}
+                        >
+                          {genre.name}
+                        </span>
+                      ))}
+                    </div>
+
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3 leading-tight">
+                      {heroSeries[currentHero].title}
+                    </h1>
+                    
+                    {heroSeries[currentHero].synopsis && (
+                      <p 
+                        className="text-xs sm:text-sm md:text-base mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-2xl"
+                        style={{ 
+                          color: `${currentTheme.foreground}90`
+                        }}
+                      >
+                        {heroSeries[currentHero].synopsis}
+                      </p>
+                    )}
+                    
+                    <div 
+                      className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm"
+                      style={{ 
+                        color: `${currentTheme.foreground}80`
+                      }}
+                    >
+                      <span className="flex items-center gap-1">
+                        <span className="text-yellow-500">★</span>
+                        {heroSeries[currentHero].rating}
+                      </span>
+                      <span>•</span>
+                      <span className="capitalize">{heroSeries[currentHero].status}</span>
+                    </div>
+                  </div>
+
+                  {/* Cover Image Right */}
+                  <div className="hidden md:block flex-shrink-0">
+                    {heroSeries[currentHero].cover_url && (
+                      <img
+                        src={heroSeries[currentHero].cover_url}
+                        alt={heroSeries[currentHero].title}
+                        className="w-28 h-40 lg:w-32 lg:h-44 object-cover rounded-lg shadow-xl border-2"
+                        style={{
+                          borderColor: `${currentTheme.foreground}20`
+                        }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Dots Indicator */}
+              {heroSeries.length > 1 && (
+                <div className="absolute bottom-3 sm:bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+                  {heroSeries.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentHero(index);
+                      }}
+                      className="w-2 h-2 rounded-full transition-all duration-200 border"
+                      style={{
+                        backgroundColor: index === currentHero 
+                          ? currentTheme.foreground 
+                          : 'transparent',
+                        borderColor: currentTheme.foreground
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
       )}
 
       {/* Popular Series */}

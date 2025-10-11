@@ -3,6 +3,7 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
+import BannerAd from '@/Components/Ads/BannerAd';
 
 interface User {
   id: number;
@@ -840,14 +841,27 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
         </div>
       )}
 
+      {/* Spacer for fixed navbar */}
+      <div className="h-16" />
+
+      {/* Top Banner Ad (below navbar) */}
+      {!auth?.user?.membership_tier || auth.user.membership_tier === 'basic' ? (
+        <BannerAd position="top" />
+      ) : null}
+
       {/* Main Content */}
       <main className={`transition-all duration-300 ${
         showSearch 
-          ? (showNavbar ? 'pt-32' : 'pt-20') 
-          : 'pt-16'
+          ? (showNavbar ? 'pt-16' : 'pt-4') 
+          : 'pt-0'
       }`}>
         {children}
       </main>
+
+      {/* Bottom Banner Ad (above footer) */}
+      {!auth?.user?.membership_tier || auth.user.membership_tier === 'basic' ? (
+        <BannerAd position="bottom" />
+      ) : null}
 
       {/* Footer */}
       <footer 

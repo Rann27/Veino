@@ -6,6 +6,9 @@ import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import CommentSection from '@/Components/CommentSection';
 import ReactionBar from '@/Components/ReactionBar';
 import PremiumDiamond from '@/Components/PremiumDiamond';
+import InterstitialAd from '@/Components/Ads/InterstitialAd';
+import InTextAd from '@/Components/Ads/InTextAd';
+import axios from 'axios';
 
 // Sanitize HTML to remove conflicting color styles
 const sanitizeColorStyles = (html: string): string => {
@@ -84,6 +87,7 @@ function ChapterShowContent({
     const [showReaderSettings, setShowReaderSettings] = useState(false);
     const readerSettingsButtonRef = useRef<HTMLButtonElement>(null);
     const hideDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const [inTextAds, setInTextAds] = useState<Array<{id: number; caption: string; link_url: string}>>([]);
 
     useEffect(() => {
         let lastY = 0;
@@ -128,9 +132,88 @@ function ChapterShowContent({
         };
     }, []);
 
+    // Fetch in-text ads for non-premium users (including guests)
+    useEffect(() => {
+        if (!isPremiumMember) {
+            axios.get('/api/ads/in-text/random', { params: { count: 5 } })
+                .then(response => {
+                    if (response.data && response.data.ads) {
+                        setInTextAds(response.data.ads);
+                        
+                        // Track impressions for in-text ads
+                        response.data.ads.forEach((ad: any) => {
+                            axios.post(`/api/ads/${ad.id}/track-impression`).catch(() => {});
+                        });
+                    }
+                })
+                .catch(() => {
+                    // No ads available
+                });
+        }
+    }, [isPremiumMember]);
+
+    // Handle in-text ad clicks
+    useEffect(() => {
+        const handleAdClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('in-text-ad-link')) {
+                const adId = target.getAttribute('data-ad-id');
+                if (adId) {
+                    axios.post(`/api/ads/${adId}/track-click`).catch(() => {});
+                }
+            }
+        };
+
+        document.addEventListener('click', handleAdClick);
+        return () => {
+            document.removeEventListener('click', handleAdClick);
+        };
+    }, []);
+
     const jumpToChapter = (chapterNumber: number) => {
         router.get(route('chapters.show', [series.slug, chapterNumber]));
         setShowChapterList(false);
+    };
+
+    // Helper function to inject in-text ads every 40 lines
+    const injectInTextAds = (content: string): string => {
+        if (isPremiumMember || inTextAds.length === 0) {
+            return content;
+        }
+
+        // Split content by paragraph tags
+        const paragraphs = content.split(/<\/p>/gi);
+        let lineCount = 0;
+        let adIndex = 0;
+        const result: string[] = [];
+
+        paragraphs.forEach((para, index) => {
+            if (para.trim()) {
+                result.push(para + (index < paragraphs.length - 1 ? '</p>' : ''));
+                lineCount++;
+
+                // Inject ad every 40 lines
+                if (lineCount % 40 === 0 && adIndex < inTextAds.length) {
+                    const ad = inTextAds[adIndex];
+                    const adHtml = `<p style="margin-bottom: 1.5em;">
+                        <a href="${ad.link_url}" 
+                           target="_blank" 
+                           rel="noopener noreferrer" 
+                           data-ad-id="${ad.id}" 
+                           class="in-text-ad-link"
+                           style="color: #a78bfa; text-decoration: none; transition: all 0.2s;"
+                           onmouseover="this.style.color='#c084fc'; this.style.textDecoration='underline'"
+                           onmouseout="this.style.color='#a78bfa'; this.style.textDecoration='none'">
+                            ${ad.caption} <span style="opacity: 0.7; font-size: 0.9em;">[AD]</span>
+                        </a>
+                    </p>`;
+                    result.push(adHtml);
+                    adIndex++;
+                }
+            }
+        });
+
+        return result.join('');
     };
 
     if (!canAccess && chapter.is_premium) {
@@ -366,7 +449,7 @@ function ChapterShowContent({
                                                     ch.chapter_number === chapter.chapter_number ? 'opacity-80' : ''
                                                 }`}
                                                 style={{
-                                                    color: ch.chapter_number === chapter.chapter_number ? '#3b82f6' : currentTheme.foreground,
+                                                    color: ch.chapter_number === chapter.chapter_number ? SHINY_PURPLE : currentTheme.foreground,
                                                     backgroundColor: ch.chapter_number === chapter.chapter_number ? `${currentTheme.foreground}10` : 'transparent'
                                                 }}
                                             >
@@ -424,10 +507,11 @@ function ChapterShowContent({
                 style={{ backgroundColor: currentTheme.background }}
             >
                 <div 
-                    className="mx-auto px-2 sm:px-6 lg:px-8 py-8"
+                    className="mx-auto px-2 sm:px-6 lg:px-8 py-8 rounded-lg border-2"
                     style={{ 
                         maxWidth: `${readerSettings.contentWidth}%`,
-                        width: '100%'
+                        width: '100%',
+                        borderColor: `${currentTheme.foreground}20`
                     }}
                 >
                     {/* Chapter Header */}
@@ -441,7 +525,7 @@ function ChapterShowContent({
                         <Link
                             href={route('series.show', series.slug)}
                             className="text-lg transition-colors hover:opacity-70"
-                            style={{ color: '#3b82f6' }}
+                            style={{ color: SHINY_PURPLE }}
                         >
                             {series.title}
                         </Link>
@@ -561,10 +645,13 @@ function ChapterShowContent({
                                             }
                                         );
                                         
+                                        // Inject in-text ads for non-premium users
+                                        processedContent = injectInTextAds(processedContent);
+                                        
                                         return processedContent;
                                     } else {
                                         // Legacy plain text content, use old logic
-                                        return content
+                                        let legacyContent = content
                                             .split(/\n\s*\n/)
                                             .map(paragraph => paragraph.trim())
                                             .filter(paragraph => paragraph.length > 0)
@@ -579,6 +666,11 @@ function ChapterShowContent({
                                                 ">${formattedParagraph}</p>`;
                                             })
                                             .join('');
+                                        
+                                        // Inject in-text ads for non-premium users
+                                        legacyContent = injectInTextAds(legacyContent);
+                                        
+                                        return legacyContent;
                                     }
                                 })()
                             }}
@@ -676,6 +768,11 @@ function ChapterShowContent({
                 onClose={() => setShowReaderSettings(false)}
                 triggerElement={readerSettingsButtonRef.current}
             />
+
+            {/* Interstitial Ad (shows once per chapter for basic users, including guests) */}
+            {!isPremiumMember && (
+                <InterstitialAd chapterId={chapter.id} />
+            )}
         </>
     );
 }
