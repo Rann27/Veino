@@ -52,6 +52,7 @@ class HandleInertiaRequests extends Middleware
                     'membership_tier' => $request->user()->membership_tier,
                     'membership_expires_at' => $request->user()->membership_expires_at,
                     'avatar' => $request->user()->avatar,
+                    'avatar_url' => $request->user()->avatar_url,
                     'role' => $request->user()->role,
                 ] : null,
             ],
