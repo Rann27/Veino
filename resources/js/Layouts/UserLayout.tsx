@@ -13,6 +13,7 @@ interface User {
   membership_tier: 'basic' | 'premium';
   membership_expires_at?: string;
   avatar?: string;
+  avatar_url?: string;
 }
 
 interface SearchSuggestion {
@@ -315,9 +316,9 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         })
                       }}
                     >
-                    {auth.user.avatar ? (
+                    {auth.user.avatar_url ? (
                       <img
-                        src={auth.user.avatar}
+                        src={auth.user.avatar_url}
                         alt={auth.user.display_name}
                         className="w-8 h-8 rounded-full object-cover"
                         style={{
@@ -599,9 +600,9 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               {auth?.user ? (
                 <div className="mt-8 pt-6 border-t" style={{ borderColor: `${currentTheme.foreground}20` }}>
                   <div className="flex items-center space-x-3 mb-4">
-                    {auth.user.avatar ? (
+                    {auth.user.avatar_url ? (
                       <img
-                        src={auth.user.avatar}
+                        src={auth.user.avatar_url}
                         alt={auth.user.display_name}
                         className="w-10 h-10 rounded-full object-cover"
                       />
