@@ -51,9 +51,26 @@ function SettingsContent({ user }: Props) {
         e.preventDefault();
         setIsLoading(true);
         
-        router.put(route('account.profile.update'), profileData, {
+        // Use FormData for file upload support
+        const formData = new FormData();
+        formData.append('display_name', profileData.display_name);
+        formData.append('email', profileData.email);
+        formData.append('bio', profileData.bio);
+        
+        if (profileData.avatar) {
+            formData.append('avatar', profileData.avatar);
+        }
+        
+        // Use POST with _method spoofing for file uploads
+        formData.append('_method', 'PUT');
+        
+        router.post(route('account.profile.update'), formData, {
             onSuccess: () => {
                 setIsLoading(false);
+                setProfileData({
+                    ...profileData,
+                    avatar: null // Clear the file input after successful upload
+                });
             },
             onError: () => {
                 setIsLoading(false);
