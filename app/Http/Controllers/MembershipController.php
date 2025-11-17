@@ -43,44 +43,45 @@ class MembershipController extends Controller
     }
 
     /**
-     * Handle membership purchase
+     * Handle membership purchase with coins
      */
     public function purchase(Request $request)
     {
         $request->validate([
             'package_id' => 'required|exists:membership_packages,id',
-            'payment_method' => 'required|in:paypal,cryptomus',
         ]);
 
-    $user = Auth::user();
-    $package = MembershipPackage::findOrFail($request->package_id);
-    $isInertiaRequest = $request->headers->has('X-Inertia');
+        $user = Auth::user();
+        $package = MembershipPackage::findOrFail($request->package_id);
+        $isInertiaRequest = $request->headers->has('X-Inertia');
 
-        // Validate if user can purchase
-        $canPurchase = $this->membershipService->canPurchasePackage($user, $package);
-        if (!$canPurchase['can_purchase']) {
-            $errorReason = $canPurchase['reason'] ?? 'Unable to process membership purchase right now.';
-
+        // Check if user has enough coins
+        if (!$user->hasEnoughCoins($package->coin_price)) {
+            $shortfall = $package->coin_price - $user->coins;
+            $errorMsg = "Insufficient coins. You need {$shortfall} more coins to purchase this membership.";
+            
             if ($isInertiaRequest) {
                 return back()
                     ->withInput()
-                    ->withErrors(['membership' => $errorReason])
-                    ->with('error', $errorReason);
+                    ->withErrors(['membership' => $errorMsg])
+                    ->with('error', $errorMsg);
             }
 
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => $errorReason,
-                    'message' => $errorReason,
-                ], 422);
-            }
-
-            return back()->withInput()->with('error', $errorReason);
+            return response()->json([
+                'success' => false,
+                'error' => $errorMsg,
+                'message' => $errorMsg,
+                'shortfall' => $shortfall,
+            ], 422);
         }
 
         DB::beginTransaction();
         try {
+            // Deduct coins from user
+            if (!$user->deductCoins($package->coin_price)) {
+                throw new \Exception('Failed to deduct coins from user balance');
+            }
+
             // Generate invoice number
             $invoiceNumber = MembershipHistory::generateInvoiceNumber();
 
@@ -92,28 +93,23 @@ class MembershipController extends Controller
                 'tier' => $package->tier,
                 'duration_days' => $package->duration_days,
                 'amount_usd' => $package->price_usd,
-                'payment_method' => $request->payment_method,
-                'status' => 'pending',
+                'coin_price' => $package->coin_price,
+                'payment_method' => 'coins',
+                'status' => 'completed',
+                'completed_at' => now(),
             ]);
 
-            // Create payment gateway order
-            Log::info('Creating payment order', [
-                'history_id' => $history->id,
-                'method' => $request->payment_method
-            ]);
+            // Grant membership (premium tier)
+            $granted = $this->membershipService->grantPremium($user, $package->duration_days);
 
-            $paymentResult = $this->createPaymentOrder($history, $package, $request->payment_method);
-
-            Log::info('Payment order result', [
-                'success' => $paymentResult['success'],
-                'has_payment_url' => isset($paymentResult['payment_url']),
-                'payment_url' => $paymentResult['payment_url'] ?? null,
-            ]);
-
-            if (!$paymentResult['success']) {
+            if (!$granted) {
                 DB::rollBack();
-                $errorMsg = $paymentResult['error'] ?? 'Payment gateway error';
-
+                
+                // Refund coins
+                $user->addCoins($package->coin_price);
+                
+                $errorMsg = 'Failed to grant membership';
+                
                 if ($isInertiaRequest) {
                     return back()
                         ->withInput()
@@ -128,44 +124,38 @@ class MembershipController extends Controller
                 ], 400);
             }
 
-            // Update history with gateway info
-            if ($request->payment_method === 'paypal') {
-                $history->update([
-                    'paypal_order_id' => $paymentResult['order_id'],
-                    'gateway_response' => $paymentResult['data'] ?? null,
-                ]);
-            } else if ($request->payment_method === 'cryptomus') {
-                $history->update([
-                    'cryptomus_order_id' => $paymentResult['order_id'],
-                    'gateway_response' => $paymentResult['data'] ?? null,
-                ]);
-            }
+            // Update history with membership dates
+            $history->update([
+                'starts_at' => $user->fresh()->membership_started_at,
+                'expires_at' => $user->fresh()->membership_expires_at,
+            ]);
 
             DB::commit();
 
-            $statusUrl = route('membership.status', ['history' => $history->id]);
-            $paymentUrl = $paymentResult['payment_url'] ?? $statusUrl;
-
-            Log::info('Returning response', [
-                'status_url' => $statusUrl,
-                'payment_url' => $paymentUrl,
-                'is_external_gateway' => $paymentUrl !== $statusUrl,
+            Log::info('Membership purchased with coins', [
+                'user_id' => $user->id,
+                'package_id' => $package->id,
+                'coins_spent' => $package->coin_price,
+                'remaining_coins' => $user->fresh()->coins,
+                'history_id' => $history->id,
             ]);
 
             if ($isInertiaRequest) {
-                if ($paymentUrl && $paymentUrl !== $statusUrl) {
-                    return Inertia::location($paymentUrl);
-                }
-
-                return redirect()->to($statusUrl);
+                return back()
+                    ->with('success', 'Membership purchased successfully!')
+                    ->with('premium_granted', [
+                        'days' => $package->duration_days,
+                        'package_name' => $package->name,
+                        'source' => 'membership_purchase'
+                    ]);
             }
 
-            // Return payment URL to frontend for redirect
             return response()->json([
                 'success' => true,
+                'message' => 'Membership purchased successfully!',
                 'history_id' => $history->id,
-                'payment_url' => $paymentUrl,
-                'status_url' => $statusUrl,
+                'remaining_coins' => $user->fresh()->coins,
+                'membership_expires_at' => $user->fresh()->membership_expires_at,
             ]);
 
         } catch (\Exception $e) {
@@ -176,7 +166,7 @@ class MembershipController extends Controller
                 $errorMessage = 'An unexpected error occurred during purchase';
             }
             
-            Log::error('Membership purchase failed', [
+            Log::error('Membership purchase with coins failed', [
                 'user_id' => $user->id,
                 'package_id' => $package->id,
                 'error' => $errorMessage,

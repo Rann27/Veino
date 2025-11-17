@@ -61,10 +61,13 @@ class UserController extends Controller
         
         $user->save();
         
-        // Set cache flag for the user to show congratulations modal on next visit (expires in 24 hours)
-        if ($isNewActivation) {
-            cache()->put("show_premium_congratulations_{$user->id}", true, now()->addHours(24));
-        }
+        // Set flash for congratulations modal (for user when they visit)
+        session()->put("premium_granted_user_{$user->id}", [
+            'days' => $durationDays,
+            'package_name' => "Admin Grant ({$durationDays} Days)",
+            'source' => 'admin_grant',
+            'expires_at' => now()->addHours(24)->timestamp
+        ]);
         
         return redirect()->back()->with('success', "Added {$durationDays} days of Premium membership to {$user->display_name}");
     }

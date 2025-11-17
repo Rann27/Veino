@@ -98,9 +98,38 @@ class AccountController extends Controller
     {
         $user = Auth::user();
         
-        // TODO: Fetch coin packages and transaction history
-        $coinPackages = \App\Models\CoinPackage::orderBy('coin_amount')->get();
-        $transactions = [];
+        // Fetch coin packages
+        $coinPackages = \App\Models\CoinPackage::where('is_active', true)
+            ->orderBy('coin_amount')
+            ->get()
+            ->map(function ($package) {
+                return [
+                    'id' => $package->id,
+                    'name' => $package->name,
+                    'coin_amount' => $package->coin_amount,
+                    'bonus_premium_days' => $package->bonus_premium_days,
+                    'price_usd' => $package->price_usd,
+                    'is_active' => $package->is_active,
+                ];
+            });
+        
+        // Fetch coin purchase transactions
+        $transactions = \App\Models\CoinPurchase::where('user_id', $user->id)
+            ->where('status', 'completed')
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get()
+            ->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'coins_amount' => $transaction->coins_amount,
+                    'price_usd' => $transaction->price_usd,
+                    'payment_method' => $transaction->payment_method,
+                    'transaction_id' => $transaction->transaction_id,
+                    'status' => $transaction->status,
+                    'purchased_at' => $transaction->created_at->toISOString(),
+                ];
+            });
         
         return Inertia::render('Account/Coins', [
             'coinPackages' => $coinPackages,

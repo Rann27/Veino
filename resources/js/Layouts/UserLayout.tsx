@@ -43,11 +43,13 @@ interface UserLayoutProps {
 }
 
 function UserLayoutContent({ children, title }: UserLayoutProps) {
-  const { auth } = usePage<PageProps>().props;
+  const { auth, flash } = usePage<PageProps>().props;
   const { currentTheme } = useTheme();
   const [showSearch, setShowSearch] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showPremiumCongrats, setShowPremiumCongrats] = useState(false);
+  const [premiumGrantedData, setPremiumGrantedData] = useState<any>(null);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
@@ -155,6 +157,14 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showSuggestions]);
+
+  // Premium congratulations modal detection
+  useEffect(() => {
+    if (flash?.premium_granted) {
+      setPremiumGrantedData(flash.premium_granted);
+      setShowPremiumCongrats(true);
+    }
+  }, [flash]);
 
   // Children should use useTheme hook instead of receiving currentTheme as prop
 
@@ -377,6 +387,29 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         borderColor: `${currentTheme.foreground}20`
                       }}
                     >
+                      {/* Coin Balance */}
+                      <div 
+                        className="px-4 py-2 text-sm border-b"
+                        style={{
+                          borderColor: `${currentTheme.foreground}20`
+                        }}
+                      >
+                        <Link 
+                          href="/account/coins"
+                          className="flex items-center justify-between hover:opacity-70 transition-opacity"
+                        >
+                          <span style={{ color: currentTheme.foreground, opacity: 0.7 }}>
+                            Coin Balance
+                          </span>
+                          <span 
+                            className="font-bold text-lg"
+                            style={{ color: '#f59e0b' }}
+                          >
+                            ¢{auth.user.coins?.toLocaleString() || 0}
+                          </span>
+                        </Link>
+                      </div>
+
                       {/* Membership Status */}
                       <div 
                         className="px-4 py-3 text-sm border-b font-medium flex items-center gap-2"
@@ -621,6 +654,14 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                       <p className="font-medium truncate" style={{ color: currentTheme.foreground }}>
                         {auth.user.display_name}
                       </p>
+                      <Link 
+                        href="/account/coins" 
+                        className="text-sm font-semibold mt-0.5 inline-block hover:opacity-70 transition-opacity"
+                        style={{ color: '#f59e0b' }}
+                        onClick={toggleMobileSidebar}
+                      >
+                        ¢{auth.user.coins?.toLocaleString() || 0}
+                      </Link>
                       {auth.user.membership_tier === 'premium' && auth.user.membership_expires_at && new Date(auth.user.membership_expires_at) > new Date() ? (
                         <div className="text-xs flex items-center gap-1 mt-1" style={{ color: '#a78bfa' }}>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -924,6 +965,81 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
         isOpen={showThemeModal} 
         onClose={() => setShowThemeModal(false)} 
       />
+
+      {/* Premium Congratulations Modal */}
+      {showPremiumCongrats && premiumGrantedData && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowPremiumCongrats(false)}
+        >
+          <div 
+            className="rounded-lg p-8 max-w-md w-full shadow-xl border"
+            style={{ 
+              backgroundColor: currentTheme.background,
+              borderColor: `${currentTheme.foreground}20`
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Success Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#a78bfa20' }}>
+                <svg className="w-8 h-8" style={{ color: '#a78bfa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 
+              className="text-2xl font-bold text-center mb-2"
+              style={{ 
+                fontFamily: 'Poppins, sans-serif',
+                color: currentTheme.foreground
+              }}
+            >
+              Congratulations!
+            </h3>
+
+            {/* Message */}
+            <p 
+              className="text-center mb-6"
+              style={{ 
+                fontFamily: 'Poppins, sans-serif',
+                color: `${currentTheme.foreground}80`
+              }}
+            >
+              {premiumGrantedData.days} Day{premiumGrantedData.days !== 1 ? 's' : ''} of Premium Has Been Added to Your Account!
+            </p>
+
+            {/* Package Badge */}
+            <div className="flex justify-center mb-6">
+              <span 
+                className="px-4 py-2 rounded-full text-sm font-semibold"
+                style={{
+                  backgroundColor: '#a78bfa20',
+                  color: '#a78bfa',
+                  fontFamily: 'Poppins, sans-serif'
+                }}
+              >
+                {premiumGrantedData.package_name}
+              </span>
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={() => setShowPremiumCongrats(false)}
+              className="w-full py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
+              style={{
+                backgroundColor: '#a78bfa',
+                color: 'white',
+                fontFamily: 'Poppins, sans-serif'
+              }}
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

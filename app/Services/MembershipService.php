@@ -78,21 +78,6 @@ class MembershipService
             // Mark purchase as completed (this also activates the membership)
             $purchase->complete();
             
-            // Award bonus coins if the package has this feature
-            $package = $purchase->membershipPackage;
-            if ($package && isset($package->features['bonus_coins'])) {
-                $bonusCoins = (int) $package->features['bonus_coins'];
-                if ($bonusCoins > 0) {
-                    $purchase->user->addCoins($bonusCoins);
-                    
-                    Log::info('Bonus coins awarded', [
-                        'user_id' => $purchase->user_id,
-                        'amount' => $bonusCoins,
-                        'purchase_id' => $purchase->id,
-                    ]);
-                }
-            }
-            
             DB::commit();
             
             Log::info('Membership purchase completed', [

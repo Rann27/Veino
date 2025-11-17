@@ -92,9 +92,15 @@ Route::middleware('auth')->group(function () {
 // Membership webhooks (public)
 Route::post('/membership/webhook/{provider}', [MembershipController::class, 'webhook'])->name('membership.webhook');
 
-// Buy Coins route (kept for backward compatibility)
+// Buy Coins route
 Route::get('/buy-coins', function () {
-    return redirect()->route('membership');
+    $packages = \App\Models\CoinPackage::where('is_active', true)
+        ->orderBy('coin_amount')
+        ->get();
+    
+    return inertia('BuyCoins', [
+        'packages' => $packages
+    ]);
 })->name('buy-coins');
 
 // Search routes
@@ -113,6 +119,12 @@ Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController:
 
 // Payment routes
 Route::middleware('auth')->group(function () {
+    // New coin purchase flow
+    Route::post('/payment/purchase', [PaymentController::class, 'purchase'])->name('payment.purchase');
+    Route::get('/payment/status/{purchase}', [PaymentController::class, 'status'])->name('payment.status');
+    Route::get('/payment/callback/{provider}/{purchase}', [PaymentController::class, 'callback'])->name('payment.callback');
+    
+    // Old payment routes (deprecated but kept for backward compatibility)
     Route::post('/payment/initiate/{coinPackage}', [PaymentController::class, 'initiatePayment'])->name('payment.initiate');
     Route::get('/payment/success', [PaymentController::class, 'handleSuccess'])->name('payment.success');
     Route::get('/payment/cancel', [PaymentController::class, 'handleCancel'])->name('payment.cancel');

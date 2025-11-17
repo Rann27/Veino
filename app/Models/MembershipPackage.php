@@ -14,6 +14,7 @@ class MembershipPackage extends Model
         'name',
         'tier',
         'price_usd',
+        'coin_price',
         'gimmick_price',
         'duration_days',
         'features',
@@ -24,6 +25,7 @@ class MembershipPackage extends Model
 
     protected $casts = [
         'price_usd' => 'decimal:2',
+        'coin_price' => 'integer',
         'gimmick_price' => 'decimal:2',
         'duration_days' => 'integer',
         'features' => 'array',

@@ -8,6 +8,7 @@ interface MembershipPackage {
     name: string;
     tier: string;
     price_usd: string;
+    coin_price: number;
     gimmick_price?: string | null;
     duration_days: number;
     features: {
@@ -23,6 +24,11 @@ interface Props {
     flash?: {
         success?: string;
         error?: string;
+        premium_granted?: {
+            days: number;
+            package_name: string;
+            source: string;
+        };
     };
     errors?: Record<string, string | string[]>;
 }
@@ -37,14 +43,24 @@ const getOriginalPrice = (price: number, discount: number): string => {
     return (price / (1 - discount / 100)).toFixed(2);
 };
 
+const getOriginalCoinPrice = (coinPrice: number, discount: number): number => {
+    if (discount === 0) return 0;
+    return Math.round(coinPrice / (1 - discount / 100));
+};
+
 function MembershipContent({ packages, flash, errors }: Props) {
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
-    const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(flash?.error ?? null);
+    const [premiumGranted, setPremiumGranted] = useState<{ days: number; package_name: string; source: string } | null>(null);
 
-    const page = usePage<{ flash?: { success?: string; error?: string }; errors?: Record<string, string | string[]> }>();
+    const page = usePage<{ 
+        auth: { user: { coins: number } }; 
+        flash?: { success?: string; error?: string; premium_granted?: { days: number; package_name: string; source: string } }; 
+        errors?: Record<string, string | string[]> 
+    }>();
 
     const extractMessage = (value: unknown): string | undefined => {
         if (!value) {
@@ -58,6 +74,14 @@ function MembershipContent({ packages, flash, errors }: Props) {
 
         return typeof value === 'string' ? value : undefined;
     };
+
+    // Check for premium_granted flash message
+    React.useEffect(() => {
+        if (flash?.premium_granted) {
+            setPremiumGranted(flash.premium_granted);
+            setShowSuccess(true);
+        }
+    }, [flash?.premium_granted]);
 
     // Check for success parameter in URL
     React.useEffect(() => {
@@ -95,15 +119,23 @@ function MembershipContent({ packages, flash, errors }: Props) {
         e.preventDefault();
         e.stopPropagation();
         
-        if (!selectedPackage || !selectedPayment) {
-            setErrorMessage('Please choose a membership package and select a payment method.');
+        if (!selectedPackage) {
+            setErrorMessage('Please choose a membership package.');
             return;
         }
 
+        // Show confirmation modal instead of direct submit
+        setShowConfirmModal(true);
+    };
+
+    const handleConfirmPurchase = () => {
+        if (!selectedPackage) return;
+
         setErrorMessage(null);
+        setShowConfirmModal(false);
+        
         router.post(route('membership.purchase'), {
             package_id: selectedPackage,
-            payment_method: selectedPayment,
         }, {
             preserveScroll: true,
             onStart: () => {
@@ -114,12 +146,13 @@ function MembershipContent({ packages, flash, errors }: Props) {
                     extractMessage(formErrors.membership) ||
                     extractMessage(formErrors.error) ||
                     extractMessage(Object.values(formErrors)[0]) ||
-                    'We could not start the payment. Please try again.';
+                    'We could not process your purchase. Please try again.';
 
                 setErrorMessage(message);
             },
             onSuccess: () => {
                 setErrorMessage(null);
+                setShowSuccess(true);
             },
             onFinish: () => {
                 setIsProcessing(false);
@@ -136,15 +169,18 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 flash={flash}
                 selectedPackage={selectedPackage}
                 setSelectedPackage={setSelectedPackage}
-                selectedPayment={selectedPayment}
-                setSelectedPayment={setSelectedPayment}
                 isProcessing={isProcessing}
                 showSuccess={showSuccess}
                 setShowSuccess={setShowSuccess}
+                showConfirmModal={showConfirmModal}
+                setShowConfirmModal={setShowConfirmModal}
                 handleSubmit={handleSubmit}
+                handleConfirmPurchase={handleConfirmPurchase}
                 selectedPkg={selectedPkg}
                 errorMessage={errorMessage}
                 dismissError={() => setErrorMessage(null)}
+                userCoins={page.props.auth.user.coins}
+                premiumGranted={premiumGranted}
             />
         </UserLayout>
     );
@@ -155,15 +191,18 @@ function MembershipInner({
     flash, 
     selectedPackage,
     setSelectedPackage,
-    selectedPayment,
-    setSelectedPayment,
     isProcessing,
     showSuccess,
     setShowSuccess,
+    showConfirmModal,
+    setShowConfirmModal,
     handleSubmit,
+    handleConfirmPurchase,
     selectedPkg,
     errorMessage,
-    dismissError
+    dismissError,
+    userCoins,
+    premiumGranted
 }: any) {
     const { currentTheme } = useTheme();
 
@@ -191,6 +230,109 @@ function MembershipInner({
                             Unlock unlimited reading experience
                         </p>
                     </div>
+
+                    {/* Confirmation Modal */}
+                    {showConfirmModal && selectedPkg && (
+                        <div 
+                            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                            style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+                            onClick={() => setShowConfirmModal(false)}
+                        >
+                            <div 
+                                className="backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center border-2 shadow-2xl"
+                                style={{ 
+                                    backgroundColor: `${currentTheme.background}F0`,
+                                    borderColor: SHINY_PURPLE,
+                                    boxShadow: `0 0 40px ${SHINY_PURPLE}80`
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="mb-6">
+                                    <div 
+                                        className="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"
+                                        style={{ 
+                                            backgroundColor: `${SHINY_PURPLE}20`,
+                                            boxShadow: `0 0 30px ${SHINY_PURPLE}50`
+                                        }}
+                                    >
+                                        <svg className="w-12 h-12" viewBox="0 0 24 24" fill="none">
+                                            <text x="12" y="18" fontSize="24" fontWeight="bold" fill={SHINY_PURPLE} textAnchor="middle">¢</text>
+                                        </svg>
+                                    </div>
+                                    <h2 
+                                        className="text-2xl font-bold mb-3"
+                                        style={{ color: SHINY_PURPLE }}
+                                    >
+                                        Confirm Purchase
+                                    </h2>
+                                    <p 
+                                        className="text-lg mb-4"
+                                        style={{ color: currentTheme.foreground }}
+                                    >
+                                        Are you sure you want to purchase <span className="font-semibold" style={{ color: SHINY_PURPLE }}>{selectedPkg.name}</span> membership?
+                                    </p>
+                                    
+                                    {/* Package Details */}
+                                    <div 
+                                        className="rounded-lg p-4 mb-4 text-left"
+                                        style={{ 
+                                            backgroundColor: `${currentTheme.foreground}10`,
+                                            borderColor: `${currentTheme.foreground}20`
+                                        }}
+                                    >
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span style={{ color: currentTheme.foreground }} className="opacity-70">Duration:</span>
+                                            <span style={{ color: currentTheme.foreground }} className="font-semibold">{selectedPkg.duration_days} days</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span style={{ color: currentTheme.foreground }} className="opacity-70">Cost:</span>
+                                            <span style={{ color: '#f59e0b' }} className="font-bold text-xl">¢{selectedPkg.coin_price.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+
+                                    <p 
+                                        className="text-sm opacity-70 mb-2"
+                                        style={{ color: currentTheme.foreground }}
+                                    >
+                                        Your current balance: <span className="font-semibold" style={{ color: '#f59e0b' }}>¢{userCoins.toLocaleString()}</span>
+                                    </p>
+                                    {userCoins >= selectedPkg.coin_price && (
+                                        <p 
+                                            className="text-sm opacity-70"
+                                            style={{ color: currentTheme.foreground }}
+                                        >
+                                            After purchase: <span className="font-semibold" style={{ color: '#f59e0b' }}>¢{(userCoins - selectedPkg.coin_price).toLocaleString()}</span>
+                                        </p>
+                                    )}
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => setShowConfirmModal(false)}
+                                        className="flex-1 py-3 rounded-lg font-semibold transition-all border-2"
+                                        style={{
+                                            borderColor: `${currentTheme.foreground}40`,
+                                            color: currentTheme.foreground
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={handleConfirmPurchase}
+                                        disabled={isProcessing}
+                                        className="flex-1 py-3 rounded-lg font-semibold transition-all"
+                                        style={{
+                                            backgroundColor: SHINY_PURPLE,
+                                            color: '#fff',
+                                            opacity: isProcessing ? 0.5 : 1
+                                        }}
+                                    >
+                                        {isProcessing ? 'Processing...' : 'Confirm Purchase'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Success Popup */}
                     {showSuccess && (
@@ -233,18 +375,57 @@ function MembershipInner({
                                     >
                                         Congratulations!
                                     </h2>
-                                    <p 
-                                        className="text-lg mb-2"
-                                        style={{ color: currentTheme.foreground }}
-                                    >
-                                        Your Premium Membership
-                                    </p>
-                                    <p 
-                                        className="text-xl font-semibold mb-4"
-                                        style={{ color: SHINY_PURPLE }}
-                                    >
-                                        Has Been Activated!
-                                    </p>
+                                    
+                                    {premiumGranted ? (
+                                        <>
+                                            <p 
+                                                className="text-lg mb-2"
+                                                style={{ color: currentTheme.foreground }}
+                                            >
+                                                <span className="font-bold" style={{ color: SHINY_PURPLE }}>
+                                                    {premiumGranted.days} {premiumGranted.days === 1 ? 'Day' : 'Days'}
+                                                </span>
+                                                {' '}of Premium
+                                            </p>
+                                            <p 
+                                                className="text-xl font-semibold mb-4"
+                                                style={{ color: SHINY_PURPLE }}
+                                            >
+                                                Has Been Added to Your Account!
+                                            </p>
+                                            <div 
+                                                className="inline-block px-4 py-2 rounded-lg mb-4"
+                                                style={{ 
+                                                    backgroundColor: `${SHINY_PURPLE}20`,
+                                                    borderColor: SHINY_PURPLE,
+                                                    border: '1px solid'
+                                                }}
+                                            >
+                                                <p 
+                                                    className="text-sm font-semibold"
+                                                    style={{ color: SHINY_PURPLE }}
+                                                >
+                                                    {premiumGranted.package_name}
+                                                </p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p 
+                                                className="text-lg mb-2"
+                                                style={{ color: currentTheme.foreground }}
+                                            >
+                                                Your Premium Membership
+                                            </p>
+                                            <p 
+                                                className="text-xl font-semibold mb-4"
+                                                style={{ color: SHINY_PURPLE }}
+                                            >
+                                                Has Been Activated!
+                                            </p>
+                                        </>
+                                    )}
+                                    
                                     <p 
                                         className="text-sm opacity-70"
                                         style={{ color: currentTheme.foreground }}
@@ -323,15 +504,12 @@ function MembershipInner({
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {packages.map((pkg: MembershipPackage) => {
-                                    // Use gimmick_price if available, otherwise calculate from discount
-                                    const gimmickPrice = pkg.gimmick_price ? parseFloat(pkg.gimmick_price) : null;
-                                    const realPrice = parseFloat(pkg.price_usd);
-                                    const originalPrice = gimmickPrice && gimmickPrice > realPrice 
-                                        ? gimmickPrice.toFixed(2) 
-                                        : (pkg.discount_percentage > 0 ? getOriginalPrice(realPrice, pkg.discount_percentage) : null);
+                                    const coinPrice = pkg.coin_price;
+                                    const originalCoinPrice = pkg.discount_percentage > 0 ? getOriginalCoinPrice(coinPrice, pkg.discount_percentage) : 0;
                                     
                                     const isSelected = selectedPackage === pkg.id;
                                     const isBestValue = pkg.duration_days === 365;
+                                    const canAfford = userCoins >= coinPrice;
 
                                     return (
                                         <button
@@ -348,7 +526,8 @@ function MembershipInner({
                                                     : `${currentTheme.foreground}20`,
                                                 boxShadow: isSelected 
                                                     ? `0 0 20px ${SHINY_PURPLE}40` 
-                                                    : 'none'
+                                                    : 'none',
+                                                opacity: canAfford ? 1 : 0.6
                                             }}
                                         >
                                             {isBestValue && (
@@ -363,6 +542,18 @@ function MembershipInner({
                                                 </div>
                                             )}
                                             
+                                            {!canAfford && (
+                                                <div 
+                                                    className="absolute -top-3 left-4 px-3 py-1 rounded-full text-xs font-bold"
+                                                    style={{ 
+                                                        backgroundColor: '#ef4444',
+                                                        color: '#fff'
+                                                    }}
+                                                >
+                                                    INSUFFICIENT COINS
+                                                </div>
+                                            )}
+                                            
                                             <div className="mb-3">
                                                 <h3 
                                                     className="font-semibold text-lg"
@@ -373,19 +564,19 @@ function MembershipInner({
                                             </div>
                                             
                                             <div className="flex items-baseline gap-2 mb-3">
-                                                {originalPrice && (
+                                                {originalCoinPrice > 0 && (
                                                     <span 
                                                         className="text-sm line-through opacity-50"
                                                         style={{ color: currentTheme.foreground }}
                                                     >
-                                                        ${originalPrice}
+                                                        ¢{originalCoinPrice.toLocaleString()}
                                                     </span>
                                                 )}
                                                 <span 
                                                     className="text-2xl font-bold"
-                                                    style={{ color: SHINY_PURPLE }}
+                                                    style={{ color: '#f59e0b' }}
                                                 >
-                                                    ${pkg.price_usd}
+                                                    ¢{coinPrice.toLocaleString()}
                                                 </span>
                                             </div>
 
@@ -453,7 +644,7 @@ function MembershipInner({
                             )}
                         </div>
 
-                        {/* Step 2: Payment Method */}
+                        {/* Coin Balance Info */}
                         <div 
                             className="rounded-xl p-6 border"
                             style={{ 
@@ -461,76 +652,61 @@ function MembershipInner({
                                 borderColor: `${currentTheme.foreground}20`
                             }}
                         >
-                            <div className="flex items-center gap-3 mb-6">
-                                <div 
-                                    className="w-8 h-8 rounded-full flex items-center justify-center font-bold"
-                                    style={{ 
-                                        backgroundColor: SHINY_PURPLE,
-                                        color: '#fff'
-                                    }}
-                                >
-                                    2
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 
+                                        className="text-sm opacity-70 mb-1"
+                                        style={{ color: currentTheme.foreground }}
+                                    >
+                                        Your Coin Balance
+                                    </h3>
+                                    <p 
+                                        className="text-3xl font-bold"
+                                        style={{ color: '#f59e0b' }}
+                                    >
+                                        ¢{userCoins.toLocaleString()}
+                                    </p>
                                 </div>
-                                <h2 
-                                    className="text-xl font-semibold"
-                                    style={{ color: currentTheme.foreground }}
-                                >
-                                    Select Payment Method
-                                </h2>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {PAYMENT_METHODS.map((method) => {
-                                    const isSelected = selectedPayment === method.id;
-                                    return (
-                                        <button
-                                            key={method.id}
-                                            type="button"
-                                            onClick={() => setSelectedPayment(method.id)}
-                                            className="p-4 rounded-lg border-2 transition-all flex items-center gap-4"
+                                {selectedPkg && userCoins < selectedPkg.coin_price && (
+                                    <div>
+                                        <p 
+                                            className="text-sm mb-2"
+                                            style={{ color: '#ef4444' }}
+                                        >
+                                            Need ¢{(selectedPkg.coin_price - userCoins).toLocaleString()} more
+                                        </p>
+                                        <a
+                                            href="/buy-coins"
+                                            className="inline-block px-4 py-2 rounded-lg text-sm font-semibold transition-all"
                                             style={{
-                                                backgroundColor: isSelected 
-                                                    ? `${SHINY_PURPLE}15` 
-                                                    : `${currentTheme.foreground}03`,
-                                                borderColor: isSelected 
-                                                    ? SHINY_PURPLE 
-                                                    : `${currentTheme.foreground}20`,
+                                                backgroundColor: '#f59e0b',
+                                                color: '#fff'
                                             }}
                                         >
-                                            <div className="flex-shrink-0">
-                                                <img 
-                                                    src={method.logo} 
-                                                    alt={method.name}
-                                                    className="w-12 h-12 object-contain"
-                                                    style={{ filter: currentTheme.name === 'dark' ? 'invert(1)' : 'none' }}
-                                                />
-                                            </div>
-                                            <div 
-                                                className="text-left font-medium"
-                                                style={{ color: currentTheme.foreground }}
-                                            >
-                                                {method.name}
-                                            </div>
-                                        </button>
-                                    );
-                                })}
+                                            Buy Coins
+                                        </a>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
                         {/* Buy Button */}
                         <button
                             type="submit"
-                            disabled={!selectedPackage || !selectedPayment || isProcessing}
+                            disabled={!selectedPackage || (selectedPkg && userCoins < selectedPkg.coin_price) || isProcessing}
                             className="w-full py-4 rounded-xl font-bold text-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             style={{
                                 backgroundColor: SHINY_PURPLE,
                                 color: '#fff',
-                                boxShadow: selectedPackage && selectedPayment 
+                                boxShadow: selectedPackage && selectedPkg && userCoins >= selectedPkg.coin_price
                                     ? `0 0 30px ${SHINY_PURPLE}60` 
                                     : 'none'
                             }}
                         >
-                            {isProcessing ? 'Processing...' : 'Buy Now'}
+                            {isProcessing ? 'Processing...' : 
+                             !selectedPackage ? 'Select a Package' :
+                             selectedPkg && userCoins < selectedPkg.coin_price ? 'Insufficient Coins' :
+                             'Buy with Coins'}
                         </button>
 
                         {selectedPkg && (
@@ -542,8 +718,8 @@ function MembershipInner({
                                     className="text-sm opacity-70"
                                     style={{ color: currentTheme.foreground }}
                                 >
-                                    Total: <span className="font-bold text-xl" style={{ color: SHINY_PURPLE }}>
-                                        ${selectedPkg.price_usd}
+                                    Total: <span className="font-bold text-xl" style={{ color: '#f59e0b' }}>
+                                        ¢{selectedPkg.coin_price.toLocaleString()}
                                     </span>
                                 </p>
                             </div>

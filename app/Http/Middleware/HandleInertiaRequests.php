@@ -39,6 +39,26 @@ class HandleInertiaRequests extends Middleware
     {
         [$message, $author] = str(Inspiring::quotes()->random())->explode('-');
 
+        // Check if user has pending premium_granted from admin
+        $premiumGrantedFromAdmin = null;
+        if ($request->user()) {
+            $sessionKey = "premium_granted_user_{$request->user()->id}";
+            $stored = session()->get($sessionKey);
+            
+            if ($stored && isset($stored['expires_at']) && $stored['expires_at'] > now()->timestamp) {
+                $premiumGrantedFromAdmin = [
+                    'days' => $stored['days'],
+                    'package_name' => $stored['package_name'],
+                    'source' => $stored['source']
+                ];
+                // Remove after first access
+                session()->forget($sessionKey);
+            }
+        }
+
+        // Prioritize admin grant over flash (flash is for immediate feedback, admin grant can be delayed)
+        $premiumGrantedData = $premiumGrantedFromAdmin ?? session('premium_granted');
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -55,6 +75,11 @@ class HandleInertiaRequests extends Middleware
                     'avatar_url' => $request->user()->avatar_url,
                     'role' => $request->user()->role,
                 ] : null,
+            ],
+            'flash' => [
+                'success' => session('success'),
+                'error' => session('error'),
+                'premium_granted' => $premiumGrantedData,
             ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),

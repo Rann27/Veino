@@ -17,6 +17,7 @@ class CoinPurchase extends Model
         'price_usd',
         'payment_method',
         'transaction_id',
+        'payment_url',
         'status',
     ];
 

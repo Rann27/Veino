@@ -18,13 +18,14 @@ class MembershipPackageSeeder extends Seeder
                 'name' => '1 Month Premium',
                 'tier' => 'premium',
                 'gimmick_price' => 10.00,
-                'price_usd' => 7.95,
+                'price_usd' => 5.49,
+                'coin_price' => 549,
                 'duration_days' => 30,
                 'features' => [
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 21, // $10 -> $7.95
+                'discount_percentage' => 45, // $10 -> $5.49
                 'is_active' => true,
                 'sort_order' => 1,
             ],
@@ -33,14 +34,15 @@ class MembershipPackageSeeder extends Seeder
             [
                 'name' => '3 Months Premium',
                 'tier' => 'premium',
-                'gimmick_price' => 29.99,
-                'price_usd' => 20.99,
+                'gimmick_price' => 45.00,
+                'price_usd' => 15.49,
+                'coin_price' => 1549,
                 'duration_days' => 90,
                 'features' => [
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 30, // $29.99 -> $20.99
+                'discount_percentage' => 66, // $45 -> $15.49
                 'is_active' => true,
                 'sort_order' => 2,
             ],
@@ -49,14 +51,15 @@ class MembershipPackageSeeder extends Seeder
             [
                 'name' => '6 Months Premium',
                 'tier' => 'premium',
-                'gimmick_price' => 59.63,
-                'price_usd' => 39.95,
+                'gimmick_price' => 90.00,
+                'price_usd' => 28.99,
+                'coin_price' => 2899,
                 'duration_days' => 180,
                 'features' => [
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 33, // $59.63 -> $39.95
+                'discount_percentage' => 68, // $90 -> $28.99
                 'is_active' => true,
                 'sort_order' => 3,
             ],
@@ -65,14 +68,15 @@ class MembershipPackageSeeder extends Seeder
             [
                 'name' => '12 Months Premium',
                 'tier' => 'premium',
-                'gimmick_price' => 119.33,
-                'price_usd' => 79.95,
+                'gimmick_price' => 180.00,
+                'price_usd' => 54.49,
+                'coin_price' => 5449,
                 'duration_days' => 365,
                 'features' => [
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 33, // $119.33 -> $79.95
+                'discount_percentage' => 70, // $180 -> $54.49
                 'is_active' => true,
                 'sort_order' => 4,
             ],

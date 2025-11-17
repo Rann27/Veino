@@ -20,6 +20,7 @@ class MembershipHistory extends Model
         'tier',
         'duration_days',
         'amount_usd',
+        'coin_price',
         'payment_method',
         'status',
         'paypal_order_id',
@@ -32,6 +33,7 @@ class MembershipHistory extends Model
 
     protected $casts = [
         'amount_usd' => 'decimal:2',
+        'coin_price' => 'integer',
         'duration_days' => 'integer',
         'gateway_response' => 'array',
         'starts_at' => 'datetime',
