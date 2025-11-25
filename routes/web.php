@@ -21,6 +21,10 @@ use App\Http\Controllers\Admin\TransactionHistoryController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\EbookSeriesController;
+use App\Http\Controllers\ChartController;
+use App\Http\Controllers\BookshelfController;
+use App\Http\Controllers\Admin\EbookSeriesController as AdminEbookSeriesController;
 use Illuminate\Support\Facades\Auth;
 
 // Authentication Routes
@@ -117,6 +121,24 @@ Route::get('/series/{slug}/chapter/{chapter}', [UserChapterController::class, 's
 Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController::class, 'purchase'])
     ->name('chapters.purchase')->middleware('auth');
 
+// Ebook Shop Routes
+Route::get('/epub-novels', [EbookSeriesController::class, 'index'])->name('epub-novels.index');
+Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name('epub-novels.show');
+
+// Shopping Cart Routes (requires authentication)
+Route::middleware('auth')->group(function () {
+    Route::get('/my-chart', [ChartController::class, 'index'])->name('my-chart');
+    Route::post('/chart/add', [ChartController::class, 'add'])->name('chart.add');
+    Route::post('/chart/add-all', [ChartController::class, 'addAll'])->name('chart.add-all');
+    Route::delete('/chart/remove', [ChartController::class, 'remove'])->name('chart.remove');
+    Route::post('/chart/checkout', [ChartController::class, 'checkout'])->name('chart.checkout');
+    
+    // Bookshelf Routes
+    Route::get('/bookshelf', [BookshelfController::class, 'index'])->name('bookshelf');
+    Route::get('/ebook/download/{item}', [BookshelfController::class, 'download'])->name('ebook.download');
+});
+
+
 // Payment routes
 Route::middleware('auth')->group(function () {
     // New coin purchase flow
@@ -194,8 +216,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/advertisements/{advertisement}', [App\Http\Controllers\Admin\AdvertisementController::class, 'destroy'])->name('advertisements.destroy');
     Route::post('/advertisements/{advertisement}/toggle-active', [App\Http\Controllers\Admin\AdvertisementController::class, 'toggleActive'])->name('advertisements.toggle-active');
     
-    // Monitoring (Comments & Reactions)
+        // Monitoring (Comments & Reactions)
     Route::get('/monitoring', [App\Http\Controllers\Admin\MonitoringController::class, 'index'])->name('monitoring.index');
+    
+    // Ebook Series Management
+    Route::get('/ebookseries', [AdminEbookSeriesController::class, 'index'])->name('ebookseries.index');
+    Route::get('/ebookseries/create', [AdminEbookSeriesController::class, 'create'])->name('ebookseries.create');
+    Route::post('/ebookseries', [AdminEbookSeriesController::class, 'store'])->name('ebookseries.store');
+    Route::get('/ebookseries/{series}/edit', [AdminEbookSeriesController::class, 'edit'])->name('ebookseries.edit');
+    Route::put('/ebookseries/{series}', [AdminEbookSeriesController::class, 'update'])->name('ebookseries.update');
+    Route::delete('/ebookseries/{series}', [AdminEbookSeriesController::class, 'destroy'])->name('ebookseries.destroy');
+    
+    // Ebook Item Management
+    Route::post('/ebookseries/{series}/items', [AdminEbookSeriesController::class, 'storeItem'])->name('ebookseries.items.store');
+    Route::put('/ebookseries/{series}/items/{item}', [AdminEbookSeriesController::class, 'updateItem'])->name('ebookseries.items.update');
+    Route::delete('/ebookseries/{series}/items/{item}', [AdminEbookSeriesController::class, 'destroyItem'])->name('ebookseries.items.destroy');
+    
     Route::get('/monitoring/comments', [App\Http\Controllers\Admin\MonitoringController::class, 'getComments'])->name('monitoring.comments');
     Route::delete('/monitoring/comments/{id}', [App\Http\Controllers\Admin\MonitoringController::class, 'deleteComment'])->name('monitoring.comments.delete');
     Route::get('/monitoring/reactions', [App\Http\Controllers\Admin\MonitoringController::class, 'getReactions'])->name('monitoring.reactions');

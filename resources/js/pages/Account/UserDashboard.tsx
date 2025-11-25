@@ -17,17 +17,18 @@ interface MembershipStatus {
     expires_at?: string;
 }
 
-interface MembershipTransaction {
+interface Transaction {
     id: number;
-    invoice_number: string;
-    tier: string;
-    duration_days: number;
-    amount_usd: string;
+    type: string;
+    type_label: string;
+    description?: string;
+    amount: string;
+    coins_spent?: number;
+    coins_received?: number;
     payment_method: string;
     status: string;
-    purchased_at: string;
-    starts_at?: string;
-    expires_at?: string;
+    date: string;
+    formatted_date: string;
 }
 
 interface ReadingHistoryItem {
@@ -44,11 +45,12 @@ interface ReadingHistoryItem {
 interface Props {
     user: User;
     membershipStatus: MembershipStatus;
-    membershipTransactions?: MembershipTransaction[];
+    coinBalance: number;
+    transactions?: Transaction[];
     readingHistory?: ReadingHistoryItem[];
 }
 
-function DashboardContent({ user, membershipStatus, membershipTransactions = [], readingHistory = [] }: Props) {
+function DashboardContent({ user, membershipStatus, coinBalance, transactions = [], readingHistory = [] }: Props) {
     const { currentTheme } = useTheme();
 
     const formatDate = (dateString: string) => {
@@ -142,6 +144,20 @@ function DashboardContent({ user, membershipStatus, membershipTransactions = [],
                                         {user.bio}
                                     </p>
                                 )}
+                                
+                                {/* Coin Balance - Above Membership */}
+                                <div className="mb-3">
+                                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border"
+                                        style={{
+                                            backgroundColor: `${currentTheme.foreground}05`,
+                                            borderColor: `${currentTheme.foreground}20`,
+                                            color: currentTheme.foreground
+                                        }}
+                                    >
+                                        <span className="font-bold text-lg">¢{coinBalance.toLocaleString()}</span>
+                                        <span className="text-sm opacity-70">Coins</span>
+                                    </div>
+                                </div>
                                 
                                 {/* Membership Badge */}
                                 {membershipStatus.is_premium ? (
@@ -308,7 +324,7 @@ function DashboardContent({ user, membershipStatus, membershipTransactions = [],
                             )}
                         </div>
                         
-                        {/* Membership History Section */}
+                        {/* Transaction History Section */}
                         <div 
                             className="rounded-2xl p-6 border flex flex-col"
                             style={{
@@ -325,16 +341,16 @@ function DashboardContent({ user, membershipStatus, membershipTransactions = [],
                                     className="text-xl font-bold"
                                     style={{ color: currentTheme.foreground }}
                                 >
-                                    Membership History
+                                    Transaction History
                                 </h3>
                             </div>
                             
-                            {membershipTransactions.length > 0 ? (
+                            {transactions.length > 0 ? (
                                 <div className="flex-1 overflow-y-auto space-y-3">
-                                    {membershipTransactions.map((transaction) => (
+                                    {transactions.map((transaction) => (
                                         <div
                                             key={transaction.id}
-                                            className="p-4 rounded-lg border transition-all hover:shadow-md cursor-pointer"
+                                            className="p-4 rounded-lg border transition-all hover:shadow-md"
                                             style={{
                                                 backgroundColor: `${currentTheme.foreground}03`,
                                                 borderColor: `${currentTheme.foreground}20`
@@ -344,64 +360,73 @@ function DashboardContent({ user, membershipStatus, membershipTransactions = [],
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span 
-                                                            className="font-semibold text-sm"
+                                                            className="font-semibold"
                                                             style={{ color: currentTheme.foreground }}
                                                         >
-                                                            {transaction.invoice_number}
+                                                            {transaction.type_label}
                                                         </span>
-                                                        <span 
-                                                            className="px-2 py-0.5 rounded text-xs font-medium"
-                                                            style={{
-                                                                background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #e879f9 100%)`,
-                                                                color: '#fff'
-                                                            }}
-                                                        >
-                                                            {transaction.tier}
-                                                        </span>
+                                                        {transaction.coins_received && (
+                                                            <span 
+                                                                className="px-2 py-0.5 rounded text-xs font-medium"
+                                                                style={{
+                                                                    backgroundColor: '#10b981',
+                                                                    color: '#fff'
+                                                                }}
+                                                            >
+                                                                +¢{transaction.coins_received.toLocaleString()}
+                                                            </span>
+                                                        )}
+                                                        {transaction.coins_spent && (
+                                                            <span 
+                                                                className="px-2 py-0.5 rounded text-xs font-medium"
+                                                                style={{
+                                                                    backgroundColor: '#ef4444',
+                                                                    color: '#fff'
+                                                                }}
+                                                            >
+                                                                -¢{transaction.coins_spent.toLocaleString()}
+                                                            </span>
+                                                        )}
                                                     </div>
+                                                    {transaction.description && (
+                                                        <div className="text-xs mb-1" style={{ color: `${currentTheme.foreground}80` }}>
+                                                            {transaction.description}
+                                                        </div>
+                                                    )}
                                                     <div className="flex items-center gap-2 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
-                                                        <span>{formatDate(transaction.purchased_at)}</span>
+                                                        <span>{transaction.formatted_date}</span>
                                                         <span>•</span>
-                                                        <span>{transaction.duration_days} days</span>
+                                                        <span className="capitalize">{transaction.payment_method}</span>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
                                                     <div className="font-bold" style={{ color: SHINY_PURPLE }}>
-                                                        ${transaction.amount_usd}
+                                                        ${parseFloat(transaction.amount).toFixed(2)}
                                                     </div>
                                                     <div className="flex items-center gap-1 justify-end mt-1">
                                                         {getPaymentMethodLogo(transaction.payment_method)}
-                                                        <span className="text-xs capitalize" style={{ color: `${currentTheme.foreground}60` }}>
-                                                            {transaction.payment_method}
-                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
-                                            {transaction.expires_at && (
-                                                <div className="text-xs mt-2 pt-2 border-t" style={{ 
-                                                    borderColor: `${currentTheme.foreground}10`,
-                                                    color: `${currentTheme.foreground}50`
-                                                }}>
-                                                    Valid until: {formatDate(transaction.expires_at)}
-                                                </div>
-                                            )}
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="flex-1 flex items-center justify-center">
-                                    <div className="text-center">
-                                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-3" style={{ opacity: 0.3 }}>
+                                <div className="flex-1 flex flex-col items-center justify-center">
+                                    <div className="mb-4" style={{ opacity: 0.3 }}>
+                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                             <path d="M19 14V6c0-1.1-.9-2-2-2H3c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zm-9-1c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm13-6v11c0 1.1-.9 2-2 2H4v-2h17V7h2z" fill="currentColor"/>
                                         </svg>
+                                    </div>
+                                    <div className="text-center">
                                         <p 
-                                            className="text-sm"
+                                            className="text-sm mb-2"
                                             style={{ color: `${currentTheme.foreground}60` }}
                                         >
-                                            No membership transactions yet
+                                            No transactions yet
                                         </p>
                                         <Link
-                                            href="/membership"
+                                            href="/buy-coins"
                                             className="inline-block mt-3 px-4 py-2 rounded-lg text-sm font-medium"
                                             style={{
                                                 backgroundColor: SHINY_PURPLE,

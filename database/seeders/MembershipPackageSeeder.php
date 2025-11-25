@@ -12,6 +12,9 @@ class MembershipPackageSeeder extends Seeder
      */
     public function run(): void
     {
+        // Clear existing packages (using delete instead of truncate due to foreign key)
+        MembershipPackage::query()->delete();
+        
         $packages = [
             // 1 Month Premium
             [
@@ -25,7 +28,7 @@ class MembershipPackageSeeder extends Seeder
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 45, // $10 -> $5.49
+                'discount_percentage' => 45,
                 'is_active' => true,
                 'sort_order' => 1,
             ],
@@ -42,7 +45,7 @@ class MembershipPackageSeeder extends Seeder
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 66, // $45 -> $15.49
+                'discount_percentage' => 66,
                 'is_active' => true,
                 'sort_order' => 2,
             ],
@@ -59,7 +62,7 @@ class MembershipPackageSeeder extends Seeder
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 68, // $90 -> $28.99
+                'discount_percentage' => 68,
                 'is_active' => true,
                 'sort_order' => 3,
             ],
@@ -76,7 +79,7 @@ class MembershipPackageSeeder extends Seeder
                     'unlock_premium_chapters' => true,
                     'ad_free' => true,
                 ],
-                'discount_percentage' => 70, // $180 -> $54.49
+                'discount_percentage' => 70,
                 'is_active' => true,
                 'sort_order' => 4,
             ],
@@ -86,6 +89,6 @@ class MembershipPackageSeeder extends Seeder
             MembershipPackage::create($package);
         }
 
-        $this->command->info('Membership packages seeded successfully!');
+        $this->command->info('✅ Membership packages seeded successfully!');
     }
 }

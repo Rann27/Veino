@@ -166,6 +166,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get user's chart items
+     */
+    public function chartItems(): HasMany
+    {
+        return $this->hasMany(ChartItem::class);
+    }
+
+    /**
+     * Get user's purchased ebook items
+     */
+    public function purchasedItems(): HasMany
+    {
+        return $this->hasMany(PurchasedItem::class);
+    }
+
+    /**
      * Get user's active membership purchase
      */
     public function activeMembershipPurchase()

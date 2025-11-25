@@ -266,6 +266,20 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   Explore
                 </Link>
                 <Link 
+                  href="/epub-novels" 
+                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
+                  style={{ color: currentTheme.foreground }}
+                >
+                  Epub Novels
+                </Link>
+                <Link 
+                  href="/buy-coins" 
+                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
+                  style={{ color: currentTheme.foreground }}
+                >
+                  Buy Coins
+                </Link>
+                <Link 
                   href="/membership" 
                   className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
@@ -449,6 +463,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         )}
                       </div>
                       
+                      {/* Dashboard */}
                       <Link 
                         href="/account" 
                         className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
@@ -460,17 +475,31 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         Dashboard
                       </Link>
                       
+                      {/* My Chart */}
                       <Link 
-                        href="/account/settings" 
+                        href="/my-chart" 
                         className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
                         style={{ color: currentTheme.foreground }}
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+                          <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z" fill="currentColor"/>
                         </svg>
-                        Settings
+                        My Chart
                       </Link>
                       
+                      {/* Bookshelf */}
+                      <Link 
+                        href="/bookshelf" 
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19 2H9c-1.1 0-2 .9-2 2v5.5c0 .83.67 1.5 1.5 1.5S10 10.33 10 9.5V4h8v16H5V10H3v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 9.5C9 9.78 8.78 10 8.5 10S8 9.78 8 9.5V4H2v5.5C2 10.33 2.67 11 3.5 11S5 10.33 5 9.5V4" fill="currentColor"/>
+                        </svg>
+                        Bookshelf
+                      </Link>
+                      
+                      {/* Bookmark */}
                       <Link 
                         href="/account/bookmarks" 
                         className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
@@ -482,7 +511,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         Bookmark
                       </Link>
                       
-                      {/* Theme Selector */}
+                      {/* Theme Settings */}
                       <button
                         onClick={() => {
                           setShowThemeModal(true);
@@ -496,6 +525,18 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         </svg>
                         Theme Settings
                       </button>
+                      
+                      {/* Settings */}
+                      <Link 
+                        href="/account/settings" 
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" fill="currentColor"/>
+                        </svg>
+                        Settings
+                      </Link>
                       
                       <div 
                         className="border-t mt-1"
@@ -602,6 +643,28 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   onClick={toggleMobileSidebar}
                 >
                   Explore
+                </Link>
+                <Link 
+                  href="/epub-novels" 
+                  className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
+                  style={{ 
+                    color: currentTheme.foreground,
+                    backgroundColor: `${currentTheme.foreground}05`
+                  }}
+                  onClick={toggleMobileSidebar}
+                >
+                  Epub Novels
+                </Link>
+                <Link 
+                  href="/buy-coins" 
+                  className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
+                  style={{ 
+                    color: currentTheme.foreground,
+                    backgroundColor: `${currentTheme.foreground}05`
+                  }}
+                  onClick={toggleMobileSidebar}
+                >
+                  Buy Coins
                 </Link>
                 <Link 
                   href="/membership" 

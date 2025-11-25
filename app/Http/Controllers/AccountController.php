@@ -22,24 +22,29 @@ class AccountController extends Controller
             'expires_at' => $user->membership_expires_at ? $user->membership_expires_at->toISOString() : null,
         ];
         
-        // Get membership transactions (completed only)
-        $membershipTransactions = \App\Models\MembershipHistory::where('user_id', $user->id)
+        // Get coin balance
+        $coinBalance = $user->coin_balance ?? 0;
+        
+        // Get all transaction history (hybrid: coins, membership, ebook)
+        $transactions = \App\Models\Transaction::where('user_id', $user->id)
             ->where('status', 'completed')
-            ->orderBy('completed_at', 'desc')
-            ->limit(10)
+            ->with(['coinPackage', 'membershipPackage', 'ebookItem', 'chapter'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
             ->get()
             ->map(function ($transaction) {
                 return [
                     'id' => $transaction->id,
-                    'invoice_number' => $transaction->invoice_number,
-                    'tier' => ucfirst($transaction->tier),
-                    'duration_days' => $transaction->duration_days,
-                    'amount_usd' => $transaction->amount_usd,
+                    'type' => $transaction->type,
+                    'type_label' => $transaction->getTypeLabel(),
+                    'description' => $transaction->description,
+                    'amount' => $transaction->amount,
+                    'coins_spent' => $transaction->coins_spent,
+                    'coins_received' => $transaction->coins_received,
                     'payment_method' => $transaction->payment_method,
                     'status' => $transaction->status,
-                    'purchased_at' => $transaction->completed_at ? $transaction->completed_at->toISOString() : $transaction->created_at->toISOString(),
-                    'starts_at' => $transaction->starts_at ? $transaction->starts_at->toISOString() : null,
-                    'expires_at' => $transaction->expires_at ? $transaction->expires_at->toISOString() : null,
+                    'date' => $transaction->created_at->toISOString(),
+                    'formatted_date' => $transaction->created_at->format('M d, Y H:i'),
                 ];
             });
         
@@ -65,7 +70,8 @@ class AccountController extends Controller
         return Inertia::render('Account/UserDashboard', [
             'user' => $user->append('avatar_url'),
             'membershipStatus' => $membershipStatus,
-            'membershipTransactions' => $membershipTransactions,
+            'coinBalance' => $coinBalance,
+            'transactions' => $transactions,
             'readingHistory' => $readingHistory,
         ]);
     }
