@@ -47,7 +47,9 @@ export default function Edit({ series, items, genres }: Props) {
         synopsis: series.synopsis,
         author: series.author || '',
         artist: series.artist || '',
-        genre_ids: series.genres.map(g => g.id)
+        genre_ids: series.genres.map(g => g.id),
+        show_trial_button: (series as any).show_trial_button || false,
+        series_slug: (series as any).series_slug || '',
     });
 
     const [coverPreview, setCoverPreview] = useState<string>(series.cover_url);
@@ -99,6 +101,8 @@ export default function Edit({ series, items, genres }: Props) {
         data.append('author', seriesData.author);
         data.append('artist', seriesData.artist);
         seriesData.genre_ids.forEach(id => data.append('genre_ids[]', id.toString()));
+        data.append('show_trial_button', seriesData.show_trial_button ? '1' : '0');
+        data.append('series_slug', seriesData.series_slug);
         data.append('_method', 'PUT');
 
         router.post(route('admin.ebookseries.update', series.id), data, {
@@ -324,6 +328,42 @@ export default function Edit({ series, items, genres }: Props) {
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Trial Reading Backlink Section */}
+                    <div className="space-y-4 p-4 bg-blue-50 rounded-md border border-blue-200">
+                        <div className="flex items-center">
+                            <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
+                                <input
+                                    type="checkbox"
+                                    checked={seriesData.show_trial_button}
+                                    onChange={(e) => setSeriesData(prev => ({
+                                        ...prev,
+                                        show_trial_button: e.target.checked,
+                                        series_slug: e.target.checked ? prev.series_slug : '',
+                                    }))}
+                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
+                                />
+                                <span className="ml-2 text-sm text-gray-700 font-medium">Show Trial Reading Button</span>
+                            </label>
+                        </div>
+                        
+                        {seriesData.show_trial_button && (
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                    Series Slug *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={seriesData.series_slug}
+                                    onChange={(e) => setSeriesData(prev => ({ ...prev, series_slug: e.target.value }))}
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="e.g., novel-series-name"
+                                    required={seriesData.show_trial_button}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">The slug of the Series (on-site novel) to link to</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Submit */}

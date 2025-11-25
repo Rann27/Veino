@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
@@ -30,6 +30,8 @@ interface EbookSeries {
     author?: string;
     artist?: string;
     genres: Genre[];
+    show_trial_button?: boolean;
+    series_slug?: string;
 }
 
 interface Props {
@@ -237,6 +239,26 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                             {series.synopsis || 'No synopsis available.'}
                                         </p>
                                     </div>
+
+                                    {/* Trial Reading Button */}
+                                    {series.show_trial_button && series.series_slug && (
+                                        <div className="mt-6">
+                                            <Link
+                                                href={route('series.show', series.series_slug)}
+                                                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all interactive-scale"
+                                                style={{
+                                                    backgroundColor: currentTheme.foreground,
+                                                    color: currentTheme.background,
+                                                    fontFamily: 'Poppins, sans-serif'
+                                                }}
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                                </svg>
+                                                Try Reading for Free
+                                            </Link>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

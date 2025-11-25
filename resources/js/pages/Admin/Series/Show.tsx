@@ -68,6 +68,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     status: series.status,
     native_language_id: series.native_language.id.toString(),
     genre_ids: series.genres.map(g => g.id),
+    show_epub_button: (series as any).show_epub_button || false,
+    epub_series_slug: (series as any).epub_series_slug || '',
   });
   const [chapterFormData, setChapterFormData] = useState({
     title: '',
@@ -708,6 +710,41 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                     ))}
                   </div>
                 </div>
+
+                {/* Epub Backlink Section */}
+                <div className="space-y-4 p-4 bg-green-50 rounded-md border border-green-200">
+                  <div className="flex items-center">
+                    <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
+                      <input
+                        type="checkbox"
+                        checked={editFormData.show_epub_button}
+                        onChange={(e) => setEditFormData(prev => ({
+                          ...prev,
+                          show_epub_button: e.target.checked,
+                          epub_series_slug: e.target.checked ? prev.epub_series_slug : '',
+                        }))}
+                        className="rounded border-gray-300 text-green-600 focus:ring-green-500 focus:ring-2"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 font-medium">Show Epub Download Button</span>
+                    </label>
+                  </div>
+                  
+                  {editFormData.show_epub_button && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Epub Series Slug *</label>
+                      <input
+                        type="text"
+                        value={editFormData.epub_series_slug}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, epub_series_slug: e.target.value }))}
+                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500 focus:ring-2 transition-all duration-200"
+                        placeholder="e.g., novel-series-name"
+                        required={editFormData.show_epub_button}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">The slug of the Epub Series to link to</p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     type="button"

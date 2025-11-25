@@ -51,6 +51,8 @@ class EbookSeriesController extends Controller
             'cover' => 'nullable|image|max:2048',
             'genre_ids' => 'nullable|array',
             'genre_ids.*' => 'exists:genres,id',
+            'show_trial_button' => 'nullable|boolean',
+            'series_slug' => 'nullable|string|max:255',
         ]);
 
         // Handle cover upload
@@ -115,6 +117,8 @@ class EbookSeriesController extends Controller
             'cover' => 'nullable|image|max:2048',
             'genre_ids' => 'nullable|array',
             'genre_ids.*' => 'exists:genres,id',
+            'show_trial_button' => 'nullable|boolean',
+            'series_slug' => 'nullable|string|max:255',
         ]);
 
         // Handle cover upload

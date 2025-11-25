@@ -124,6 +124,7 @@ Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController:
 // Ebook Shop Routes
 Route::get('/epub-novels', [EbookSeriesController::class, 'index'])->name('epub-novels.index');
 Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name('epub-novels.show');
+Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name('ebookseries.show'); // Alias
 
 // Shopping Cart Routes (requires authentication)
 Route::middleware('auth')->group(function () {
@@ -201,10 +202,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/users/{user}/ban', [UserController::class, 'banUser'])->name('users.ban');
     Route::post('/users/{user}/unban', [UserController::class, 'unbanUser'])->name('users.unban');
     Route::post('/users/{user}/add-membership', [UserController::class, 'addMembership'])->name('users.add-membership');
+    Route::post('/users/{user}/add-coins', [UserController::class, 'addCoins'])->name('users.add-coins');
+    Route::post('/users/{user}/deduct-coins', [UserController::class, 'deductCoins'])->name('users.deduct-coins');
     
     // Payment & Shop Management
     Route::get('/payment-management', [AdminPaymentController::class, 'index'])->name('payment.index');
     Route::put('/membership-packages/{membershipPackage}', [AdminPaymentController::class, 'updateMembershipPackage'])->name('membership-packages.update');
+    Route::put('/coin-packages/{coinPackage}', [AdminPaymentController::class, 'updateCoinPackage'])->name('coin-packages.update');
     
     // Transaction History
     Route::get('/transaction-history', [TransactionHistoryController::class, 'index'])->name('transaction-history.index');

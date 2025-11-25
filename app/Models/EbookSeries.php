@@ -20,9 +20,15 @@ class EbookSeries extends Model
         'artist',
         'status_id',
         'native_language_id',
+        'show_trial_button',
+        'series_slug',
     ];
 
     protected $appends = ['cover_url', 'price_range'];
+
+    protected $casts = [
+        'show_trial_button' => 'boolean',
+    ];
 
     protected static function boot()
     {

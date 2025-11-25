@@ -27,10 +27,13 @@ class Series extends Model
         'views',
         'bookmarks_count',
         'comments_count',
+        'show_epub_button',
+        'epub_series_slug',
     ];
 
     protected $casts = [
         'rating' => 'decimal:1',
+        'show_epub_button' => 'boolean',
     ];
 
     protected static function boot()

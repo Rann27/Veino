@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,7 +14,8 @@ class UserController extends Controller
     {
         $search = $request->get('search');
         
-        $users = User::when($search, function($query, $search) {
+        $users = User::select('id', 'display_name', 'email', 'role', 'coins', 'membership_tier', 'membership_expires_at', 'is_banned', 'created_at')
+            ->when($search, function($query, $search) {
                 return $query->where('display_name', 'like', "%{$search}%")
                            ->orWhere('email', 'like', "%{$search}%");
             })
@@ -61,6 +63,15 @@ class UserController extends Controller
         
         $user->save();
         
+        // Create transaction record for admin-granted membership
+        Transaction::create([
+            'user_id' => $user->id,
+            'type' => 'admin_membership_grant',
+            'status' => 'completed',
+            'payment_method' => 'admin',
+            'description' => "Admin granted {$durationDays} days Premium membership",
+        ]);
+        
         // Set flash for congratulations modal (for user when they visit)
         session()->put("premium_granted_user_{$user->id}", [
             'days' => $durationDays,
@@ -70,5 +81,64 @@ class UserController extends Controller
         ]);
         
         return redirect()->back()->with('success', "Added {$durationDays} days of Premium membership to {$user->display_name}");
+    }
+
+    public function addCoins(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|integer|min:1|max:1000000',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $amount = $validated['amount'];
+        $reason = $validated['reason'] ?? 'Admin Grant';
+        
+        // Add coins to user
+        $user->increment('coins', $amount);
+        
+        // Create transaction record
+        Transaction::create([
+            'user_id' => $user->id,
+            'type' => 'admin_grant',
+            'coins_received' => $amount,
+            'status' => 'completed',
+            'payment_method' => 'admin',
+            'description' => $reason,
+        ]);
+        
+        return redirect()->back()->with('success', "Added {$amount} coins to {$user->display_name}");
+    }
+
+    public function deductCoins(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'amount' => 'required|integer|min:1',
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $amount = $validated['amount'];
+        $reason = $validated['reason'] ?? 'Admin Deduction';
+        
+        // Check if user has enough coins
+        if ($user->coins < $amount) {
+            return redirect()->back()->withErrors([
+                'amount' => "User only has {$user->coins} coins. Cannot deduct {$amount} coins."
+            ]);
+        }
+        
+        // Deduct coins from user
+        $user->decrement('coins', $amount);
+        
+        // Create transaction record
+        Transaction::create([
+            'user_id' => $user->id,
+            'type' => 'admin_deduction',
+            'coins_spent' => $amount,
+            'status' => 'completed',
+            'payment_method' => 'admin',
+            'description' => $reason,
+        ]);
+        
+        return redirect()->back()->with('success', "Deducted {$amount} coins from {$user->display_name}");
     }
 }

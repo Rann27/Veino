@@ -68,6 +68,9 @@ class Transaction extends Model
             'membership_purchase' => '👑 Membership',
             'ebook_purchase' => '📖 Ebook',
             'chapter_purchase' => '📄 Chapter',
+            'admin_grant' => '🎁 Admin Grant (Coins)',
+            'admin_deduction' => '📉 Admin Deduction',
+            'admin_membership_grant' => '👑 Premium Membership (Admin)',
             default => $this->type,
         };
     }

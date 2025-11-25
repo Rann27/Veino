@@ -7,6 +7,7 @@ interface User {
   display_name: string;
   email: string;
   role: string;
+  coins: number;
   membership_tier: 'basic' | 'premium';
   membership_expires_at: string | null;
   is_banned: boolean;
@@ -28,8 +29,12 @@ interface UsersIndexProps {
 export default function UsersIndex({ users, search }: UsersIndexProps) {
   const [searchTerm, setSearchTerm] = useState(search || '');
   const [showAddMembershipModal, setShowAddMembershipModal] = useState(false);
+  const [showCoinModal, setShowCoinModal] = useState(false);
+  const [coinModalType, setCoinModalType] = useState<'add' | 'deduct'>('add');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [durationDays, setDurationDays] = useState('');
+  const [coinAmount, setCoinAmount] = useState('');
+  const [coinReason, setCoinReason] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +67,42 @@ export default function UsersIndex({ users, search }: UsersIndexProps) {
         duration_days: parseInt(durationDays)
       }, {
         onSuccess: () => setShowAddMembershipModal(false)
+      });
+    }
+  };
+
+  const openAddCoinsModal = (user: User) => {
+    setSelectedUser(user);
+    setCoinModalType('add');
+    setCoinAmount('');
+    setCoinReason('');
+    setShowCoinModal(true);
+  };
+
+  const openDeductCoinsModal = (user: User) => {
+    setSelectedUser(user);
+    setCoinModalType('deduct');
+    setCoinAmount('');
+    setCoinReason('');
+    setShowCoinModal(true);
+  };
+
+  const handleCoinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedUser && coinAmount) {
+      const url = coinModalType === 'add'
+        ? `/admin/users/${selectedUser.id}/add-coins`
+        : `/admin/users/${selectedUser.id}/deduct-coins`;
+      
+      router.post(url, {
+        amount: parseInt(coinAmount),
+        reason: coinReason || undefined
+      }, {
+        onSuccess: () => {
+          setShowCoinModal(false);
+          setCoinAmount('');
+          setCoinReason('');
+        }
       });
     }
   };
@@ -116,6 +157,9 @@ export default function UsersIndex({ users, search }: UsersIndexProps) {
                 Role
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Coins
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Membership
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -150,6 +194,11 @@ export default function UsersIndex({ users, search }: UsersIndexProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-bold text-amber-600">
+                    ¢{user.coins.toLocaleString()}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex flex-col">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium w-fit ${
                       user.membership_tier === 'premium'
@@ -178,29 +227,46 @@ export default function UsersIndex({ users, search }: UsersIndexProps) {
                   {new Date(user.created_at).toLocaleDateString()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex space-x-2">
-                    {user.is_banned ? (
+                  <div className="flex flex-col space-y-1">
+                    <div className="flex space-x-2">
+                      {user.is_banned ? (
+                        <button
+                          onClick={() => handleUnbanUser(user)}
+                          className="text-green-600 hover:text-green-900 text-xs"
+                        >
+                          Unban
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleBanUser(user)}
+                          className="text-red-600 hover:text-red-900 text-xs"
+                          disabled={user.role === 'admin'}
+                        >
+                          Ban
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleUnbanUser(user)}
-                        className="text-green-600 hover:text-green-900"
+                        onClick={() => openAddMembershipModal(user)}
+                        className="text-purple-600 hover:text-purple-900 text-xs"
                       >
-                        Unban
+                        + Membership
                       </button>
-                    ) : (
+                    </div>
+                    <div className="flex space-x-2">
                       <button
-                        onClick={() => handleBanUser(user)}
-                        className="text-red-600 hover:text-red-900"
-                        disabled={user.role === 'admin'}
+                        onClick={() => openAddCoinsModal(user)}
+                        className="text-green-600 hover:text-green-900 text-xs"
                       >
-                        Ban
+                        + Coins
                       </button>
-                    )}
-                    <button
-                      onClick={() => openAddMembershipModal(user)}
-                      className="text-purple-600 hover:text-purple-900"
-                    >
-                      Add Membership
-                    </button>
+                      <button
+                        onClick={() => openDeductCoinsModal(user)}
+                        className="text-orange-600 hover:text-orange-900 text-xs"
+                        disabled={user.coins === 0}
+                      >
+                        - Coins
+                      </button>
+                    </div>
                   </div>
                 </td>
               </tr>
@@ -292,6 +358,109 @@ export default function UsersIndex({ users, search }: UsersIndexProps) {
                     className="px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md"
                   >
                     Confirm
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Deduct Coins Modal */}
+      {showCoinModal && selectedUser && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {coinModalType === 'add' ? 'Add Coins to' : 'Deduct Coins from'} {selectedUser.display_name}
+              </h3>
+              <form onSubmit={handleCoinSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Balance: {' '}
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                      ¢{selectedUser.coins.toLocaleString()}
+                    </span>
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={coinModalType === 'deduct' ? selectedUser.coins : 1000000}
+                    value={coinAmount}
+                    onChange={(e) => setCoinAmount(e.target.value)}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                    placeholder={coinModalType === 'add' ? 'Enter coins to add' : 'Enter coins to deduct'}
+                    required
+                  />
+                  {coinModalType === 'deduct' && selectedUser.coins > 0 && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      Maximum: ¢{selectedUser.coins.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Reason (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={coinReason}
+                    onChange={(e) => setCoinReason(e.target.value)}
+                    className="block w-full border-gray-300 rounded-md shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                    placeholder="e.g., Compensation, Event reward, etc."
+                    maxLength={255}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Will appear in user's transaction history
+                  </p>
+                </div>
+
+                {/* Preview */}
+                {coinAmount && (
+                  <div className={`rounded-md p-3 ${
+                    coinModalType === 'add' ? 'bg-green-50 border border-green-200' : 'bg-orange-50 border border-orange-200'
+                  }`}>
+                    <div className="flex items-center">
+                      <svg className={`w-4 h-4 mr-2 ${
+                        coinModalType === 'add' ? 'text-green-600' : 'text-orange-600'
+                      }`} fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <span className={`text-sm font-medium ${
+                        coinModalType === 'add' ? 'text-green-800' : 'text-orange-800'
+                      }`}>
+                        New Balance: ¢
+                        {coinModalType === 'add'
+                          ? (selectedUser.coins + parseInt(coinAmount)).toLocaleString()
+                          : (selectedUser.coins - parseInt(coinAmount)).toLocaleString()
+                        }
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCoinModal(false)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
+                      coinModalType === 'add'
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-orange-600 hover:bg-orange-700'
+                    }`}
+                  >
+                    {coinModalType === 'add' ? 'Add Coins' : 'Deduct Coins'}
                   </button>
                 </div>
               </form>

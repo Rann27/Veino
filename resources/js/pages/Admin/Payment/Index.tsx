@@ -11,6 +11,15 @@ interface MembershipPackage {
   is_active: boolean;
 }
 
+interface CoinPackage {
+  id: number;
+  name: string;
+  coin_amount: number;
+  bonus_premium_days: number;
+  price_usd: number;
+  is_active: boolean;
+}
+
 interface PaymentSettings {
   paypal_client_id: string | null;
   paypal_secret: string | null;
@@ -21,14 +30,24 @@ interface PaymentSettings {
 
 interface PaymentIndexProps {
   membershipPackages: MembershipPackage[];
+  coinPackages: CoinPackage[];
   paymentSettings: PaymentSettings;
 }
 
-export default function PaymentIndex({ membershipPackages, paymentSettings }: PaymentIndexProps) {
+export default function PaymentIndex({ membershipPackages, coinPackages, paymentSettings }: PaymentIndexProps) {
   const [editingPackage, setEditingPackage] = useState<MembershipPackage | null>(null);
   const [packageFormData, setPackageFormData] = useState({
     name: '',
     gimmick_price: '',
+    price_usd: '',
+    is_active: true,
+  });
+
+  const [editingCoinPackage, setEditingCoinPackage] = useState<CoinPackage | null>(null);
+  const [coinPackageFormData, setCoinPackageFormData] = useState({
+    name: '',
+    coin_amount: '',
+    bonus_premium_days: '',
     price_usd: '',
     is_active: true,
   });
@@ -55,6 +74,35 @@ export default function PaymentIndex({ membershipPackages, paymentSettings }: Pa
         onSuccess: () => {
           setEditingPackage(null);
           setPackageFormData({ name: '', gimmick_price: '', price_usd: '', is_active: true });
+        }
+      });
+    }
+  };
+
+  const openEditCoinPackage = (pkg: CoinPackage) => {
+    setEditingCoinPackage(pkg);
+    setCoinPackageFormData({
+      name: pkg.name,
+      coin_amount: pkg.coin_amount.toString(),
+      bonus_premium_days: pkg.bonus_premium_days.toString(),
+      price_usd: pkg.price_usd.toString(),
+      is_active: pkg.is_active,
+    });
+  };
+
+  const handleCoinPackageSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingCoinPackage) {
+      router.put(`/admin/coin-packages/${editingCoinPackage.id}`, {
+        name: coinPackageFormData.name,
+        coin_amount: parseInt(coinPackageFormData.coin_amount),
+        bonus_premium_days: parseInt(coinPackageFormData.bonus_premium_days),
+        price_usd: parseFloat(coinPackageFormData.price_usd),
+        is_active: coinPackageFormData.is_active,
+      }, {
+        onSuccess: () => {
+          setEditingCoinPackage(null);
+          setCoinPackageFormData({ name: '', coin_amount: '', bonus_premium_days: '', price_usd: '', is_active: true });
         }
       });
     }
@@ -132,6 +180,111 @@ export default function PaymentIndex({ membershipPackages, paymentSettings }: Pa
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Coin Packages Section */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Coin Packages</h2>
+            <span className="text-sm text-gray-500">Users can purchase coins for premium features</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+            {coinPackages.map((pkg) => {
+              const priceUsd = parseFloat(pkg.price_usd.toString());
+              const bonusPercentage = pkg.coin_amount > priceUsd * 100
+                ? Math.round(((pkg.coin_amount - priceUsd * 100) / (priceUsd * 100)) * 100)
+                : 0;
+
+              return (
+                <div
+                  key={pkg.id}
+                  className={`border rounded-lg p-4 relative ${
+                    pkg.is_active ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-gray-50'
+                  }`}
+                >
+                  {/* Bonus Badge */}
+                  {bonusPercentage > 0 && (
+                    <div className="absolute -top-2 -right-2 z-10">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-green-500 text-white shadow-lg">
+                        +{bonusPercentage}%
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Package Name */}
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 z-10">
+                    <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-600 text-white shadow-lg whitespace-nowrap">
+                      {pkg.name}
+                    </span>
+                  </div>
+
+                  <div className="text-center mt-4">
+                    {/* Coin Amount */}
+                    <div className="mb-3">
+                      <div className="text-3xl font-bold text-amber-500">
+                        ¢{pkg.coin_amount.toLocaleString()}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">coins</div>
+                    </div>
+
+                    {/* Premium Days Bonus */}
+                    {pkg.bonus_premium_days > 0 && (
+                      <div className="mb-3">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          💎 +{pkg.bonus_premium_days}d Premium
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Price */}
+                    <div className="mb-3 pt-3 border-t border-gray-300">
+                      <div className="text-2xl font-bold text-gray-900">
+                        ${priceUsd.toFixed(2)}
+                      </div>
+                      <div className="text-xs text-gray-500">USD</div>
+                    </div>
+
+                    {/* Status */}
+                    <div className="mb-3">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        pkg.is_active 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {pkg.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => openEditCoinPackage(pkg)}
+                      className="w-full bg-amber-600 text-white py-2 px-4 rounded-md hover:bg-amber-700 text-sm font-medium"
+                    >
+                      Edit Package
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Info Box */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <svg className="w-5 h-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <div className="text-sm text-amber-800">
+                <p className="font-medium mb-1">Coin Package Management</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>Users purchase coins with real money (PayPal/Cryptomus)</li>
+                  <li>Coins can be used for: Membership upgrades, unlocking chapters, shop items</li>
+                  <li>Bonus Premium Days are granted automatically upon purchase</li>
+                  <li>Inactive packages won't be displayed on Buy Coins page</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -469,6 +622,119 @@ export default function PaymentIndex({ membershipPackages, paymentSettings }: Pa
                   <button
                     type="submit"
                     className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
+                  >
+                    Update Package
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Coin Package Modal */}
+      {editingCoinPackage && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Edit {editingCoinPackage.name}
+              </h3>
+              <form onSubmit={handleCoinPackageSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Package Name</label>
+                  <input
+                    type="text"
+                    value={coinPackageFormData.name}
+                    onChange={(e) => setCoinPackageFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                    placeholder="e.g., S Package, M Package"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Coin Amount</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={coinPackageFormData.coin_amount}
+                    onChange={(e) => setCoinPackageFormData(prev => ({ ...prev, coin_amount: e.target.value }))}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                    placeholder="600"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Number of coins user will receive</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Bonus Premium Days</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={coinPackageFormData.bonus_premium_days}
+                    onChange={(e) => setCoinPackageFormData(prev => ({ ...prev, bonus_premium_days: e.target.value }))}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                    placeholder="1"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Premium days granted with purchase (0 for none)</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Price (USD)</label>
+                  <input
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={coinPackageFormData.price_usd}
+                    onChange={(e) => setCoinPackageFormData(prev => ({ ...prev, price_usd: e.target.value }))}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-amber-500 focus:ring-amber-500"
+                    placeholder="6.00"
+                    required
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Price charged via payment gateway</p>
+                </div>
+
+                {/* Bonus Percentage Preview */}
+                {coinPackageFormData.coin_amount && coinPackageFormData.price_usd && 
+                 parseInt(coinPackageFormData.coin_amount) > parseFloat(coinPackageFormData.price_usd) * 100 && (
+                  <div className="bg-green-50 border border-green-200 rounded-md p-3">
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm font-medium text-green-800">
+                        Bonus: +{Math.round(((parseInt(coinPackageFormData.coin_amount) - parseFloat(coinPackageFormData.price_usd) * 100) / (parseFloat(coinPackageFormData.price_usd) * 100)) * 100)}% extra coins
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={coinPackageFormData.is_active}
+                      onChange={(e) => setCoinPackageFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                      className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Active Package</span>
+                  </label>
+                  <p className="mt-1 ml-6 text-xs text-gray-500">Only active packages appear on Buy Coins page</p>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditingCoinPackage(null)}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-md"
                   >
                     Update Package
                   </button>

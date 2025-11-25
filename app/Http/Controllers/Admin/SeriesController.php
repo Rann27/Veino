@@ -131,6 +131,8 @@ class SeriesController extends Controller
             'native_language_id' => 'required|exists:native_languages,id',
             'genre_ids' => 'required|array',
             'genre_ids.*' => 'exists:genres,id',
+            'show_epub_button' => 'nullable|boolean',
+            'epub_series_slug' => 'nullable|string|max:255',
         ]);
 
         // Sanitize synopsis HTML content
@@ -160,6 +162,8 @@ class SeriesController extends Controller
             'native_language_id' => 'required|exists:native_languages,id',
             'genre_ids' => 'required|array',
             'genre_ids.*' => 'exists:genres,id',
+            'show_epub_button' => 'nullable|boolean',
+            'epub_series_slug' => 'nullable|string|max:255',
         ]);
 
         // Sanitize synopsis HTML content

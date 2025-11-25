@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MembershipPackage;
+use App\Models\CoinPackage;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -12,6 +13,7 @@ class PaymentController extends Controller
     public function index()
     {
         $membershipPackages = MembershipPackage::orderBy('sort_order')->get();
+        $coinPackages = CoinPackage::orderBy('price_usd')->get();
         
         // Get PayPal and Cryptomus settings from .env (more secure)
         $paymentSettings = [
@@ -24,6 +26,7 @@ class PaymentController extends Controller
 
         return Inertia::render('Admin/Payment/Index', [
             'membershipPackages' => $membershipPackages,
+            'coinPackages' => $coinPackages,
             'paymentSettings' => $paymentSettings,
         ]);
     }
@@ -47,6 +50,21 @@ class PaymentController extends Controller
         $membershipPackage->update($validated);
 
         return redirect()->back()->with('success', 'Membership package updated successfully');
+    }
+
+    public function updateCoinPackage(Request $request, CoinPackage $coinPackage)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'coin_amount' => 'required|integer|min:1',
+            'bonus_premium_days' => 'required|integer|min:0',
+            'price_usd' => 'required|numeric|min:0.01',
+            'is_active' => 'boolean',
+        ]);
+
+        $coinPackage->update($validated);
+
+        return redirect()->back()->with('success', 'Coin package updated successfully');
     }
 
     // PayPal and Cryptomus settings are now configured via .env for security
