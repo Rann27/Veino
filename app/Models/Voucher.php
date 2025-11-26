@@ -67,16 +67,18 @@ class Voucher extends Model
     }
 
     /**
-     * Calculate discount amount
+     * Calculate discount amount (rounded UP to make users happy!)
      */
     public function calculateDiscount(float $originalAmount): float
     {
         if ($this->discount_type === 'percent') {
-            return round(($originalAmount * $this->discount_value) / 100, 2);
+            // Calculate percentage discount and round UP
+            $discount = ($originalAmount * $this->discount_value) / 100;
+            return (float) ceil($discount); // Always round up! 🎉
         }
 
-        // Flat discount
-        return min($this->discount_value, $originalAmount); // Can't discount more than the total
+        // Flat discount (already whole number)
+        return (float) min($this->discount_value, $originalAmount); // Can't discount more than the total
     }
 
     /**
