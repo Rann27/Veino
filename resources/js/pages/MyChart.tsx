@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
@@ -21,6 +21,12 @@ interface Props {
 
 function MyChartContent({ chartItems, totalPrice }: Props) {
     const { currentTheme } = useTheme();
+    
+    // Voucher state
+    const [voucherCode, setVoucherCode] = useState('');
+    const [voucherData, setVoucherData] = useState<any>(null);
+    const [voucherError, setVoucherError] = useState('');
+    const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
 
     const removeFromChart = (chartItemId: number) => {
         if (confirm('Remove this item from chart?')) {
@@ -30,6 +36,75 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
             });
         }
     };
+
+    const handleApplyVoucher = async () => {
+        if (!voucherCode.trim()) {
+            alert('Please enter a voucher code');
+            return;
+        }
+
+        if (chartItems.length === 0) {
+            alert('Your chart is empty');
+            return;
+        }
+
+        setIsApplyingVoucher(true);
+        setVoucherError('');
+
+        try {
+            const response = await fetch(route('voucher.validate'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({
+                    code: voucherCode.toUpperCase(),
+                    type: 'ebook',
+                    amount: totalPrice,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setVoucherData(data);
+                setVoucherError('');
+                alert(`Voucher applied! You saved ¢${data.discount_amount.toLocaleString()}`);
+            } else {
+                setVoucherError(data.message || 'Invalid voucher');
+                setVoucherData(null);
+                alert(data.message || 'Invalid or expired voucher');
+            }
+        } catch (error) {
+            setVoucherError('Failed to validate voucher');
+            setVoucherData(null);
+            alert('Failed to validate voucher. Please try again.');
+        } finally {
+            setIsApplyingVoucher(false);
+        }
+    };
+
+    const handleRemoveVoucher = () => {
+        setVoucherCode('');
+        setVoucherData(null);
+        setVoucherError('');
+    };
+
+    const handleCheckout = () => {
+        if (chartItems.length === 0) {
+            alert('Your chart is empty');
+            return;
+        }
+
+        if (confirm(`Checkout ${chartItems.length} item(s) for ¢${(voucherData ? voucherData.final_amount : totalPrice).toLocaleString()}?`)) {
+            router.post(route('chart.checkout'), {
+                voucher_code: voucherData ? voucherCode.toUpperCase() : null,
+            });
+        }
+    };
+
+    const displayPrice = voucherData ? voucherData.final_amount : totalPrice;
 
     return (
         <>
@@ -118,12 +193,102 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
                                     </div>
                                 ))}
 
+                                {/* Voucher Section */}
+                                <div 
+                                    className="border rounded-lg p-6"
+                                    style={{ borderColor: `${currentTheme.foreground}20` }}
+                                >
+                                    <h3 
+                                        className="text-lg font-bold mb-4"
+                                        style={{ 
+                                            fontFamily: 'Poppins, sans-serif',
+                                            color: currentTheme.foreground
+                                        }}
+                                    >
+                                        Have a voucher code?
+                                    </h3>
+
+                                    {!voucherData ? (
+                                        <div className="flex gap-3">
+                                            <input
+                                                type="text"
+                                                value={voucherCode}
+                                                onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                                                placeholder="Enter voucher code"
+                                                className="flex-1 px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                style={{ 
+                                                    fontFamily: 'Poppins, sans-serif',
+                                                    borderColor: `${currentTheme.foreground}30`,
+                                                    backgroundColor: currentTheme.background,
+                                                    color: currentTheme.foreground
+                                                }}
+                                                disabled={isApplyingVoucher}
+                                            />
+                                            <button
+                                                onClick={handleApplyVoucher}
+                                                disabled={isApplyingVoucher || !voucherCode.trim()}
+                                                className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50"
+                                                style={{
+                                                    backgroundColor: '#f59e0b',
+                                                    color: 'white',
+                                                    fontFamily: 'Poppins, sans-serif'
+                                                }}
+                                            >
+                                                {isApplyingVoucher ? 'Checking...' : 'Apply'}
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p 
+                                                    className="text-sm opacity-70 mb-1"
+                                                    style={{ 
+                                                        fontFamily: 'Poppins, sans-serif',
+                                                        color: currentTheme.foreground
+                                                    }}
+                                                >
+                                                    Applied Voucher
+                                                </p>
+                                                <p 
+                                                    className="text-xl font-bold"
+                                                    style={{ 
+                                                        fontFamily: 'Poppins, sans-serif',
+                                                        color: '#10b981'
+                                                    }}
+                                                >
+                                                    {voucherCode}
+                                                </p>
+                                                <p 
+                                                    className="text-sm opacity-70 mt-1"
+                                                    style={{ 
+                                                        fontFamily: 'Poppins, sans-serif',
+                                                        color: currentTheme.foreground
+                                                    }}
+                                                >
+                                                    Discount: -¢{voucherData.discount_amount.toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={handleRemoveVoucher}
+                                                className="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:opacity-80"
+                                                style={{
+                                                    backgroundColor: `${currentTheme.foreground}10`,
+                                                    color: currentTheme.foreground,
+                                                    fontFamily: 'Poppins, sans-serif'
+                                                }}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Summary Card */}
                                 <div 
                                     className="border-2 rounded-lg p-6 mt-6"
                                     style={{ borderColor: '#f59e0b' }}
                                 >
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center mb-6">
                                         <div>
                                             <p 
                                                 className="text-sm opacity-70 mb-1"
@@ -162,10 +327,27 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
                                                     color: '#f59e0b'
                                                 }}
                                             >
-                                                ¢{totalPrice.toLocaleString()}
+                                                ¢{displayPrice.toLocaleString()}
+                                                {voucherData && (
+                                                    <span className="text-sm opacity-70 ml-2">
+                                                        (after discount)
+                                                    </span>
+                                                )}
                                             </p>
                                         </div>
                                     </div>
+
+                                    <button
+                                        onClick={handleCheckout}
+                                        className="w-full py-3 rounded-lg font-bold text-lg transition-all duration-200 hover:opacity-90"
+                                        style={{
+                                            backgroundColor: '#f59e0b',
+                                            color: 'white',
+                                            fontFamily: 'Poppins, sans-serif'
+                                        }}
+                                    >
+                                        Checkout
+                                    </button>
                                 </div>
                             </div>
                         ) : (

@@ -139,8 +139,12 @@ class ChartController extends Controller
     /**
      * Checkout - purchase all items in chart
      */
-    public function checkout()
+    public function checkout(Request $request)
     {
+        $request->validate([
+            'voucher_code' => 'nullable|string',
+        ]);
+
         $userId = auth()->id();
         $user = auth()->user();
 
@@ -157,9 +161,25 @@ class ChartController extends Controller
             return $chartItem->ebookItem->price_coins;
         });
 
+        // Handle voucher discount
+        $finalPrice = $totalPrice;
+        $voucher = null;
+        $discountAmount = 0;
+
+        if ($request->filled('voucher_code')) {
+            $voucher = \App\Models\Voucher::where('code', strtoupper($request->voucher_code))->first();
+            
+            if (!$voucher || !$voucher->isValidFor($userId, 'ebook')) {
+                return back()->with('error', 'Invalid or expired voucher code!');
+            }
+
+            $discountAmount = $voucher->calculateDiscount($totalPrice);
+            $finalPrice = max(0, $totalPrice - $discountAmount);
+        }
+
         // Check if user has enough coins
-        if ($user->coins < $totalPrice) {
-            return back()->with('error', 'Insufficient coins! You need ¢' . $totalPrice . ' but only have ¢' . $user->coins);
+        if ($user->coins < $finalPrice) {
+            return back()->with('error', 'Insufficient coins! You need ¢' . $finalPrice . ' but only have ¢' . $user->coins);
         }
 
         DB::beginTransaction();
@@ -183,8 +203,13 @@ class ChartController extends Controller
                 ]);
             }
 
-            // Deduct coins
-            $user->decrement('coins', $totalPrice);
+            // Deduct coins (with discount applied)
+            $user->decrement('coins', $finalPrice);
+
+            // Record voucher usage
+            if ($voucher) {
+                $voucher->recordUsage($userId, 'ebook', $discountAmount);
+            }
 
             // Clear cart
             ChartItem::where('user_id', $userId)->delete();

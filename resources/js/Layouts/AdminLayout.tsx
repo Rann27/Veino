@@ -20,6 +20,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
     { href: '/admin/user-management', label: 'Users', icon: '👥' },
     { href: '/admin/payment-management', label: 'Payment', icon: '💳' },
     { href: '/admin/blog', label: 'Blog', icon: '📝' },
+    { href: '/admin/voucher', label: 'Voucher', icon: '🎟️' },
     { href: '/admin/advertisement-management', label: 'Ads', icon: '📢' },
     { href: '/admin/monitoring', label: 'Monitoring', icon: '📈' },
   ];

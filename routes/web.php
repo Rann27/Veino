@@ -124,10 +124,14 @@ Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController:
 // Blog Routes
 Route::get('/blog/{blog}', [App\Http\Controllers\BlogController::class, 'show'])->name('blog.show');
 
+// Voucher validation (requires authentication)
+Route::post('/voucher/validate', [App\Http\Controllers\VoucherController::class, 'validate'])
+    ->middleware('auth')
+    ->name('voucher.validate');
+
 // Ebook Shop Routes
 Route::get('/epub-novels', [EbookSeriesController::class, 'index'])->name('epub-novels.index');
 Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name('epub-novels.show');
-Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name('ebookseries.show'); // Alias
 
 // Shopping Cart Routes (requires authentication)
 Route::middleware('auth')->group(function () {
@@ -223,6 +227,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/blog/{blog}/edit', [App\Http\Controllers\Admin\BlogController::class, 'edit'])->name('blog.edit');
     Route::put('/blog/{blog}', [App\Http\Controllers\Admin\BlogController::class, 'update'])->name('blog.update');
     Route::delete('/blog/{blog}', [App\Http\Controllers\Admin\BlogController::class, 'destroy'])->name('blog.destroy');
+    
+    // Voucher Management
+    Route::get('/voucher', [App\Http\Controllers\Admin\VoucherController::class, 'index'])->name('voucher.index');
+    Route::get('/voucher/create', [App\Http\Controllers\Admin\VoucherController::class, 'create'])->name('voucher.create');
+    Route::post('/voucher', [App\Http\Controllers\Admin\VoucherController::class, 'store'])->name('voucher.store');
+    Route::get('/voucher/{voucher}/edit', [App\Http\Controllers\Admin\VoucherController::class, 'edit'])->name('voucher.edit');
+    Route::put('/voucher/{voucher}', [App\Http\Controllers\Admin\VoucherController::class, 'update'])->name('voucher.update');
+    Route::delete('/voucher/{voucher}', [App\Http\Controllers\Admin\VoucherController::class, 'destroy'])->name('voucher.destroy');
     
     // Advertisement Management
     Route::get('/advertisement-management', [App\Http\Controllers\Admin\AdvertisementController::class, 'index'])->name('advertisements.index');

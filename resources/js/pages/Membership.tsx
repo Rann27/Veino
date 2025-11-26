@@ -55,6 +55,10 @@ function MembershipContent({ packages, flash, errors }: Props) {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(flash?.error ?? null);
     const [premiumGranted, setPremiumGranted] = useState<{ days: number; package_name: string; source: string } | null>(null);
+    const [voucherCode, setVoucherCode] = useState('');
+    const [voucherData, setVoucherData] = useState<any>(null);
+    const [voucherError, setVoucherError] = useState<string | null>(null);
+    const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
 
     const page = usePage<{ 
         auth: { user: { coins: number } }; 
@@ -128,6 +132,61 @@ function MembershipContent({ packages, flash, errors }: Props) {
         setShowConfirmModal(true);
     };
 
+    const handleApplyVoucher = async () => {
+        if (!voucherCode.trim()) {
+            setVoucherError('Please enter a voucher code.');
+            return;
+        }
+
+        if (!selectedPackage) {
+            setVoucherError('Please select a package first.');
+            return;
+        }
+
+        const selectedPkg = packages.find(p => p.id === selectedPackage);
+        if (!selectedPkg) return;
+
+        setIsApplyingVoucher(true);
+        setVoucherError(null);
+
+        try {
+            const response = await fetch(route('voucher.validate'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({
+                    code: voucherCode.toUpperCase(),
+                    type: 'membership',
+                    amount: selectedPkg.coin_price,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setVoucherData(data.data);
+                setVoucherError(null);
+                alert(data.message);
+            } else {
+                setVoucherError(data.message);
+                setVoucherData(null);
+            }
+        } catch (error) {
+            setVoucherError('Failed to apply voucher. Please try again.');
+            setVoucherData(null);
+        } finally {
+            setIsApplyingVoucher(false);
+        }
+    };
+
+    const handleRemoveVoucher = () => {
+        setVoucherCode('');
+        setVoucherData(null);
+        setVoucherError(null);
+    };
+
     const handleConfirmPurchase = () => {
         if (!selectedPackage) return;
 
@@ -136,6 +195,7 @@ function MembershipContent({ packages, flash, errors }: Props) {
         
         router.post(route('membership.purchase'), {
             package_id: selectedPackage,
+            voucher_code: voucherData ? voucherCode.toUpperCase() : null,
         }, {
             preserveScroll: true,
             onStart: () => {
@@ -181,6 +241,13 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 dismissError={() => setErrorMessage(null)}
                 userCoins={page.props.auth.user.coins}
                 premiumGranted={premiumGranted}
+                voucherCode={voucherCode}
+                setVoucherCode={setVoucherCode}
+                voucherData={voucherData}
+                voucherError={voucherError}
+                handleApplyVoucher={handleApplyVoucher}
+                handleRemoveVoucher={handleRemoveVoucher}
+                isApplyingVoucher={isApplyingVoucher}
             />
         </UserLayout>
     );
@@ -202,7 +269,14 @@ function MembershipInner({
     errorMessage,
     dismissError,
     userCoins,
-    premiumGranted
+    premiumGranted,
+    voucherCode,
+    setVoucherCode,
+    voucherData,
+    voucherError,
+    handleApplyVoucher,
+    handleRemoveVoucher,
+    isApplyingVoucher
 }: any) {
     const { currentTheme } = useTheme();
 
@@ -690,6 +764,82 @@ function MembershipInner({
                             </div>
                         </div>
 
+                        {/* Voucher Section */}
+                        {selectedPkg && (
+                            <div 
+                                className="rounded-xl p-6 border"
+                                style={{ 
+                                    backgroundColor: `${currentTheme.foreground}05`,
+                                    borderColor: `${currentTheme.foreground}20`
+                                }}
+                            >
+                                <h3 
+                                    className="text-sm font-semibold mb-3"
+                                    style={{ color: currentTheme.foreground }}
+                                >
+                                    Have a Voucher Code?
+                                </h3>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={voucherCode}
+                                        onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                                        placeholder="Enter voucher code"
+                                        disabled={!!voucherData || isApplyingVoucher}
+                                        className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 uppercase"
+                                        style={{
+                                            borderColor: voucherError ? '#ef4444' : `${currentTheme.foreground}30`,
+                                            backgroundColor: currentTheme.background,
+                                            color: currentTheme.foreground,
+                                        }}
+                                    />
+                                    {!voucherData ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleApplyVoucher}
+                                            disabled={!voucherCode.trim() || isApplyingVoucher}
+                                            className="px-6 py-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style={{
+                                                backgroundColor: SHINY_PURPLE,
+                                                color: '#fff'
+                                            }}
+                                        >
+                                            {isApplyingVoucher ? 'Applying...' : 'Apply'}
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveVoucher}
+                                            className="px-6 py-2 rounded-lg font-semibold transition-all"
+                                            style={{
+                                                backgroundColor: '#ef4444',
+                                                color: '#fff'
+                                            }}
+                                        >
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+                                {voucherError && (
+                                    <p className="mt-2 text-sm" style={{ color: '#ef4444' }}>
+                                        {voucherError}
+                                    </p>
+                                )}
+                                {voucherData && (
+                                    <div 
+                                        className="mt-3 p-3 rounded-lg"
+                                        style={{ backgroundColor: '#10b98120', borderLeft: `4px solid #10b981` }}
+                                    >
+                                        <p className="text-sm font-semibold" style={{ color: '#10b981' }}>
+                                            ✓ Voucher Applied: {voucherData.discount_type === 'percent' 
+                                                ? `${voucherData.discount_value}% off` 
+                                                : `¢${voucherData.discount_value} off`}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Buy Button */}
                         <button
                             type="submit"
@@ -719,8 +869,15 @@ function MembershipInner({
                                     style={{ color: currentTheme.foreground }}
                                 >
                                     Total: <span className="font-bold text-xl" style={{ color: '#f59e0b' }}>
-                                        ¢{selectedPkg.coin_price.toLocaleString()}
+                                        ¢{voucherData ? voucherData.final_amount.toLocaleString() : selectedPkg.coin_price.toLocaleString()}
                                     </span>
+                                    {voucherData && (
+                                        <span className="text-xs ml-2" style={{ color: '#10b981' }}>
+                                            ({voucherData.discount_type === 'percent' 
+                                                ? `${voucherData.discount_value}%` 
+                                                : `¢${voucherData.discount_value}`} off with voucher applied)
+                                        </span>
+                                    )}
                                 </p>
                             </div>
                         )}

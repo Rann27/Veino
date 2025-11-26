@@ -49,15 +49,34 @@ class MembershipController extends Controller
     {
         $request->validate([
             'package_id' => 'required|exists:membership_packages,id',
+            'voucher_code' => 'nullable|string',
         ]);
 
         $user = Auth::user();
         $package = MembershipPackage::findOrFail($request->package_id);
         $isInertiaRequest = $request->headers->has('X-Inertia');
+        
+        $finalPrice = $package->coin_price;
+        $voucher = null;
+        $discountAmount = 0;
+
+        // Handle voucher if provided
+        if ($request->filled('voucher_code')) {
+            $voucher = \App\Models\Voucher::where('code', strtoupper($request->voucher_code))->first();
+            
+            if ($voucher) {
+                $validation = $voucher->isValidFor($user->id, 'membership');
+                
+                if ($validation['valid']) {
+                    $discountAmount = $voucher->calculateDiscount($package->coin_price);
+                    $finalPrice = max(0, $package->coin_price - $discountAmount);
+                }
+            }
+        }
 
         // Check if user has enough coins
-        if (!$user->hasEnoughCoins($package->coin_price)) {
-            $shortfall = $package->coin_price - $user->coins;
+        if (!$user->hasEnoughCoins($finalPrice)) {
+            $shortfall = $finalPrice - $user->coins;
             $errorMsg = "Insufficient coins. You need {$shortfall} more coins to purchase this membership.";
             
             if ($isInertiaRequest) {
@@ -78,7 +97,7 @@ class MembershipController extends Controller
         DB::beginTransaction();
         try {
             // Deduct coins from user
-            if (!$user->deductCoins($package->coin_price)) {
+            if (!$user->deductCoins($finalPrice)) {
                 throw new \Exception('Failed to deduct coins from user balance');
             }
 
@@ -93,11 +112,16 @@ class MembershipController extends Controller
                 'tier' => $package->tier,
                 'duration_days' => $package->duration_days,
                 'amount_usd' => $package->price_usd,
-                'coin_price' => $package->coin_price,
+                'coin_price' => $finalPrice, // Use final price after discount
                 'payment_method' => 'coins',
                 'status' => 'completed',
                 'completed_at' => now(),
             ]);
+            
+            // Record voucher usage if voucher was applied
+            if ($voucher && $discountAmount > 0) {
+                $voucher->recordUsage($user->id, 'membership', $discountAmount);
+            }
 
             // Grant membership (premium tier)
             $granted = $this->membershipService->grantPremium($user, $package->duration_days);
