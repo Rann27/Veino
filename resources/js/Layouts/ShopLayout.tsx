@@ -10,18 +10,30 @@ interface ChartItem {
     series_title: string;
 }
 
+interface VoucherData {
+    voucher_code: string;
+    discount_amount: number;
+    final_amount: number;
+    original_amount: number;
+}
+
 interface ShopLayoutProps {
     children: React.ReactNode;
     chartItems?: ChartItem[];
     totalPrice?: number;
+    voucherData?: VoucherData | null;
+    voucherCode?: string;
 }
 
-export default function ShopLayout({ children, chartItems = [], totalPrice = 0 }: ShopLayoutProps) {
+export default function ShopLayout({ children, chartItems = [], totalPrice = 0, voucherData = null, voucherCode = '' }: ShopLayoutProps) {
     const { currentTheme } = useTheme();
     const { auth } = usePage<any>().props;
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Calculate display price (with voucher discount if applied)
+    const displayPrice = voucherData ? voucherData.final_amount : totalPrice;
 
     // Determine if we're on my-chart page - check the current path
     const isMyChartPage = window.location.pathname === '/my-chart';
@@ -43,7 +55,9 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0 }
 
     const confirmCheckout = () => {
         setIsProcessing(true);
-        router.post(route('chart.checkout'), {}, {
+        router.post(route('chart.checkout'), {
+            voucher_code: voucherData ? voucherCode : null,
+        }, {
             onSuccess: () => {
                 setShowConfirmModal(false);
                 setShowSuccessModal(true);
@@ -110,7 +124,12 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0 }
                                             color: '#f59e0b' // Gold coin color
                                         }}
                                     >
-                                        ¢{totalPrice.toLocaleString()}
+                                        ¢{displayPrice.toLocaleString()}
+                                        {voucherData && (
+                                            <span className="text-xs ml-2 opacity-70">
+                                                (after discount)
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
 
@@ -204,6 +223,50 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0 }
                             className="border-t pt-4 mb-6"
                             style={{ borderColor: `${currentTheme.foreground}20` }}
                         >
+                            {voucherData && (
+                                <div className="flex justify-between items-center mb-2">
+                                    <p 
+                                        className="text-sm"
+                                        style={{ 
+                                            fontFamily: 'Poppins, sans-serif',
+                                            color: currentTheme.foreground
+                                        }}
+                                    >
+                                        Subtotal
+                                    </p>
+                                    <p 
+                                        className="text-sm"
+                                        style={{ 
+                                            fontFamily: 'Poppins, sans-serif',
+                                            color: currentTheme.foreground
+                                        }}
+                                    >
+                                        ¢{totalPrice.toLocaleString()}
+                                    </p>
+                                </div>
+                            )}
+                            {voucherData && (
+                                <div className="flex justify-between items-center mb-2">
+                                    <p 
+                                        className="text-sm font-medium"
+                                        style={{ 
+                                            fontFamily: 'Poppins, sans-serif',
+                                            color: '#10b981'
+                                        }}
+                                    >
+                                        Voucher Discount ({voucherCode})
+                                    </p>
+                                    <p 
+                                        className="text-sm font-medium"
+                                        style={{ 
+                                            fontFamily: 'Poppins, sans-serif',
+                                            color: '#10b981'
+                                        }}
+                                    >
+                                        -¢{voucherData.discount_amount.toLocaleString()}
+                                    </p>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center">
                                 <p 
                                     className="text-lg font-semibold"
@@ -221,7 +284,7 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0 }
                                         color: '#f59e0b'
                                     }}
                                 >
-                                    ¢{totalPrice.toLocaleString()}
+                                    ¢{displayPrice.toLocaleString()}
                                 </p>
                             </div>
                             <p 

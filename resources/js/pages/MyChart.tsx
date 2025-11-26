@@ -17,9 +17,10 @@ interface ChartItem {
 interface Props {
     chartItems: ChartItem[];
     totalPrice: number;
+    onVoucherChange?: (data: any, code: string) => void;
 }
 
-function MyChartContent({ chartItems, totalPrice }: Props) {
+function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
     const { currentTheme } = useTheme();
     
     // Voucher state
@@ -70,6 +71,7 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
             if (data.success) {
                 setVoucherData(data.data); // Fix: Use data.data instead of data
                 setVoucherError('');
+                onVoucherChange?.(data.data, voucherCode.toUpperCase());
                 alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.data.discount_amount.toLocaleString()}`);
             } else {
                 setVoucherError(data.message || 'Invalid voucher');
@@ -89,22 +91,8 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
         setVoucherCode('');
         setVoucherData(null);
         setVoucherError('');
+        onVoucherChange?.(null, '');
     };
-
-    const handleCheckout = () => {
-        if (chartItems.length === 0) {
-            alert('Your chart is empty');
-            return;
-        }
-
-        if (confirm(`Checkout ${chartItems.length} item(s) for ¢${(voucherData ? voucherData.final_amount : totalPrice).toLocaleString()}?`)) {
-            router.post(route('chart.checkout'), {
-                voucher_code: voucherData ? voucherCode.toUpperCase() : null,
-            });
-        }
-    };
-
-    const displayPrice = voucherData ? voucherData.final_amount : totalPrice;
 
     return (
         <>
@@ -282,73 +270,6 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
                                         </div>
                                     )}
                                 </div>
-
-                                {/* Summary Card */}
-                                <div 
-                                    className="border-2 rounded-lg p-6 mt-6"
-                                    style={{ borderColor: '#f59e0b' }}
-                                >
-                                    <div className="flex justify-between items-center mb-6">
-                                        <div>
-                                            <p 
-                                                className="text-sm opacity-70 mb-1"
-                                                style={{ 
-                                                    fontFamily: 'Poppins, sans-serif',
-                                                    color: currentTheme.foreground
-                                                }}
-                                            >
-                                                Total Items
-                                            </p>
-                                            <p 
-                                                className="text-2xl font-bold"
-                                                style={{ 
-                                                    fontFamily: 'Poppins, sans-serif',
-                                                    color: currentTheme.foreground
-                                                }}
-                                            >
-                                                {chartItems.length}
-                                            </p>
-                                        </div>
-
-                                        <div className="text-right">
-                                            <p 
-                                                className="text-sm opacity-70 mb-1"
-                                                style={{ 
-                                                    fontFamily: 'Poppins, sans-serif',
-                                                    color: currentTheme.foreground
-                                                }}
-                                            >
-                                                Total Price
-                                            </p>
-                                            <p 
-                                                className="text-3xl font-bold"
-                                                style={{ 
-                                                    fontFamily: 'Poppins, sans-serif',
-                                                    color: '#f59e0b'
-                                                }}
-                                            >
-                                                ¢{displayPrice.toLocaleString()}
-                                                {voucherData && (
-                                                    <span className="text-sm opacity-70 ml-2">
-                                                        (after discount)
-                                                    </span>
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={handleCheckout}
-                                        className="w-full py-3 rounded-lg font-bold text-lg transition-all duration-200 hover:opacity-90"
-                                        style={{
-                                            backgroundColor: '#f59e0b',
-                                            color: 'white',
-                                            fontFamily: 'Poppins, sans-serif'
-                                        }}
-                                    >
-                                        Checkout
-                                    </button>
-                                </div>
                             </div>
                         ) : (
                             <div className="text-center py-16">
@@ -402,10 +323,24 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
 }
 
 export default function MyChart(props: Props) {
+    const [voucherData, setVoucherData] = React.useState<any>(null);
+    const [voucherCode, setVoucherCode] = React.useState('');
+
     return (
         <UserLayout>
-            <ShopLayout chartItems={props.chartItems} totalPrice={props.totalPrice}>
-                <MyChartContent {...props} />
+            <ShopLayout 
+                chartItems={props.chartItems} 
+                totalPrice={props.totalPrice}
+                voucherData={voucherData}
+                voucherCode={voucherCode}
+            >
+                <MyChartContent 
+                    {...props} 
+                    onVoucherChange={(data: any, code: string) => {
+                        setVoucherData(data);
+                        setVoucherCode(code);
+                    }}
+                />
             </ShopLayout>
         </UserLayout>
     );
