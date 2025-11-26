@@ -235,6 +235,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/voucher/{voucher}/edit', [App\Http\Controllers\Admin\VoucherController::class, 'edit'])->name('voucher.edit');
     Route::put('/voucher/{voucher}', [App\Http\Controllers\Admin\VoucherController::class, 'update'])->name('voucher.update');
     Route::delete('/voucher/{voucher}', [App\Http\Controllers\Admin\VoucherController::class, 'destroy'])->name('voucher.destroy');
+    Route::get('/voucher/{voucher}/usage', [App\Http\Controllers\Admin\VoucherController::class, 'usage'])->name('voucher.usage');
     
     // Advertisement Management
     Route::get('/advertisement-management', [App\Http\Controllers\Admin\AdvertisementController::class, 'index'])->name('advertisements.index');

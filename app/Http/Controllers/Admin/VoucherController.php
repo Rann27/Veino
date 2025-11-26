@@ -93,4 +93,28 @@ class VoucherController extends Controller
         return redirect()->route('admin.voucher.index')
             ->with('success', 'Voucher deleted successfully!');
     }
+
+    /**
+     * Get usage history for a voucher
+     */
+    public function usage(Voucher $voucher)
+    {
+        $usages = $voucher->usages()
+            ->with('user:id,display_name')
+            ->latest()
+            ->get()
+            ->map(function ($usage) {
+                return [
+                    'id' => $usage->id,
+                    'user_display_name' => $usage->user->display_name ?? 'Unknown User',
+                    'used_for' => $usage->used_for,
+                    'discount_amount' => $usage->discount_amount,
+                    'created_at' => $usage->created_at->toISOString(),
+                ];
+            });
+
+        return response()->json([
+            'usages' => $usages,
+        ]);
+    }
 }
