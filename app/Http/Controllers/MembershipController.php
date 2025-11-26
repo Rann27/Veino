@@ -123,6 +123,18 @@ class MembershipController extends Controller
                 $voucher->recordUsage($user->id, 'membership', $discountAmount);
             }
 
+            // Create transaction record for transaction history
+            \App\Models\Transaction::create([
+                'user_id' => $user->id,
+                'type' => 'membership_purchase',
+                'amount' => $package->price_usd,
+                'coins_spent' => $finalPrice,
+                'payment_method' => 'coins',
+                'status' => 'completed',
+                'membership_package_id' => $package->id,
+                'description' => $voucher ? "Membership ({$package->name}) with {$discountAmount} coins discount" : "Membership ({$package->name})",
+            ]);
+
             // Grant membership (premium tier)
             $granted = $this->membershipService->grantPremium($user, $package->duration_days);
 

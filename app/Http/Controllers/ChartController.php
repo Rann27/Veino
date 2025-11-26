@@ -211,6 +211,19 @@ class ChartController extends Controller
                 $voucher->recordUsage($userId, 'ebook', $discountAmount);
             }
 
+            // Create transaction record for transaction history
+            \App\Models\Transaction::create([
+                'user_id' => $userId,
+                'type' => 'ebook_purchase',
+                'amount' => 0, // Paid with coins, not USD
+                'coins_spent' => $finalPrice,
+                'payment_method' => 'coins',
+                'status' => 'completed',
+                'description' => $voucher 
+                    ? "{$chartItems->count()} ebook item(s) with {$discountAmount} coins discount (Transaction: {$transactionId})" 
+                    : "{$chartItems->count()} ebook item(s) (Transaction: {$transactionId})",
+            ]);
+
             // Clear cart
             ChartItem::where('user_id', $userId)->delete();
 

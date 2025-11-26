@@ -135,11 +135,13 @@ function MembershipContent({ packages, flash, errors }: Props) {
     const handleApplyVoucher = async () => {
         if (!voucherCode.trim()) {
             setVoucherError('Please enter a voucher code.');
+            alert('⚠️ Please enter a voucher code');
             return;
         }
 
         if (!selectedPackage) {
             setVoucherError('Please select a package first.');
+            alert('⚠️ Please select a membership package first');
             return;
         }
 
@@ -168,14 +170,16 @@ function MembershipContent({ packages, flash, errors }: Props) {
             if (data.success) {
                 setVoucherData(data.data);
                 setVoucherError(null);
-                alert(data.message);
+                alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.data.discount_amount.toLocaleString()}`);
             } else {
                 setVoucherError(data.message);
                 setVoucherData(null);
+                alert(`❌ ${data.message || 'Invalid or expired voucher code'}`);
             }
         } catch (error) {
             setVoucherError('Failed to apply voucher. Please try again.');
             setVoucherData(null);
+            alert('❌ Failed to validate voucher. Please check your connection and try again.');
         } finally {
             setIsApplyingVoucher(false);
         }

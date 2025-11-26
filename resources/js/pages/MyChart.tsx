@@ -39,12 +39,12 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
 
     const handleApplyVoucher = async () => {
         if (!voucherCode.trim()) {
-            alert('Please enter a voucher code');
+            alert('⚠️ Please enter a voucher code');
             return;
         }
 
         if (chartItems.length === 0) {
-            alert('Your chart is empty');
+            alert('⚠️ Your chart is empty. Please add items before applying a voucher.');
             return;
         }
 
@@ -70,16 +70,16 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
             if (data.success) {
                 setVoucherData(data);
                 setVoucherError('');
-                alert(`Voucher applied! You saved ¢${data.discount_amount.toLocaleString()}`);
+                alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.discount_amount.toLocaleString()}`);
             } else {
                 setVoucherError(data.message || 'Invalid voucher');
                 setVoucherData(null);
-                alert(data.message || 'Invalid or expired voucher');
+                alert(`❌ ${data.message || 'Invalid or expired voucher code'}`);
             }
         } catch (error) {
             setVoucherError('Failed to validate voucher');
             setVoucherData(null);
-            alert('Failed to validate voucher. Please try again.');
+            alert('❌ Failed to validate voucher. Please check your connection and try again.');
         } finally {
             setIsApplyingVoucher(false);
         }
