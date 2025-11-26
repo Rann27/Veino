@@ -362,10 +362,28 @@ function MembershipInner({
                                             <span style={{ color: currentTheme.foreground }} className="opacity-70">Duration:</span>
                                             <span style={{ color: currentTheme.foreground }} className="font-semibold">{selectedPkg.duration_days} days</span>
                                         </div>
-                                        <div className="flex justify-between items-center">
-                                            <span style={{ color: currentTheme.foreground }} className="opacity-70">Cost:</span>
-                                            <span style={{ color: '#f59e0b' }} className="font-bold text-xl">¢{selectedPkg.coin_price.toLocaleString()}</span>
-                                        </div>
+                                        
+                                        {voucherData ? (
+                                            <>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span style={{ color: currentTheme.foreground }} className="opacity-70">Original Price:</span>
+                                                    <span style={{ color: currentTheme.foreground }} className="line-through opacity-50">¢{selectedPkg.coin_price.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span style={{ color: '#10b981' }} className="font-medium">Voucher Discount ({voucherCode}):</span>
+                                                    <span style={{ color: '#10b981' }} className="font-medium">-¢{voucherData.discount_amount.toLocaleString()}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center pt-2 border-t" style={{ borderColor: `${currentTheme.foreground}20` }}>
+                                                    <span style={{ color: currentTheme.foreground }} className="font-semibold">Final Cost:</span>
+                                                    <span style={{ color: '#f59e0b' }} className="font-bold text-xl">¢{voucherData.final_amount.toLocaleString()}</span>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex justify-between items-center">
+                                                <span style={{ color: currentTheme.foreground }} className="opacity-70">Cost:</span>
+                                                <span style={{ color: '#f59e0b' }} className="font-bold text-xl">¢{selectedPkg.coin_price.toLocaleString()}</span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <p 
@@ -374,12 +392,12 @@ function MembershipInner({
                                     >
                                         Your current balance: <span className="font-semibold" style={{ color: '#f59e0b' }}>¢{userCoins.toLocaleString()}</span>
                                     </p>
-                                    {userCoins >= selectedPkg.coin_price && (
+                                    {userCoins >= (voucherData ? voucherData.final_amount : selectedPkg.coin_price) && (
                                         <p 
                                             className="text-sm opacity-70"
                                             style={{ color: currentTheme.foreground }}
                                         >
-                                            After purchase: <span className="font-semibold" style={{ color: '#f59e0b' }}>¢{(userCoins - selectedPkg.coin_price).toLocaleString()}</span>
+                                            After purchase: <span className="font-semibold" style={{ color: '#f59e0b' }}>¢{(userCoins - (voucherData ? voucherData.final_amount : selectedPkg.coin_price)).toLocaleString()}</span>
                                         </p>
                                     )}
                                 </div>
