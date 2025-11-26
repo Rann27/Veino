@@ -68,9 +68,9 @@ function MyChartContent({ chartItems, totalPrice }: Props) {
             const data = await response.json();
 
             if (data.success) {
-                setVoucherData(data);
+                setVoucherData(data.data); // Fix: Use data.data instead of data
                 setVoucherError('');
-                alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.discount_amount.toLocaleString()}`);
+                alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.data.discount_amount.toLocaleString()}`);
             } else {
                 setVoucherError(data.message || 'Invalid voucher');
                 setVoucherData(null);
