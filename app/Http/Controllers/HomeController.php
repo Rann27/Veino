@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Series;
 use App\Models\Chapter;
+use App\Models\Blog;
 use Inertia\Inertia;
 
 class HomeController extends Controller
@@ -68,12 +69,16 @@ class HomeController extends Controller
             }
         }
 
+        // Get latest blogs for announcements (limit 3)
+        $blogs = Blog::where('show_in_homepage', true)->latest()->take(3)->get();
+
         return Inertia::render('Home', [
             'heroSeries' => $heroSeries,
             'popularSeries' => $popularSeries,
             'latestUpdates' => $latestUpdates,
             'newSeries' => $newSeries,
             'showPremiumCongrats' => $showPremiumCongrats,
+            'blogs' => $blogs,
         ]);
     }
 }

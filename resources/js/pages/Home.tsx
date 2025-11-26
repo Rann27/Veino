@@ -44,15 +44,23 @@ interface Series {
   latest_chapters?: Chapter[]; // legacy/comment
 }
 
+interface Blog {
+  id: number;
+  title: string;
+  content: string;
+  created_at: string;
+}
+
 interface HomeProps {
   heroSeries: Series[];
   popularSeries: Series[];
   latestUpdates: Series[];
   newSeries: Series[];
+  blogs: Blog[];
   showPremiumCongrats?: boolean;
 }
 
-function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, showPremiumCongrats }: HomeProps) {
+function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blogs, showPremiumCongrats }: HomeProps) {
   const [currentHero, setCurrentHero] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -508,6 +516,69 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, show
             </section>
           </div>
         </div>
+      )}
+
+      {/* Blog Announcements */}
+      {blogs && blogs.length > 0 && (
+        <section 
+          className="py-3 sm:py-4"
+          style={{ backgroundColor: currentTheme.background }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="space-y-2">
+              {blogs.map((blog) => (
+                <Link
+                  key={blog.id}
+                  href={`/blog/${blog.id}`}
+                  className="block group"
+                >
+                  <div 
+                    className="card-hover rounded-lg py-3 px-4 flex items-center gap-3 transition-all duration-200"
+                    style={{
+                      backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                      borderLeft: '4px solid rgb(220, 38, 38)',
+                    }}
+                  >
+                    {/* Announcement Icon (Megaphone) */}
+                    <div className="flex-shrink-0">
+                      <svg 
+                        className="w-5 h-5 sm:w-6 sm:h-6" 
+                        style={{ color: 'rgb(220, 38, 38)' }}
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" />
+                      </svg>
+                    </div>
+                    
+                    {/* Blog Title */}
+                    <div className="flex-grow min-w-0">
+                      <h3 
+                        className="font-semibold text-sm sm:text-base truncate group-hover:text-red-600 transition-colors"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        {blog.title}
+                      </h3>
+                    </div>
+
+                    {/* Arrow Icon */}
+                    <div className="flex-shrink-0">
+                      <svg 
+                        className="w-4 h-4 sm:w-5 sm:h-5 transform group-hover:translate-x-1 transition-transform" 
+                        style={{ color: 'rgb(220, 38, 38)' }}
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Popular Series */}

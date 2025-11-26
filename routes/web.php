@@ -121,6 +121,9 @@ Route::get('/series/{slug}/chapter/{chapter}', [UserChapterController::class, 's
 Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController::class, 'purchase'])
     ->name('chapters.purchase')->middleware('auth');
 
+// Blog Routes
+Route::get('/blog/{blog}', [App\Http\Controllers\BlogController::class, 'show'])->name('blog.show');
+
 // Ebook Shop Routes
 Route::get('/epub-novels', [EbookSeriesController::class, 'index'])->name('epub-novels.index');
 Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name('epub-novels.show');
@@ -212,6 +215,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     // Transaction History
     Route::get('/transaction-history', [TransactionHistoryController::class, 'index'])->name('transaction-history.index');
+    
+    // Blog Management
+    Route::get('/blog', [App\Http\Controllers\Admin\BlogController::class, 'index'])->name('blog.index');
+    Route::get('/blog/create', [App\Http\Controllers\Admin\BlogController::class, 'create'])->name('blog.create');
+    Route::post('/blog', [App\Http\Controllers\Admin\BlogController::class, 'store'])->name('blog.store');
+    Route::get('/blog/{blog}/edit', [App\Http\Controllers\Admin\BlogController::class, 'edit'])->name('blog.edit');
+    Route::put('/blog/{blog}', [App\Http\Controllers\Admin\BlogController::class, 'update'])->name('blog.update');
+    Route::delete('/blog/{blog}', [App\Http\Controllers\Admin\BlogController::class, 'destroy'])->name('blog.destroy');
     
     // Advertisement Management
     Route::get('/advertisement-management', [App\Http\Controllers\Admin\AdvertisementController::class, 'index'])->name('advertisements.index');
