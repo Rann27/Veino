@@ -39,7 +39,7 @@ interface MembershipPackage {
 interface MembershipPurchase {
   id: number;
   user: User;
-  membership_package: MembershipPackage;
+  membership_package: MembershipPackage | null;
   invoice_number: string;
   tier: string;
   duration_days: number;
@@ -312,7 +312,7 @@ export default function TransactionHistory({
                           Package
                         </div>
                         <div className="text-sm font-semibold text-gray-900">
-                          {purchase.membership_package.name}
+                          {purchase.membership_package?.name || 'Legacy Package'}
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5">
                           {purchase.duration_days} days
