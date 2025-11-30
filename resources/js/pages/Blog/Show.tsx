@@ -94,8 +94,19 @@ function BlogShowContent({ blog }: Props) {
                                 color: currentTheme.foreground,
                                 fontFamily: 'Poppins, sans-serif',
                             }}
-                            dangerouslySetInnerHTML={{ __html: blog.content }}
-                        />
+                        >
+                            <style>{`
+                                .prose a {
+                                    color: #a855f7;
+                                    text-decoration: underline;
+                                    transition: opacity 0.2s;
+                                }
+                                .prose a:hover {
+                                    opacity: 0.7;
+                                }
+                            `}</style>
+                            <div dangerouslySetInnerHTML={{ __html: blog.content }} />
+                        </div>
                     </article>
                 </div>
             </div>
