@@ -18,6 +18,7 @@ class Series extends Model
         'alternative_title',
         'slug',
         'cover_url',
+        'cover_type',
         'synopsis',
         'author',
         'artist',
@@ -82,6 +83,25 @@ class Series extends Model
     public function getRouteKeyName()
     {
         return 'slug';
+    }
+
+    /**
+     * Get the cover URL with proper path
+     * Accessor for cover_url that automatically handles file vs CDN
+     */
+    public function getCoverUrlAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        // Check if it's already a full URL (CDN link)
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        // If it's a relative path (uploaded file), prepend storage URL
+        return asset('storage/' . $value);
     }
 
     /**

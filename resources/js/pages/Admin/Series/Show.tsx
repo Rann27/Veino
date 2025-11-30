@@ -57,10 +57,12 @@ export default function SeriesShow({ series }: SeriesShowProps) {
   // Refs for auto-focus
   const titleInputRef = useRef<HTMLInputElement>(null);
   const chapterTitleInputRef = useRef<HTMLInputElement>(null);
+  const [coverType, setCoverType] = useState<'cdn' | 'file'>((series as any).cover_type || 'cdn');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [editFormData, setEditFormData] = useState({
     title: series.title,
     alternative_title: series.alternative_title || '',
-    cover_url: series.cover_url || '',
+    cover_url: (series as any).cover_url_raw || series.cover_url || '',
     synopsis: series.synopsis || '',
     author: series.author || '',
     artist: series.artist || '',
@@ -169,10 +171,37 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     e.preventDefault();
     setIsSubmitting(true);
     
-    router.put(`/admin/series/${series.slug}`, editFormData, {
+    const submitData = new FormData();
+    submitData.append('title', editFormData.title);
+    submitData.append('alternative_title', editFormData.alternative_title);
+    submitData.append('cover_type', coverType);
+    
+    if (coverType === 'cdn') {
+      submitData.append('cover_url', editFormData.cover_url);
+    } else if (coverFile) {
+      submitData.append('cover_file', coverFile);
+    }
+    
+    submitData.append('synopsis', editFormData.synopsis);
+    submitData.append('author', editFormData.author);
+    submitData.append('artist', editFormData.artist);
+    submitData.append('rating', editFormData.rating);
+    submitData.append('status', editFormData.status);
+    submitData.append('native_language_id', editFormData.native_language_id);
+    submitData.append('show_epub_button', editFormData.show_epub_button ? '1' : '0');
+    submitData.append('epub_series_slug', editFormData.epub_series_slug);
+    
+    editFormData.genre_ids.forEach(id => {
+      submitData.append('genre_ids[]', id.toString());
+    });
+    
+    submitData.append('_method', 'PUT');
+    
+    router.post(`/admin/series/${series.slug}`, submitData, {
       onSuccess: () => {
         setShowEditModal(false);
         setIsSubmitting(false);
+        setCoverFile(null);
         setAlertMessage({ type: 'success', message: 'Series updated successfully!' });
         setTimeout(() => setAlertMessage(null), 5000);
       },
@@ -180,7 +209,8 @@ export default function SeriesShow({ series }: SeriesShowProps) {
         setIsSubmitting(false);
         setAlertMessage({ type: 'error', message: 'Failed to update series. Please try again.' });
         setTimeout(() => setAlertMessage(null), 5000);
-      }
+      },
+      forceFormData: true,
     });
   };
 
@@ -605,14 +635,60 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Cover URL</label>
-                  <input
-                    type="url"
-                    value={editFormData.cover_url}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, cover_url: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                    placeholder="https://example.com/cover-image.jpg"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cover</label>
+                  
+                  {/* Toggle CDN/File */}
+                  <div className="flex gap-4 mb-3">
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="cover_type"
+                        value="cdn"
+                        checked={coverType === 'cdn'}
+                        onChange={() => setCoverType('cdn')}
+                        className="form-radio h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">CDN URL</span>
+                    </label>
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="cover_type"
+                        value="file"
+                        checked={coverType === 'file'}
+                        onChange={() => setCoverType('file')}
+                        className="form-radio h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Upload File</span>
+                    </label>
+                  </div>
+
+                  {/* Cover Input based on type */}
+                  {coverType === 'cdn' ? (
+                    <input
+                      type="url"
+                      value={editFormData.cover_url}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, cover_url: e.target.value }))}
+                      placeholder="https://example.com/cover.jpg"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Max 2MB. Supported: JPG, PNG, WebP</p>
+                      {coverFile && (
+                        <p className="mt-2 text-sm text-green-600">Selected: {coverFile.name}</p>
+                      )}
+                      {!coverFile && series.cover_url && coverType === 'file' && (
+                        <p className="mt-2 text-sm text-gray-500">Current: Using uploaded file</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

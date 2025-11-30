@@ -51,6 +51,8 @@ export default function SeriesIndex({
   const [page, setPage] = useState(currentPage);
   
   const [showModal, setShowModal] = useState(false);
+  const [coverType, setCoverType] = useState<'cdn' | 'file'>('cdn');
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     alternative_title: '',
@@ -127,6 +129,8 @@ export default function SeriesIndex({
 
   const closeModal = () => {
     setShowModal(false);
+    setCoverType('cdn');
+    setCoverFile(null);
     setFormData({
       title: '',
       alternative_title: '',
@@ -143,8 +147,32 @@ export default function SeriesIndex({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    router.post('/admin/series', formData, {
+    
+    const submitData = new FormData();
+    submitData.append('title', formData.title);
+    submitData.append('alternative_title', formData.alternative_title);
+    submitData.append('cover_type', coverType);
+    
+    if (coverType === 'cdn') {
+      submitData.append('cover_url', formData.cover_url);
+    } else if (coverFile) {
+      submitData.append('cover_file', coverFile);
+    }
+    
+    submitData.append('synopsis', formData.synopsis);
+    submitData.append('author', formData.author);
+    submitData.append('artist', formData.artist);
+    submitData.append('rating', formData.rating);
+    submitData.append('status', formData.status);
+    submitData.append('native_language_id', formData.native_language_id);
+    
+    formData.genre_ids.forEach(id => {
+      submitData.append('genre_ids[]', id.toString());
+    });
+
+    router.post('/admin/series', submitData, {
       onSuccess: () => closeModal(),
+      forceFormData: true,
     });
   };
 
@@ -301,13 +329,57 @@ export default function SeriesIndex({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Cover URL</label>
-                  <input
-                    type="url"
-                    value={formData.cover_url}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cover_url: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cover</label>
+                  
+                  {/* Toggle CDN/File */}
+                  <div className="flex gap-4 mb-3">
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="cover_type"
+                        value="cdn"
+                        checked={coverType === 'cdn'}
+                        onChange={() => setCoverType('cdn')}
+                        className="form-radio h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">CDN URL</span>
+                    </label>
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="cover_type"
+                        value="file"
+                        checked={coverType === 'file'}
+                        onChange={() => setCoverType('file')}
+                        className="form-radio h-4 w-4 text-blue-600"
+                      />
+                      <span className="ml-2 text-sm text-gray-700">Upload File</span>
+                    </label>
+                  </div>
+
+                  {/* Cover Input based on type */}
+                  {coverType === 'cdn' ? (
+                    <input
+                      type="url"
+                      value={formData.cover_url}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cover_url: e.target.value }))}
+                      placeholder="https://example.com/cover.jpg"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    />
+                  ) : (
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Max 2MB. Supported: JPG, PNG, WebP</p>
+                      {coverFile && (
+                        <p className="mt-2 text-sm text-green-600">Selected: {coverFile.name}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

@@ -112,8 +112,12 @@ class SeriesController extends Controller
             $query->orderBy('chapter_number');
         }]);
 
+        // Add raw cover URL for editing (bypass accessor)
+        $seriesData = $series->toArray();
+        $seriesData['cover_url_raw'] = $series->getOriginal('cover_url');
+
         return Inertia::render('Admin/Series/Show', [
-            'series' => $series,
+            'series' => $seriesData,
         ]);
     }
 
@@ -122,7 +126,9 @@ class SeriesController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'alternative_title' => 'nullable|string|max:255',
+            'cover_type' => 'required|in:cdn,file',
             'cover_url' => 'nullable|url',
+            'cover_file' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
             'synopsis' => 'nullable|string',
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
@@ -134,6 +140,14 @@ class SeriesController extends Controller
             'show_epub_button' => 'nullable|boolean',
             'epub_series_slug' => 'nullable|string|max:255',
         ]);
+
+        // Handle cover based on type
+        if ($validated['cover_type'] === 'file' && $request->hasFile('cover_file')) {
+            $path = $request->file('cover_file')->store('series-covers', 'public');
+            $validated['cover_url'] = $path;
+        } elseif ($validated['cover_type'] === 'cdn' && empty($validated['cover_url'])) {
+            $validated['cover_url'] = null;
+        }
 
         // Sanitize synopsis HTML content
         if (!empty($validated['synopsis'])) {
@@ -153,7 +167,9 @@ class SeriesController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'alternative_title' => 'nullable|string|max:255',
+            'cover_type' => 'required|in:cdn,file',
             'cover_url' => 'nullable|url',
+            'cover_file' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
             'synopsis' => 'nullable|string',
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
@@ -165,6 +181,27 @@ class SeriesController extends Controller
             'show_epub_button' => 'nullable|boolean',
             'epub_series_slug' => 'nullable|string|max:255',
         ]);
+
+        // Handle cover based on type
+        if ($validated['cover_type'] === 'file' && $request->hasFile('cover_file')) {
+            // Delete old file if exists and is a file type
+            if ($series->cover_type === 'file' && $series->cover_url) {
+                \Storage::disk('public')->delete($series->cover_url);
+            }
+            $path = $request->file('cover_file')->store('series-covers', 'public');
+            $validated['cover_url'] = $path;
+        } elseif ($validated['cover_type'] === 'cdn' && empty($validated['cover_url'])) {
+            // If switching to CDN with no URL, keep existing if it's CDN type
+            if ($series->cover_type === 'cdn') {
+                $validated['cover_url'] = $series->cover_url;
+            } else {
+                // Delete old file if exists
+                if ($series->cover_url) {
+                    \Storage::disk('public')->delete($series->cover_url);
+                }
+                $validated['cover_url'] = null;
+            }
+        }
 
         // Sanitize synopsis HTML content
         if (!empty($validated['synopsis'])) {
