@@ -39,9 +39,7 @@ class HomeController extends Controller
                     ->select(['id', 'series_id', 'title', 'chapter_number', 'volume', 'is_premium']);
             }])
             ->withCount('chapters')
-            ->whereHas('chapters', function ($query) {
-                $query->where('created_at', '>=', now()->subDays(30));
-            })
+            ->whereHas('chapters') // Only series that have at least one chapter
             ->select('series.*', \DB::raw('(SELECT MAX(created_at) FROM chapters WHERE chapters.series_id = series.id) as latest_chapter_date'))
             ->orderByDesc('latest_chapter_date')
             ->take(24)
