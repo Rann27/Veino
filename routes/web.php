@@ -105,7 +105,7 @@ Route::get('/buy-coins', function () {
     return inertia('BuyCoins', [
         'packages' => $packages
     ]);
-})->name('buy-coins');
+})->middleware('auth')->name('buy-coins');
 
 // Search routes
 Route::get('/search', [SearchController::class, 'search'])->name('search');

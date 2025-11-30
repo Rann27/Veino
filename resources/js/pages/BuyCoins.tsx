@@ -23,7 +23,7 @@ function BuyCoinsContent({ packages }: Props) {
     const { currentTheme } = useTheme();
 
     const page = usePage<{ 
-        auth: { user: { coins: number } }; 
+        auth: { user: { coins: number } | null }; 
     }>();
 
     const handlePurchase = () => {
@@ -78,7 +78,7 @@ function BuyCoinsContent({ packages }: Props) {
                     >
                         Purchase coins to unlock premium features and access exclusive content
                     </p>
-                    {page.props.auth.user.coins !== undefined && (
+                    {page.props.auth.user && page.props.auth.user.coins !== undefined && (
                         <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 border border-amber-500/30">
                             <span className="text-amber-400 font-semibold">Your Balance:</span>
                             <span className="text-2xl font-bold text-amber-400">¢{page.props.auth.user.coins.toLocaleString()}</span>
