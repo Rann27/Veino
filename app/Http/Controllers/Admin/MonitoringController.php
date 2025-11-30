@@ -159,6 +159,94 @@ class MonitoringController extends Controller
         return response()->json($transformedReactions);
     }
 
+    public function getViews(Request $request)
+    {
+        $results = [];
+
+        // Filter by type
+        if ($request->filterType === 'series' && $request->filterId) {
+            // Get specific series views
+            $series = Series::find($request->filterId);
+            if ($series) {
+                $results[] = [
+                    'page' => $series->title . ' (Series Page)',
+                    'views' => $series->views,
+                    'type' => 'series',
+                ];
+            }
+        } elseif ($request->filterType === 'chapter' && $request->filterId) {
+            // Get specific chapter views
+            $chapter = Chapter::with('series')->find($request->filterId);
+            if ($chapter) {
+                $page = $chapter->series->title . ' - Ch ' . $chapter->chapter_number;
+                if ($chapter->title) {
+                    $page .= ': ' . $chapter->title;
+                }
+                $results[] = [
+                    'page' => $page,
+                    'views' => $chapter->views,
+                    'type' => 'chapter',
+                ];
+            }
+        } elseif ($request->filterType === 'series_chapters' && $request->filterId) {
+            // Get all chapters in a series
+            $chapters = Chapter::where('series_id', $request->filterId)
+                ->with('series')
+                ->orderBy('views', 'desc')
+                ->get();
+            
+            foreach ($chapters as $chapter) {
+                $page = $chapter->series->title . ' - Ch ' . $chapter->chapter_number;
+                if ($chapter->title) {
+                    $page .= ': ' . $chapter->title;
+                }
+                $results[] = [
+                    'page' => $page,
+                    'views' => $chapter->views,
+                    'type' => 'chapter',
+                ];
+            }
+        } else {
+            // Get all series and chapters sorted by views
+            $seriesViews = Series::select('id', 'title', 'views')
+                ->orderBy('views', 'desc')
+                ->limit(20)
+                ->get()
+                ->map(function ($series) {
+                    return [
+                        'page' => $series->title . ' (Series Page)',
+                        'views' => $series->views,
+                        'type' => 'series',
+                    ];
+                });
+
+            $chapterViews = Chapter::with('series')
+                ->select('id', 'series_id', 'chapter_number', 'title', 'views')
+                ->orderBy('views', 'desc')
+                ->limit(30)
+                ->get()
+                ->map(function ($chapter) {
+                    $page = $chapter->series->title . ' - Ch ' . $chapter->chapter_number;
+                    if ($chapter->title) {
+                        $page .= ': ' . $chapter->title;
+                    }
+                    return [
+                        'page' => $page,
+                        'views' => $chapter->views,
+                        'type' => 'chapter',
+                    ];
+                });
+
+            // Merge and sort by views
+            $results = $seriesViews->concat($chapterViews)
+                ->sortByDesc('views')
+                ->values()
+                ->all();
+        }
+
+        return response()->json($results);
+    }
+
     public function getChapters($seriesId)
     {
         $chapters = Chapter::where('series_id', $seriesId)

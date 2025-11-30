@@ -245,8 +245,21 @@ class PaymentController extends Controller
                 $user = $purchase->user;
                 $user->addCoins($purchase->coins_amount);
 
-                // Grant bonus premium days if applicable
+                // Create transaction record for history
                 $package = $purchase->coinPackage;
+                \App\Models\Transaction::create([
+                    'user_id' => $user->id,
+                    'type' => 'coin_purchase',
+                    'amount' => $purchase->price_usd,
+                    'coins_received' => $purchase->coins_amount,
+                    'payment_method' => 'paypal',
+                    'status' => 'completed',
+                    'coin_package_id' => $purchase->coin_package_id,
+                    'paypal_order_id' => $token,
+                    'description' => ($package ? $package->name : 'Coin Purchase') . ' - ' . number_format($purchase->coins_amount) . ' coins',
+                ]);
+
+                // Grant bonus premium days if applicable
                 if ($package && $package->bonus_premium_days > 0) {
                     $user->grantMembership('premium', $package->bonus_premium_days);
                     
@@ -441,6 +454,19 @@ class PaymentController extends Controller
                 $user->increment('coins', $coinPackage->coin_amount);
                 $newBalance = $user->fresh()->coins;
 
+                // Create transaction record for history
+                \App\Models\Transaction::create([
+                    'user_id' => $user->id,
+                    'type' => 'coin_purchase',
+                    'amount' => $coinPackage->price_usd,
+                    'coins_received' => $coinPackage->coin_amount,
+                    'payment_method' => 'paypal',
+                    'status' => 'completed',
+                    'coin_package_id' => $coinPackage->id,
+                    'paypal_order_id' => $token,
+                    'description' => $coinPackage->name . ' - ' . number_format($coinPackage->coin_amount) . ' coins',
+                ]);
+
                 // Grant bonus premium days if applicable
                 if ($coinPackage->bonus_premium_days > 0) {
                     $user->grantMembership('premium', $coinPackage->bonus_premium_days);
@@ -512,6 +538,19 @@ class PaymentController extends Controller
             $oldBalance = $user->coins;
             $user->increment('coins', $coinPackage->coin_amount);
             $newBalance = $user->fresh()->coins;
+
+            // Create transaction record for history
+            \App\Models\Transaction::create([
+                'user_id' => $user->id,
+                'type' => 'coin_purchase',
+                'amount' => $coinPackage->price_usd,
+                'coins_received' => $coinPackage->coin_amount,
+                'payment_method' => 'paypal',
+                'status' => 'completed',
+                'coin_package_id' => $coinPackage->id,
+                'paypal_order_id' => $captureResult['capture_id'] ?? $token,
+                'description' => $coinPackage->name . ' - ' . number_format($coinPackage->coin_amount) . ' coins',
+            ]);
 
             // Grant bonus premium days if applicable
             if ($coinPackage->bonus_premium_days > 0) {

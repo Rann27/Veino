@@ -159,8 +159,6 @@ class EbookSeriesController extends Controller
                 'author' => $series->author,
                 'artist' => $series->artist,
                 'genres' => $series->genres,
-                'show_trial_button' => $series->show_trial_button,
-                'series_slug' => $series->series_slug,
             ],
             'items' => $items,
             'chartItems' => $chartItems,

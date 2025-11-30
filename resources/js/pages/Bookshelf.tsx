@@ -44,7 +44,7 @@ function BookshelfContent({ seriesGroups }: Props) {
     };
 
     return (
-        <UserLayout>
+        <>
             <Head title="My Bookshelf" />
 
             <div className="min-h-screen">
@@ -231,7 +231,7 @@ function BookshelfContent({ seriesGroups }: Props) {
                     )}
                 </div>
             </div>
-        </UserLayout>
+        </>
     );
 }
 

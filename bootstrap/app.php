@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
         
+        // Use custom CSRF token verification
+        $middleware->validateCsrfTokens(except: [
+            '/voucher/validate',
+        ]);
+        
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
         ]);

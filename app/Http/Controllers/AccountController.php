@@ -23,17 +23,17 @@ class AccountController extends Controller
         ];
         
         // Get coin balance
-        $coinBalance = $user->coin_balance ?? 0;
+        $coinBalance = $user->coins ?? 0;
         
-        // Get all transaction history (hybrid: coins, membership, ebook)
+        // Get all transaction history (coins, membership, ebook, admin grants)
         $transactions = \App\Models\Transaction::where('user_id', $user->id)
             ->where('status', 'completed')
             ->with(['coinPackage', 'membershipPackage', 'ebookItem', 'chapter'])
             ->orderBy('created_at', 'desc')
-            ->limit(20)
+            ->limit(50)
             ->get()
             ->map(function ($transaction) {
-                return [
+                $data = [
                     'id' => $transaction->id,
                     'type' => $transaction->type,
                     'type_label' => $transaction->getTypeLabel(),
@@ -46,6 +46,20 @@ class AccountController extends Controller
                     'date' => $transaction->created_at->toISOString(),
                     'formatted_date' => $transaction->created_at->format('M d, Y H:i'),
                 ];
+                
+                // Add package/item details
+                if ($transaction->coinPackage) {
+                    $data['package_name'] = $transaction->coinPackage->name;
+                }
+                if ($transaction->membershipPackage) {
+                    $data['package_name'] = $transaction->membershipPackage->name;
+                    $data['membership_days'] = $transaction->membershipPackage->duration_days;
+                }
+                if ($transaction->ebookItem) {
+                    $data['ebook_title'] = $transaction->ebookItem->title;
+                }
+                
+                return $data;
             });
         
         // Get reading history (last 10)

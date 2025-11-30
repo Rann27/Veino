@@ -55,21 +55,31 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0, 
 
     const confirmCheckout = () => {
         setIsProcessing(true);
+        
+        console.log('Starting checkout...', {
+            route: route('chart.checkout'),
+            voucherCode: voucherData ? voucherCode : null
+        });
+
         router.post(route('chart.checkout'), {
             voucher_code: voucherData ? voucherCode : null,
         }, {
-            onSuccess: () => {
-                // Backend will redirect to bookshelf, don't show modal
-                // Just let Inertia follow the redirect
+            onSuccess: (page) => {
+                console.log('Checkout success', page);
+                setShowConfirmModal(false);
+                setShowSuccessModal(true);
+                setIsProcessing(false);
             },
             onError: (errors) => {
+                console.error('Checkout error', errors);
                 setIsProcessing(false);
                 setShowConfirmModal(false);
-                alert(errors?.message || 'Checkout failed. Please try again.');
+                
+                const errorMessage = errors?.message || errors?.error || 'Checkout failed. Please try again.';
+                alert(errorMessage);
             },
             onFinish: () => {
-                // This runs after success/error, but we only stop processing on error
-                // On success, the redirect will happen automatically
+                console.log('Checkout finished');
             }
         });
     };

@@ -263,6 +263,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/monitoring/comments', [App\Http\Controllers\Admin\MonitoringController::class, 'getComments'])->name('monitoring.comments');
     Route::delete('/monitoring/comments/{id}', [App\Http\Controllers\Admin\MonitoringController::class, 'deleteComment'])->name('monitoring.comments.delete');
     Route::get('/monitoring/reactions', [App\Http\Controllers\Admin\MonitoringController::class, 'getReactions'])->name('monitoring.reactions');
+    Route::get('/monitoring/views', [App\Http\Controllers\Admin\MonitoringController::class, 'getViews'])->name('monitoring.views');
     Route::get('/monitoring/series/{seriesId}/chapters', [App\Http\Controllers\Admin\MonitoringController::class, 'getChapters'])->name('monitoring.chapters');
 });
 

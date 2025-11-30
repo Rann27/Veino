@@ -157,6 +157,7 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     code: voucherCode.toUpperCase(),
@@ -165,6 +166,7 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 }),
             });
 
+            // Always try to parse JSON (even for errors)
             const data = await response.json();
 
             if (data.success) {
@@ -172,12 +174,15 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 setVoucherError(null);
                 alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.data.discount_amount.toLocaleString()}`);
             } else {
+                // Backend returned error (400, 404, etc.)
                 setVoucherError(data.message);
                 setVoucherData(null);
                 alert(`❌ ${data.message || 'Invalid or expired voucher code'}`);
             }
         } catch (error) {
-            setVoucherError('Failed to apply voucher. Please try again.');
+            // Network error or JSON parse error
+            console.error('Voucher validation error:', error);
+            setVoucherError('Failed to validate voucher. Please try again.');
             setVoucherData(null);
             alert('❌ Failed to validate voucher. Please check your connection and try again.');
         } finally {

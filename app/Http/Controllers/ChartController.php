@@ -169,8 +169,13 @@ class ChartController extends Controller
         if ($request->filled('voucher_code')) {
             $voucher = \App\Models\Voucher::where('code', strtoupper($request->voucher_code))->first();
             
-            if (!$voucher || !$voucher->isValidFor($userId, 'ebook')) {
-                return back()->with('error', 'Invalid or expired voucher code!');
+            if (!$voucher) {
+                return back()->with('error', 'Invalid voucher code!');
+            }
+
+            $validation = $voucher->isValidFor($userId, 'ebook');
+            if (!$validation['valid']) {
+                return back()->with('error', $validation['message']);
             }
 
             $discountAmount = $voucher->calculateDiscount($totalPrice);
@@ -229,11 +234,17 @@ class ChartController extends Controller
 
             DB::commit();
 
-            return redirect()->route('bookshelf')->with('success', 'Purchase successful! Items added to your bookshelf.');
+            // Return JSON success instead of redirect (for Inertia handling)
+            return back()->with('success', 'Purchase successful! Items added to your bookshelf.');
 
         } catch (\Exception $e) {
             DB::rollback();
-            return back()->with('error', 'Purchase failed. Please try again.');
+            \Log::error('Ebook checkout failed', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Purchase failed: ' . $e->getMessage());
         }
     }
 }
