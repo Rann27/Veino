@@ -270,4 +270,42 @@ class EbookSeriesController extends Controller
 
         return back()->with('success', 'Item deleted successfully!');
     }
+
+    /**
+     * Cleanup orphaned EPUB files
+     * This will delete .epub files that are not referenced in the database
+     */
+    public function cleanupOrphanedFiles()
+    {
+        $deletedCount = 0;
+        $deletedSize = 0;
+
+        // Get all .epub files in storage/app/ebook-files
+        $allFiles = Storage::files('ebook-files');
+        
+        // Get all file paths from database
+        $registeredPaths = EbookItem::whereNotNull('file_path')
+            ->pluck('file_path')
+            ->toArray();
+
+        // Find orphaned files (files that exist but not in database)
+        $orphanedFiles = array_diff($allFiles, $registeredPaths);
+
+        // Delete orphaned files
+        foreach ($orphanedFiles as $file) {
+            if (pathinfo($file, PATHINFO_EXTENSION) === 'epub') {
+                $size = Storage::size($file);
+                Storage::delete($file);
+                $deletedCount++;
+                $deletedSize += $size;
+            }
+        }
+
+        // Convert bytes to MB for readability
+        $deletedSizeMB = round($deletedSize / 1024 / 1024, 2);
+
+        return back()->with('success', 
+            "Cleanup completed! Deleted {$deletedCount} orphaned EPUB file(s), freed {$deletedSizeMB} MB of storage."
+        );
+    }
 }

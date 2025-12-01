@@ -254,6 +254,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/ebookseries/{series}/edit', [AdminEbookSeriesController::class, 'edit'])->name('ebookseries.edit');
     Route::put('/ebookseries/{series}', [AdminEbookSeriesController::class, 'update'])->name('ebookseries.update');
     Route::delete('/ebookseries/{series}', [AdminEbookSeriesController::class, 'destroy'])->name('ebookseries.destroy');
+    Route::post('/ebookseries/cleanup-orphaned-files', [AdminEbookSeriesController::class, 'cleanupOrphanedFiles'])->name('ebookseries.cleanup');
     
     // Ebook Item Management
     Route::post('/ebookseries/{series}/items', [AdminEbookSeriesController::class, 'storeItem'])->name('ebookseries.items.store');
