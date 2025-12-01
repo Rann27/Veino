@@ -45,6 +45,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
     const { currentTheme } = useTheme();
     const { flash } = usePage<any>().props;
     const [notification, setNotification] = useState<string | null>(null);
+    const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
     // Show notification from flash or local state
     React.useEffect(() => {
@@ -113,24 +114,42 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         {/* Series Details Container */}
-                        <div className="mb-8">
-                            <div className="flex flex-col md:flex-row gap-6 md:gap-8">
-                                {/* Cover */}
-                                <div className="w-full md:w-64 flex-shrink-0">
+                        <div className="mb-6">
+                            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+                                {/* Cover & Trial Button */}
+                                <div className="w-40 sm:w-48 md:w-58 flex-shrink-0 mx-auto md:mx-0">
                                     <img
                                         src={series.cover_url}
                                         alt={series.title}
-                                        className="w-full rounded-lg shadow-lg"
+                                        className="w-full rounded-lg shadow-lg mb-3"
                                         onError={(e) => {
                                             e.currentTarget.src = '/images/default-cover.jpg';
                                         }}
                                     />
+                                    
+                                    {/* Trial Reading Button */}
+                                    {series.show_trial_button && series.series_slug && (
+                                        <Link
+                                            href={route('series.show', series.series_slug)}
+                                            className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg font-medium text-sm transition-all interactive-scale"
+                                            style={{
+                                                backgroundColor: currentTheme.foreground,
+                                                color: currentTheme.background,
+                                                fontFamily: 'Poppins, sans-serif'
+                                            }}
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                                            </svg>
+                                            Trial Reading
+                                        </Link>
+                                    )}
                                 </div>
 
                                 {/* Info */}
                                 <div className="flex-1">
                                     <h1 
-                                        className="text-3xl md:text-4xl font-bold mb-2"
+                                        className="text-xl sm:text-2xl md:text-3xl font-bold mb-1"
                                         style={{ 
                                             fontFamily: 'Poppins, sans-serif',
                                             color: currentTheme.foreground
@@ -141,7 +160,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
 
                                     {series.alternative_title && (
                                         <p 
-                                            className="text-lg opacity-70 mb-4"
+                                            className="text-sm sm:text-base opacity-70 mb-2"
                                             style={{ 
                                                 fontFamily: 'Poppins, sans-serif',
                                                 color: currentTheme.foreground
@@ -152,7 +171,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                     )}
 
                                     {/* Meta Info */}
-                                    <div className="flex flex-wrap gap-4 mb-4">
+                                    <div className="flex flex-wrap gap-3 mb-3">
                                         {series.author && (
                                             <div>
                                                 <span 
@@ -201,11 +220,11 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
 
                                     {/* Genres */}
                                     {series.genres.length > 0 && (
-                                        <div className="flex flex-wrap gap-2 mb-4">
+                                        <div className="flex flex-wrap gap-2 mb-3">
                                             {series.genres.map((genre) => (
                                                 <span
                                                     key={genre.id}
-                                                    className="px-3 py-1 rounded-full text-sm"
+                                                    className="px-2 py-0.5 rounded-full text-xs"
                                                     style={{
                                                         backgroundColor: `${currentTheme.foreground}10`,
                                                         color: currentTheme.foreground,
@@ -221,7 +240,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                     {/* Synopsis */}
                                     <div>
                                         <h3 
-                                            className="text-lg font-semibold mb-2"
+                                            className="text-base font-semibold mb-1.5"
                                             style={{ 
                                                 fontFamily: 'Poppins, sans-serif',
                                                 color: currentTheme.foreground
@@ -229,48 +248,43 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                         >
                                             Synopsis
                                         </h3>
-                                        <p 
-                                            className="text-base opacity-80 leading-relaxed whitespace-pre-wrap"
-                                            style={{ 
-                                                fontFamily: 'Poppins, sans-serif',
-                                                color: currentTheme.foreground
-                                            }}
-                                        >
-                                            {series.synopsis || 'No synopsis available.'}
-                                        </p>
-                                    </div>
-
-                                    {/* Trial Reading Button */}
-                                    {series.show_trial_button && series.series_slug && (
-                                        <div className="mt-6">
-                                            <Link
-                                                href={route('series.show', series.series_slug)}
-                                                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-medium transition-all interactive-scale"
-                                                style={{
-                                                    backgroundColor: currentTheme.foreground,
-                                                    color: currentTheme.background,
-                                                    fontFamily: 'Poppins, sans-serif'
+                                        <div className="relative">
+                                            <p 
+                                                className={`text-sm opacity-80 leading-relaxed whitespace-pre-wrap transition-all duration-300 ${!isSynopsisExpanded ? 'line-clamp-8' : ''}`}
+                                                style={{ 
+                                                    fontFamily: 'Poppins, sans-serif',
+                                                    color: currentTheme.foreground
                                                 }}
                                             >
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                                                </svg>
-                                                Try Reading for Free
-                                            </Link>
+                                                {series.synopsis || 'No synopsis available.'}
+                                            </p>
+                                            {(series.synopsis && (series.synopsis.split('\n').length > 8 || series.synopsis.length > 400)) && (
+                                                <button
+                                                    onClick={() => setIsSynopsisExpanded(!isSynopsisExpanded)}
+                                                    className="mt-2 text-sm font-medium hover:underline transition-all"
+                                                    style={{
+                                                        color: currentTheme.foreground,
+                                                        opacity: 0.75,
+                                                        fontFamily: 'Poppins, sans-serif'
+                                                    }}
+                                                >
+                                                    {isSynopsisExpanded ? 'Show Less ▲' : 'Show More ▼'}
+                                                </button>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Items List Container */}
                         <div 
-                            className="border-t pt-8"
+                            className="border-t pt-6"
                             style={{ borderColor: `${currentTheme.foreground}20` }}
                         >
-                            <div className="flex justify-between items-center mb-6">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                                 <h2 
-                                    className="text-2xl font-bold"
+                                    className="text-lg sm:text-xl font-bold"
                                     style={{ 
                                         fontFamily: 'Poppins, sans-serif',
                                         color: currentTheme.foreground
@@ -282,7 +296,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                 {hasUnpurchasedItems && (
                                     <button
                                         onClick={addAllToChart}
-                                        className="px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:opacity-90"
+                                        className="w-full sm:w-auto px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:opacity-90"
                                         style={{
                                             backgroundColor: '#f59e0b',
                                             color: 'white',
@@ -295,15 +309,15 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                             </div>
 
                             {/* Items Grid */}
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {items.map((item) => (
                                     <div 
                                         key={item.id}
-                                        className="border rounded-lg p-4 flex flex-col sm:flex-row gap-4 hover:shadow-lg transition-shadow duration-200"
+                                        className="border rounded-lg p-3 flex flex-col sm:flex-row gap-3 hover:shadow-lg transition-shadow duration-200"
                                         style={{ borderColor: `${currentTheme.foreground}20` }}
                                     >
                                         {/* Item Cover */}
-                                        <div className="w-full sm:w-32 flex-shrink-0">
+                                        <div className="w-20 sm:w-24 flex-shrink-0 mx-auto sm:mx-0">
                                             <img
                                                 src={item.cover_url}
                                                 alt={item.title}
@@ -317,7 +331,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                         {/* Item Info */}
                                         <div className="flex-1">
                                             <h3 
-                                                className="text-xl font-bold mb-2"
+                                                className="text-base sm:text-lg font-bold mb-1.5"
                                                 style={{ 
                                                     fontFamily: 'Poppins, sans-serif',
                                                     color: currentTheme.foreground
@@ -327,7 +341,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                             </h3>
 
                                             <p 
-                                                className="text-sm opacity-70 mb-3 line-clamp-3"
+                                                className="text-xs sm:text-sm opacity-70 mb-2 line-clamp-2"
                                                 style={{ 
                                                     fontFamily: 'Poppins, sans-serif',
                                                     color: currentTheme.foreground
@@ -336,9 +350,9 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                 {item.summary || 'No summary available.'}
                                             </p>
 
-                                            <div className="flex items-center justify-between">
+                                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                                                 <p 
-                                                    className="text-2xl font-bold"
+                                                    className="text-xl sm:text-2xl font-bold"
                                                     style={{ 
                                                         fontFamily: 'Poppins, sans-serif',
                                                         color: '#f59e0b'
@@ -350,7 +364,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                 {item.is_purchased ? (
                                                     <button
                                                         onClick={() => downloadItem(item.id)}
-                                                        className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
+                                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90"
                                                         style={{
                                                             backgroundColor: '#10b981',
                                                             color: 'white',
@@ -362,7 +376,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                 ) : item.is_in_cart ? (
                                                     <button
                                                         disabled
-                                                        className="px-6 py-2 rounded-lg font-semibold opacity-50 cursor-not-allowed"
+                                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold opacity-50 cursor-not-allowed"
                                                         style={{
                                                             backgroundColor: `${currentTheme.foreground}20`,
                                                             color: currentTheme.foreground,
@@ -374,7 +388,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                 ) : (
                                                     <button
                                                         onClick={() => addToChart(item.id)}
-                                                        className="px-6 py-2 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
+                                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90"
                                                         style={{
                                                             backgroundColor: '#f59e0b',
                                                             color: 'white',
