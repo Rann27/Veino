@@ -129,17 +129,16 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                     </div>
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Search & Filters - Single Row */}
+                    {/* Search & Filters - Responsive Layout */}
                     <div className="mb-8">
-                        {/* Search Bar Row */}
-                        <form onSubmit={handleSearch} className="flex gap-3 mb-4">
-                            {/* Search Input */}
+                        <form onSubmit={handleSearch} className="space-y-3">
+                            {/* Search Input - Full Width on Mobile */}
                             <input
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search by title, author..."
-                                className="flex-1 px-4 py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                className="w-full px-4 py-2.5 sm:py-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm sm:text-base"
                                 style={{
                                     backgroundColor: currentTheme.background,
                                     color: currentTheme.foreground,
@@ -148,106 +147,96 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                 }}
                             />
 
-                            {/* Sort Dropdown */}
-                            <div className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowSort(!showSort)}
-                                    className="px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90 flex items-center gap-2 whitespace-nowrap"
-                                    style={{
-                                        backgroundColor: `${currentTheme.foreground}10`,
-                                        color: currentTheme.foreground,
-                                        fontFamily: 'Poppins, sans-serif'
-                                    }}
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-                                    </svg>
-                                    Sort
-                                    <svg 
-                                        className={`w-4 h-4 transition-transform ${showSort ? 'rotate-180' : ''}`} 
-                                        fill="none" 
-                                        stroke="currentColor" 
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-
-                                {showSort && (
-                                    <div 
-                                        className="absolute right-0 z-10 mt-2 w-48 rounded-lg shadow-lg border overflow-hidden"
+                            {/* Buttons Row - 50:50 on all screens */}
+                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                {/* Sort Dropdown */}
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSort(!showSort)}
+                                        className="w-full px-3 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
                                         style={{
-                                            backgroundColor: currentTheme.background,
-                                            borderColor: `${currentTheme.foreground}20`
+                                            backgroundColor: `${currentTheme.foreground}10`,
+                                            color: currentTheme.foreground,
+                                            fontFamily: 'Poppins, sans-serif'
                                         }}
                                     >
-                                        {sortOptions.map((option) => (
-                                            <button
-                                                key={option.value}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSelectedSort(option.value);
-                                                    setShowSort(false);
-                                                }}
-                                                className="w-full text-left px-4 py-3 transition-all duration-200 hover:opacity-80"
-                                                style={{
-                                                    backgroundColor: selectedSort === option.value ? `${currentTheme.foreground}10` : 'transparent',
-                                                    color: currentTheme.foreground,
-                                                    fontFamily: 'Poppins, sans-serif'
-                                                }}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                                        </svg>
+                                        <span>Sort</span>
+                                        <svg 
+                                            className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${showSort ? 'rotate-180' : ''}`} 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
 
-                            {/* Genres Button */}
-                            <div className="relative">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowGenres(!showGenres)}
-                                    className="px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90 flex items-center gap-2 whitespace-nowrap"
-                                    style={{
-                                        backgroundColor: `${currentTheme.foreground}10`,
-                                        color: currentTheme.foreground,
-                                        fontFamily: 'Poppins, sans-serif'
-                                    }}
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                    </svg>
-                                    Genres
-                                    {selectedGenres.length > 0 && (
-                                        <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-amber-500 text-white">
-                                            {selectedGenres.length}
-                                        </span>
+                                    {showSort && (
+                                        <div 
+                                            className="absolute left-0 sm:right-0 z-10 mt-2 w-40 sm:w-48 rounded-lg shadow-lg border overflow-hidden"
+                                            style={{
+                                                backgroundColor: currentTheme.background,
+                                                borderColor: `${currentTheme.foreground}20`
+                                            }}
+                                        >
+                                            {sortOptions.map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setSelectedSort(option.value);
+                                                        setShowSort(false);
+                                                    }}
+                                                    className="w-full text-left px-3 sm:px-4 py-2 sm:py-3 transition-all duration-200 hover:opacity-80 text-xs sm:text-base"
+                                                    style={{
+                                                        backgroundColor: selectedSort === option.value ? `${currentTheme.foreground}10` : 'transparent',
+                                                        color: currentTheme.foreground,
+                                                        fontFamily: 'Poppins, sans-serif'
+                                                    }}
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     )}
-                                    <svg 
-                                        className={`w-4 h-4 transition-transform ${showGenres ? 'rotate-180' : ''}`} 
-                                        fill="none" 
-                                        stroke="currentColor" 
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                            </div>
+                                </div>
 
-                            {/* Search Button */}
-                            <button
-                                type="submit"
-                                className="px-8 py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90 whitespace-nowrap"
-                                style={{
-                                    backgroundColor: '#f59e0b',
-                                    color: 'white',
-                                    fontFamily: 'Poppins, sans-serif'
-                                }}
-                            >
-                                Search
-                            </button>
+                                {/* Genres Button */}
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowGenres(!showGenres)}
+                                        className="w-full px-3 sm:px-6 py-2.5 sm:py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base"
+                                        style={{
+                                            backgroundColor: `${currentTheme.foreground}10`,
+                                            color: currentTheme.foreground,
+                                            fontFamily: 'Poppins, sans-serif'
+                                        }}
+                                    >
+                                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                        </svg>
+                                        <span>Genres</span>
+                                        {selectedGenres.length > 0 && (
+                                            <span className="ml-0.5 sm:ml-1 px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs bg-amber-500 text-white">
+                                                {selectedGenres.length}
+                                            </span>
+                                        )}
+                                        <svg 
+                                            className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${showGenres ? 'rotate-180' : ''}`} 
+                                            fill="none" 
+                                            stroke="currentColor" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
                         </form>
 
                         {/* Genre Dropdown with Checkboxes */}
@@ -310,16 +299,16 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                 </div>
                             </div>
                         )}
-                    </div>                        {/* Series Grid */}
+                    </div>                        {/* Series Grid - 2 columns on mobile, 6 on desktop */}
                         {series.data.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6">
                                 {series.data.map((s) => (
                                     <Link
                                         key={s.id}
                                         href={route('epub-novels.show', s.slug)}
                                         className="group"
                                     >
-                                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-3 transition-transform duration-300 group-hover:scale-105">
+                                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2 sm:mb-3 transition-transform duration-300 group-hover:scale-105">
                                             <img
                                                 src={s.cover_url}
                                                 alt={s.title}
@@ -332,7 +321,7 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                         </div>
 
                                         <h3 
-                                            className="font-semibold text-sm md:text-base mb-2 line-clamp-2 group-hover:opacity-80 transition-opacity"
+                                            className="font-semibold text-xs sm:text-sm md:text-base mb-1 sm:mb-2 line-clamp-2 group-hover:opacity-80 transition-opacity"
                                             style={{ 
                                                 fontFamily: 'Poppins, sans-serif',
                                                 color: currentTheme.foreground
@@ -342,7 +331,7 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                         </h3>
 
                                         <p 
-                                            className="text-lg font-bold"
+                                            className="text-sm sm:text-base md:text-lg font-bold"
                                             style={{ 
                                                 fontFamily: 'Poppins, sans-serif',
                                                 color: '#f59e0b'
@@ -353,11 +342,11 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
 
                                         {/* Genres */}
                                         {s.genres.length > 0 && (
-                                            <div className="flex flex-wrap gap-1 mt-2">
+                                            <div className="flex flex-wrap gap-1 mt-1 sm:mt-2">
                                                 {s.genres.slice(0, 2).map((genre) => (
                                                     <span
                                                         key={genre.id}
-                                                        className="px-2 py-1 rounded text-xs"
+                                                        className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs"
                                                         style={{
                                                             backgroundColor: `${currentTheme.foreground}10`,
                                                             color: currentTheme.foreground,
@@ -388,12 +377,12 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
 
                         {/* Pagination */}
                         {series.last_page > 1 && (
-                            <div className="mt-8 flex justify-center gap-2">
+                            <div className="mt-6 sm:mt-8 flex justify-center gap-1.5 sm:gap-2 flex-wrap">
                                 {Array.from({ length: series.last_page }, (_, i) => i + 1).map((page) => (
                                     <button
                                         key={page}
                                         onClick={() => router.get(route('epub-novels.index'), { ...filters, page })}
-                                        className="px-4 py-2 rounded-lg font-medium transition-all duration-200"
+                                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base"
                                         style={{
                                             backgroundColor: page === series.current_page ? '#f59e0b' : `${currentTheme.foreground}10`,
                                             color: page === series.current_page ? 'white' : currentTheme.foreground,
