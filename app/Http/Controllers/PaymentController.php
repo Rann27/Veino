@@ -171,8 +171,26 @@ class PaymentController extends Controller
      */
     public function status(CoinPurchase $purchase)
     {
+        // Check if user is authenticated
+        if (!Auth::check()) {
+            Log::warning('Payment status accessed without auth', [
+                'purchase_id' => $purchase->id,
+                'ip' => request()->ip()
+            ]);
+            
+            return redirect()->route('login')
+                ->with('error', 'Please login to view payment status');
+        }
+        
+        // Check if purchase belongs to authenticated user
         if ($purchase->user_id !== Auth::id()) {
-            abort(403);
+            Log::warning('Unauthorized payment status access', [
+                'purchase_id' => $purchase->id,
+                'purchase_user_id' => $purchase->user_id,
+                'auth_user_id' => Auth::id()
+            ]);
+            
+            abort(403, 'This payment does not belong to you');
         }
 
         return Inertia::render('PaymentStatus', [

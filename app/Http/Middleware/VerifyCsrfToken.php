@@ -13,5 +13,7 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         '/voucher/validate',
+        '/payment/paypal-ipn',
+        '/payment/callback/*',
     ];
 }

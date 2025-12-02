@@ -7,6 +7,13 @@
     </IfModule>
 
     RewriteEngine On
+    
+    # Disable ModSecurity for payment routes only
+    <If "%{REQUEST_URI} =~ m#^/payment/#">
+        <IfModule mod_security.c>
+            SecRuleEngine Off
+        </IfModule>
+    </If>
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
