@@ -93,6 +93,9 @@ class PaymentController extends Controller
             DB::commit();
 
             $statusUrl = route('payment.status', ['purchase' => $purchase->id]);
+            
+            // Store purchase ID in session to verify ownership on status page
+            session(['last_purchase_id' => $purchase->id]);
 
             if ($isInertiaRequest) {
                 // Redirect to status page, frontend will handle opening payment URL
@@ -182,12 +185,16 @@ class PaymentController extends Controller
                 ->with('error', 'Please login to view payment status');
         }
         
-        // Check if purchase belongs to authenticated user
-        if ($purchase->user_id !== Auth::id()) {
+        // Check if purchase belongs to authenticated user OR was just created in this session
+        $isOwner = $purchase->user_id === Auth::id();
+        $isRecentPurchase = session('last_purchase_id') === $purchase->id;
+        
+        if (!$isOwner && !$isRecentPurchase) {
             Log::warning('Unauthorized payment status access', [
                 'purchase_id' => $purchase->id,
                 'purchase_user_id' => $purchase->user_id,
-                'auth_user_id' => Auth::id()
+                'auth_user_id' => Auth::id(),
+                'session_purchase_id' => session('last_purchase_id')
             ]);
             
             abort(403, 'This payment does not belong to you');
