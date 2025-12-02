@@ -79,6 +79,10 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
         window.location.href = route('ebook.download', itemId);
     };
 
+    const downloadPdf = (itemId: number) => {
+        window.location.href = route('ebook.download.pdf', itemId);
+    };
+
     const hasUnpurchasedItems = items.some(item => !item.is_purchased);
 
     return (
@@ -362,17 +366,36 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                 </p>
 
                                                 {item.is_purchased ? (
-                                                    <button
-                                                        onClick={() => downloadItem(item.id)}
-                                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90"
-                                                        style={{
-                                                            backgroundColor: '#10b981',
-                                                            color: 'white',
-                                                            fontFamily: 'Poppins, sans-serif'
-                                                        }}
-                                                    >
-                                                        Download Epub
-                                                    </button>
+                                                    <div className="flex gap-2 w-full sm:w-auto">
+                                                        <button
+                                                            onClick={() => downloadItem(item.id)}
+                                                            className="flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-1.5"
+                                                            style={{
+                                                                backgroundColor: '#8b5cf6',
+                                                                color: 'white',
+                                                                fontFamily: 'Poppins, sans-serif'
+                                                            }}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                            </svg>
+                                                            EPUB
+                                                        </button>
+                                                        <button
+                                                            onClick={() => downloadPdf(item.id)}
+                                                            className="flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-1.5"
+                                                            style={{
+                                                                backgroundColor: '#f59e0b',
+                                                                color: 'white',
+                                                                fontFamily: 'Poppins, sans-serif'
+                                                            }}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                            </svg>
+                                                            PDF
+                                                        </button>
+                                                    </div>
                                                 ) : item.is_in_cart ? (
                                                     <button
                                                         disabled

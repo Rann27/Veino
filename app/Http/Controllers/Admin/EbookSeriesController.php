@@ -91,6 +91,7 @@ class EbookSeriesController extends Controller
                 'price_coins' => $item->price_coins,
                 'order' => $item->order,
                 'has_file' => !empty($item->file_path),
+                'has_pdf_file' => !empty($item->pdf_file_path),
             ];
         });
 
@@ -189,6 +190,7 @@ class EbookSeriesController extends Controller
             'order' => 'required|integer|min:0',
             'cover' => 'nullable|image|max:2048',
             'file' => 'nullable|file|mimes:epub|max:51200', // 50MB max
+            'pdf_file' => 'nullable|file|mimes:pdf|max:51200', // 50MB max
         ]);
 
         // Handle cover upload
@@ -201,6 +203,12 @@ class EbookSeriesController extends Controller
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store('ebook-files');
             $validated['file_path'] = $path;
+        }
+
+        // Handle PDF file upload
+        if ($request->hasFile('pdf_file')) {
+            $path = $request->file('pdf_file')->store('ebook-files');
+            $validated['pdf_file_path'] = $path;
         }
 
         $validated['ebook_series_id'] = $series->id;
@@ -225,6 +233,7 @@ class EbookSeriesController extends Controller
             'order' => 'required|integer|min:0',
             'cover' => 'nullable|image|max:2048',
             'file' => 'nullable|file|mimes:epub|max:51200',
+            'pdf_file' => 'nullable|file|mimes:pdf|max:51200',
         ]);
 
         // Handle cover upload
@@ -243,6 +252,15 @@ class EbookSeriesController extends Controller
             }
             $path = $request->file('file')->store('ebook-files');
             $validated['file_path'] = $path;
+        }
+
+        // Handle PDF file upload
+        if ($request->hasFile('pdf_file')) {
+            if ($item->pdf_file_path) {
+                Storage::delete($item->pdf_file_path);
+            }
+            $path = $request->file('pdf_file')->store('ebook-files');
+            $validated['pdf_file_path'] = $path;
         }
 
         $item->update($validated);
@@ -265,6 +283,9 @@ class EbookSeriesController extends Controller
         if ($item->file_path) {
             Storage::delete($item->file_path);
         }
+        if ($item->pdf_file_path) {
+            Storage::delete($item->pdf_file_path);
+        }
 
         $item->delete();
 
@@ -280,20 +301,27 @@ class EbookSeriesController extends Controller
         $deletedCount = 0;
         $deletedSize = 0;
 
-        // Get all .epub files in storage/app/ebook-files
+        // Get all files in storage/app/ebook-files
         $allFiles = Storage::files('ebook-files');
         
-        // Get all file paths from database
-        $registeredPaths = EbookItem::whereNotNull('file_path')
+        // Get all file paths from database (both EPUB and PDF)
+        $registeredEpubPaths = EbookItem::whereNotNull('file_path')
             ->pluck('file_path')
             ->toArray();
+        
+        $registeredPdfPaths = EbookItem::whereNotNull('pdf_file_path')
+            ->pluck('pdf_file_path')
+            ->toArray();
+        
+        $registeredPaths = array_merge($registeredEpubPaths, $registeredPdfPaths);
 
         // Find orphaned files (files that exist but not in database)
         $orphanedFiles = array_diff($allFiles, $registeredPaths);
 
-        // Delete orphaned files
+        // Delete orphaned files (both .epub and .pdf)
         foreach ($orphanedFiles as $file) {
-            if (pathinfo($file, PATHINFO_EXTENSION) === 'epub') {
+            $extension = pathinfo($file, PATHINFO_EXTENSION);
+            if (in_array($extension, ['epub', 'pdf'])) {
                 $size = Storage::size($file);
                 Storage::delete($file);
                 $deletedCount++;
@@ -305,7 +333,7 @@ class EbookSeriesController extends Controller
         $deletedSizeMB = round($deletedSize / 1024 / 1024, 2);
 
         return back()->with('success', 
-            "Cleanup completed! Deleted {$deletedCount} orphaned EPUB file(s), freed {$deletedSizeMB} MB of storage."
+            "Cleanup completed! Deleted {$deletedCount} orphaned EPUB/PDF file(s), freed {$deletedSizeMB} MB of storage."
         );
     }
 }

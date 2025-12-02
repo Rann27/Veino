@@ -62,6 +62,7 @@ export default function Edit({ series, items, genres }: Props) {
         cover: null as File | null,
         summary: '',
         file: null as File | null,
+        pdf_file: null as File | null,
         price_coins: '',
         order: ''
     });
@@ -70,6 +71,7 @@ export default function Edit({ series, items, genres }: Props) {
     const [deletingItemId, setDeletingItemId] = useState<number | null>(null);
     const [existingFileName, setExistingFileName] = useState<string | null>(null);
     const [hasExistingFile, setHasExistingFile] = useState(false);
+    const [hasExistingPdfFile, setHasExistingPdfFile] = useState(false);
 
     const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -124,11 +126,13 @@ export default function Edit({ series, items, genres }: Props) {
                 cover: null,
                 summary: item.summary || '',
                 file: null,
+                pdf_file: null,
                 price_coins: item.price_coins.toString(),
                 order: item.order.toString()
             });
             setItemCoverPreview(item.cover_url);
             setHasExistingFile(item.has_file);
+            setHasExistingPdfFile((item as any).has_pdf_file || false);
             setExistingFileName(item.has_file ? item.title : null);
         } else {
             setEditingItemId(null);
@@ -137,11 +141,13 @@ export default function Edit({ series, items, genres }: Props) {
                 cover: null,
                 summary: '',
                 file: null,
+                pdf_file: null,
                 price_coins: '',
                 order: (items.length + 1).toString()
             });
             setItemCoverPreview(null);
             setHasExistingFile(false);
+            setHasExistingPdfFile(false);
             setExistingFileName(null);
         }
         setShowItemForm(true);
@@ -155,11 +161,13 @@ export default function Edit({ series, items, genres }: Props) {
             cover: null,
             summary: '',
             file: null,
+            pdf_file: null,
             price_coins: '',
             order: ''
         });
         setItemCoverPreview(null);
         setHasExistingFile(false);
+        setHasExistingPdfFile(false);
         setExistingFileName(null);
     };
 
@@ -180,6 +188,7 @@ export default function Edit({ series, items, genres }: Props) {
         if (itemData.cover) data.append('cover', itemData.cover);
         data.append('summary', itemData.summary);
         if (itemData.file) data.append('file', itemData.file);
+        if (itemData.pdf_file) data.append('pdf_file', itemData.pdf_file);
         data.append('price_coins', itemData.price_coins);
         data.append('order', itemData.order);
 
@@ -536,6 +545,39 @@ export default function Edit({ series, items, genres }: Props) {
                                     {hasExistingFile && (
                                         <p className="mt-1 text-xs text-gray-500">
                                             Leave empty to keep current file, or choose a new file to replace it
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* PDF File */}
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                                        PDF File (.pdf) {!editingItemId && '*'}
+                                    </label>
+                                    
+                                    {/* Existing PDF file indicator */}
+                                    {hasExistingPdfFile && existingFileName && (
+                                        <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+                                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            <span className="text-sm text-green-700 font-medium">
+                                                Current file: {existingFileName}.pdf
+                                            </span>
+                                        </div>
+                                    )}
+                                    
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={(e) => setItemData(prev => ({ ...prev, pdf_file: e.target.files?.[0] || null }))}
+                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        required={!editingItemId}
+                                    />
+                                    
+                                    {hasExistingPdfFile && (
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            Leave empty to keep current PDF, or choose a new file to replace it
                                         </p>
                                     )}
                                 </div>

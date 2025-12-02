@@ -15,6 +15,7 @@ class EbookItem extends Model
         'cover',
         'summary',
         'file_path',
+        'pdf_file_path',
         'price_coins',
         'order',
     ];
@@ -55,6 +56,14 @@ class EbookItem extends Model
     {
         if ($this->file_path && file_exists(storage_path('app/' . $this->file_path))) {
             return route('ebook.download', $this->id);
+        }
+        return null;
+    }
+
+    public function getPdfFileUrlAttribute()
+    {
+        if ($this->pdf_file_path && file_exists(storage_path('app/' . $this->pdf_file_path))) {
+            return route('ebook.download.pdf', $this->id);
         }
         return null;
     }

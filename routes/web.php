@@ -144,6 +144,7 @@ Route::middleware('auth')->group(function () {
     // Bookshelf Routes
     Route::get('/bookshelf', [BookshelfController::class, 'index'])->name('bookshelf');
     Route::get('/ebook/download/{item}', [BookshelfController::class, 'download'])->name('ebook.download');
+    Route::get('/ebook/download-pdf/{item}', [BookshelfController::class, 'downloadPdf'])->name('ebook.download.pdf');
 });
 
 

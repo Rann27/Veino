@@ -40,6 +40,7 @@ class BookshelfController extends Controller
                         'cover_url' => $purchase->ebookItem->cover_url,
                         'purchased_at' => $purchase->purchased_at->format('M d, Y'),
                         'can_download' => !empty($purchase->ebookItem->file_path),
+                        'can_download_pdf' => !empty($purchase->ebookItem->pdf_file_path),
                     ];
                 })->values(),
             ];
@@ -71,5 +72,28 @@ class BookshelfController extends Controller
         $fileName = $item->title . '.epub';
 
         return Storage::download($item->file_path, $fileName);
+    }
+
+    /**
+     * Download PDF file
+     */
+    public function downloadPdf($itemId)
+    {
+        $userId = auth()->id();
+
+        $purchase = PurchasedItem::where('user_id', $userId)
+            ->where('ebook_item_id', $itemId)
+            ->with('ebookItem')
+            ->firstOrFail();
+
+        $item = $purchase->ebookItem;
+
+        if (!$item->pdf_file_path || !Storage::exists($item->pdf_file_path)) {
+            return back()->with('error', 'PDF file not available for download.');
+        }
+
+        $fileName = $item->title . '.pdf';
+
+        return Storage::download($item->pdf_file_path, $fileName);
     }
 }
