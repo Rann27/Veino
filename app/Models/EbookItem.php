@@ -46,10 +46,28 @@ class EbookItem extends Model
     // Helper methods
     public function getCoverUrlAttribute()
     {
-        if ($this->cover && file_exists(public_path($this->cover))) {
+        if (!$this->cover) {
+            return asset('images/default-cover.jpg');
+        }
+        
+        // Check if it's a full URL (CDN)
+        if (filter_var($this->cover, FILTER_VALIDATE_URL)) {
+            return $this->cover;
+        }
+        
+        // Check if file exists in storage (via public symlink)
+        if (str_starts_with($this->cover, 'storage/')) {
+            // Already has storage/ prefix, use asset directly
             return asset($this->cover);
         }
-        return asset('images/default-cover.jpg');
+        
+        // Check if file exists in public directory
+        if (file_exists(public_path($this->cover))) {
+            return asset($this->cover);
+        }
+        
+        // Assume it's in storage and needs storage/ prefix
+        return asset('storage/' . $this->cover);
     }
 
     public function getFileUrlAttribute()
