@@ -64,6 +64,7 @@ export default function SeriesIndex({
     status: 'ongoing',
     native_language_id: '',
     genre_ids: [] as number[],
+    is_mature: false,
   });
   const [genres, setGenres] = useState<Genre[]>([]);
   const [nativeLanguages, setNativeLanguages] = useState<NativeLanguage[]>([]);
@@ -169,6 +170,8 @@ export default function SeriesIndex({
     formData.genre_ids.forEach(id => {
       submitData.append('genre_ids[]', id.toString());
     });
+    
+    submitData.append('is_mature', formData.is_mature ? '1' : '0');
 
     router.post('/admin/series', submitData, {
       onSuccess: () => closeModal(),
@@ -456,6 +459,24 @@ export default function SeriesIndex({
                       <option key={lang.id} value={lang.id}>{lang.name}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Mature Content Toggle */}
+                <div className="border border-red-200 bg-red-50 rounded-md p-4">
+                  <label className="flex items-start cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_mature}
+                      onChange={(e) => setFormData(prev => ({ ...prev, is_mature: e.target.checked }))}
+                      className="mt-1 rounded border-red-300 text-red-600 focus:ring-red-500"
+                    />
+                    <div className="ml-3">
+                      <span className="text-sm font-medium text-red-900">🔞 Mature Content (18+)</span>
+                      <p className="text-xs text-red-700 mt-1">
+                        Mark this series as mature content. Users will see an age verification warning before accessing.
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
                 <div>

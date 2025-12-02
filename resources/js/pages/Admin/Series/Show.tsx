@@ -72,6 +72,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     genre_ids: series.genres.map(g => g.id),
     show_epub_button: (series as any).show_epub_button || false,
     epub_series_slug: (series as any).epub_series_slug || '',
+    is_mature: (series as any).is_mature || false,
   });
   const [chapterFormData, setChapterFormData] = useState({
     title: '',
@@ -190,6 +191,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     submitData.append('native_language_id', editFormData.native_language_id);
     submitData.append('show_epub_button', editFormData.show_epub_button ? '1' : '0');
     submitData.append('epub_series_slug', editFormData.epub_series_slug);
+    submitData.append('is_mature', (editFormData as any).is_mature ? '1' : '0');
     
     editFormData.genre_ids.forEach(id => {
       submitData.append('genre_ids[]', id.toString());
@@ -819,6 +821,25 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                       <p className="text-xs text-gray-500 mt-1">The slug of the Epub Series to link to</p>
                     </div>
                   )}
+                </div>
+
+                {/* Mature Content Warning */}
+                <div className="space-y-2 p-4 bg-red-50 rounded-md border border-red-200">
+                  <div className="flex items-center">
+                    <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
+                      <input
+                        type="checkbox"
+                        checked={(editFormData as any).is_mature || false}
+                        onChange={(e) => setEditFormData(prev => ({
+                          ...prev,
+                          is_mature: e.target.checked,
+                        } as any))}
+                        className="rounded border-gray-300 text-red-600 focus:ring-red-500 focus:ring-2"
+                      />
+                      <span className="ml-2 text-sm text-gray-700 font-medium">🔞 Mature Content (18+)</span>
+                    </label>
+                  </div>
+                  <p className="text-xs text-gray-600 ml-2">Readers will see an age verification warning before accessing this series</p>
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4">

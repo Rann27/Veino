@@ -112,6 +112,7 @@ interface Series {
     comments_count: number;
     show_epub_button?: boolean;
     epub_series_slug?: string;
+    is_mature?: boolean;
 }
 
 interface Props {
@@ -178,11 +179,41 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     const [notificationMessage, setNotificationMessage] = useState('');
     const [isExpanded, setIsExpanded] = useState(false);
     
+    // Age verification modal state
+    const [showAgeModal, setShowAgeModal] = useState(false);
+    const [ageVerified, setAgeVerified] = useState(false);
+    
     // New states for enhanced chapter management
     const [viewMode, setViewMode] = useState<'detailed' | 'simple'>('detailed');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+
+    // Check age verification on mount
+    useEffect(() => {
+        if (series.is_mature) {
+            const verified = localStorage.getItem(`age_verified_${series.id}`);
+            if (verified === 'true') {
+                setAgeVerified(true);
+            } else {
+                setShowAgeModal(true);
+            }
+        } else {
+            setAgeVerified(true);
+        }
+    }, [series.id, series.is_mature]);
+
+    // Handle age verification
+    const handleAgeVerification = (confirmed: boolean) => {
+        if (confirmed) {
+            localStorage.setItem(`age_verified_${series.id}`, 'true');
+            setAgeVerified(true);
+            setShowAgeModal(false);
+        } else {
+            // Redirect to home page if user clicks "No"
+            router.visit('/');
+        }
+    };
 
     // Load preferences from localStorage
     useEffect(() => {
@@ -317,7 +348,94 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
 
     return (
         <>
-            
+            <Head title={series.title} />
+
+            {/* Age Verification Modal */}
+            {showAgeModal && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ 
+                        backdropFilter: 'blur(8px)',
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)'
+                    }}
+                >
+                    <div 
+                        className="rounded-lg shadow-2xl max-w-md w-full p-8 text-center"
+                        style={{ 
+                            backgroundColor: currentTheme.background,
+                            borderColor: '#dc2626',
+                            borderWidth: '2px'
+                        }}
+                    >
+                        <div className="mb-6">
+                            {/* Age Restriction Icon */}
+                            <div className="mb-4 flex justify-center">
+                                <svg 
+                                    width="80" 
+                                    height="80" 
+                                    viewBox="0 0 24 28" 
+                                    fill="none" 
+                                    stroke="#dc2626"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    {/* Shield outline */}
+                                    <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
+                                    {/* Warning exclamation mark */}
+                                    <line x1="12" y1="8" x2="12" y2="13" strokeWidth="2.5"/>
+                                    <circle cx="12" cy="16" r="1" fill="#dc2626"/>
+                                </svg>
+                            </div>
+                            <h2 
+                                className="text-2xl font-bold mb-3"
+                                style={{ color: currentTheme.foreground }}
+                            >
+                                Age-Restricted Content
+                            </h2>
+                            <p 
+                                className="text-sm mb-4"
+                                style={{ color: `${currentTheme.foreground}90` }}
+                            >
+                                This series may contain strong language, violence, or mature themes. It is not suitable for individuals under 18.
+                            </p>
+                            <p 
+                                className="text-lg font-semibold"
+                                style={{ color: currentTheme.foreground }}
+                            >
+                                Are you over 18?
+                            </p>
+                        </div>
+                        
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                onClick={() => handleAgeVerification(false)}
+                                className="px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+                                style={{ 
+                                    backgroundColor: currentTheme.foreground,
+                                    color: currentTheme.background,
+                                }}
+                            >
+                                No
+                            </button>
+                            <button
+                                onClick={() => handleAgeVerification(true)}
+                                className="px-8 py-3 rounded-lg font-semibold border-2 transition-all transform hover:scale-105"
+                                style={{ 
+                                    borderColor: currentTheme.foreground,
+                                    color: currentTheme.foreground,
+                                    backgroundColor: 'transparent'
+                                }}
+                            >
+                                Yes, I am
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Content - only show if age verified */}
+            {ageVerified && (
             <div 
                 className="min-h-screen"
                 style={{ backgroundColor: currentTheme.background }}
@@ -955,6 +1073,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Notification Modal */}
             {showNotification && (

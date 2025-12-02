@@ -24,6 +24,7 @@ class Series extends Model
         'artist',
         'rating',
         'status',
+        'is_mature',
         'native_language_id',
         'views',
         'bookmarks_count',
@@ -35,6 +36,7 @@ class Series extends Model
     protected $casts = [
         'rating' => 'decimal:1',
         'show_epub_button' => 'boolean',
+        'is_mature' => 'boolean',
     ];
 
     protected static function boot()

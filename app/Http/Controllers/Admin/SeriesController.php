@@ -139,6 +139,7 @@ class SeriesController extends Controller
             'genre_ids.*' => 'exists:genres,id',
             'show_epub_button' => 'nullable|boolean',
             'epub_series_slug' => 'nullable|string|max:255',
+            'is_mature' => 'nullable|boolean',
         ]);
 
         // Handle cover based on type
@@ -180,6 +181,7 @@ class SeriesController extends Controller
             'genre_ids.*' => 'exists:genres,id',
             'show_epub_button' => 'nullable|boolean',
             'epub_series_slug' => 'nullable|string|max:255',
+            'is_mature' => 'nullable|boolean',
         ]);
 
         // Handle cover based on type
