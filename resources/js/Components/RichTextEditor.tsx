@@ -21,7 +21,6 @@ import {
   ImageStyle,
   ImageToolbar,
   ImageUpload,
-  Base64UploadAdapter,
   Indent,
   IndentBlock,
   Alignment,
@@ -33,6 +32,64 @@ import {
 } from 'ckeditor5';
 
 import 'ckeditor5/ckeditor5.css';
+
+// Custom Upload Adapter for Laravel Storage
+class MyUploadAdapter {
+  loader: any;
+  xhr?: XMLHttpRequest;
+
+  constructor(loader: any) {
+    this.loader = loader;
+  }
+
+  upload() {
+    return this.loader.file.then((file: File) => new Promise((resolve, reject) => {
+      this.xhr = new XMLHttpRequest();
+      
+      this.xhr.open('POST', '/admin/chapters/upload-image', true);
+      
+      // Add CSRF token
+      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      if (token) {
+        this.xhr.setRequestHeader('X-CSRF-TOKEN', token);
+      }
+      
+      this.xhr.responseType = 'json';
+      
+      this.xhr.addEventListener('load', () => {
+        const response = this.xhr!.response;
+        
+        if (!response || response.error) {
+          return reject(response && response.error ? response.error.message : 'Upload failed');
+        }
+        
+        resolve({
+          default: response.url
+        });
+      });
+      
+      this.xhr.addEventListener('error', () => reject('Upload failed'));
+      this.xhr.addEventListener('abort', () => reject('Upload aborted'));
+      
+      const data = new FormData();
+      data.append('upload', file);
+      
+      this.xhr.send(data);
+    }));
+  }
+
+  abort() {
+    if (this.xhr) {
+      this.xhr.abort();
+    }
+  }
+}
+
+function MyCustomUploadAdapterPlugin(editor: any) {
+  editor.plugins.get('FileRepository').createUploadAdapter = (loader: any) => {
+    return new MyUploadAdapter(loader);
+  };
+}
 
 interface RichTextEditorProps {
   value: string;
@@ -74,7 +131,6 @@ export default function RichTextEditor({
       ImageStyle,
       ImageToolbar,
       ImageUpload,
-      Base64UploadAdapter,
       Indent,
       IndentBlock,
       Alignment,
@@ -83,6 +139,7 @@ export default function RichTextEditor({
       GeneralHtmlSupport,
       PasteFromOffice,
     ],
+    extraPlugins: [MyCustomUploadAdapterPlugin],
     toolbar: {
       items: [
         'undo', 'redo',

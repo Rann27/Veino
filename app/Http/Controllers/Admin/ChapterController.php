@@ -216,4 +216,31 @@ class ChapterController extends Controller
         $chapter->delete();
         return redirect()->back()->with('success', 'Chapter deleted successfully');
     }
+
+    /**
+     * Upload image for chapter content (CKEditor)
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'upload' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
+        ]);
+
+        if ($request->hasFile('upload')) {
+            $image = $request->file('upload');
+            $path = $image->store('chapter-images', 'public');
+            $url = asset('storage/' . $path);
+
+            // CKEditor expects this specific response format
+            return response()->json([
+                'url' => $url
+            ]);
+        }
+
+        return response()->json([
+            'error' => [
+                'message' => 'Image upload failed'
+            ]
+        ], 400);
+    }
 }

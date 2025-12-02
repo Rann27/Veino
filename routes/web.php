@@ -204,6 +204,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/series/{series}/chapters', [ChapterController::class, 'store'])->name('chapters.store');
     Route::put('/chapters/{chapter}', [ChapterController::class, 'update'])->name('chapters.update');
     Route::delete('/chapters/{chapter}', [ChapterController::class, 'destroy'])->name('chapters.destroy');
+    Route::post('/chapters/upload-image', [ChapterController::class, 'uploadImage'])->name('chapters.upload-image');
     
     // User Management
     Route::get('/user-management', [UserController::class, 'index'])->name('users.index');
