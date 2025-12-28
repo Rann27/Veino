@@ -64,11 +64,20 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0, 
         router.post(route('chart.checkout'), {
             voucher_code: voucherData ? voucherCode : null,
         }, {
-            onSuccess: (page) => {
+            onSuccess: (page: any) => {
                 console.log('Checkout success', page);
-                setShowConfirmModal(false);
-                setShowSuccessModal(true);
                 setIsProcessing(false);
+                setShowConfirmModal(false);
+                
+                // Check if there's an error flash message
+                const errorMsg = page.props?.flash?.error || page.props?.errors?.message;
+                if (errorMsg) {
+                    alert('❌ ' + errorMsg);
+                    return;
+                }
+                
+                // Show success modal only if no error
+                setShowSuccessModal(true);
             },
             onError: (errors) => {
                 console.error('Checkout error', errors);
@@ -76,7 +85,7 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0, 
                 setShowConfirmModal(false);
                 
                 const errorMessage = errors?.message || errors?.error || 'Checkout failed. Please try again.';
-                alert(errorMessage);
+                alert('❌ ' + errorMessage);
             },
             onFinish: () => {
                 console.log('Checkout finished');

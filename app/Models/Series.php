@@ -101,8 +101,13 @@ class Series extends Model
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             return $value;
         }
+        
+        // Check if already has storage/ prefix
+        if (str_starts_with($value, 'storage/')) {
+            return asset($value);
+        }
 
-        // If it's a relative path (uploaded file), prepend storage URL
+        // Assume it's a storage path and prepend storage/
         return asset('storage/' . $value);
     }
 

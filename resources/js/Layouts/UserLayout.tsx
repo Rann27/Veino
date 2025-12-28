@@ -57,6 +57,20 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (showMobileSidebar) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showMobileSidebar]);
+  
   // Auto-hide/show navbar on scroll with delay
   const [showNavbar, setShowNavbar] = useState(true);
   const hideDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -581,13 +595,13 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 z-[70] bg-black bg-opacity-50 md:hidden"
+            className="fixed inset-0 z-[70] backdrop-blur-sm bg-black/25 md:hidden"
             onClick={toggleMobileSidebar}
           />
           
           {/* Sidebar */}
-          <div 
-            className={`fixed top-0 left-0 h-full w-80 z-[75] transform transition-transform duration-300 ease-in-out md:hidden ${
+          <div
+            className={`fixed top-0 left-0 h-full w-80 z-[75] transform transition-transform duration-300 ease-in-out md:hidden overflow-hidden flex flex-col ${
               showMobileSidebar ? 'translate-x-0' : '-translate-x-full'
             }`}
             style={{ 
@@ -595,7 +609,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               borderRight: `1px solid ${currentTheme.foreground}20`
             }}
           >
-            <div className="p-6">
+            <div className="h-full overflow-y-auto p-6 scrollbar-hide">
               {/* Header */}
               <div className="flex items-center justify-between mb-8">
                 <Link 
