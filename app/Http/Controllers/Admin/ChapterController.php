@@ -218,6 +218,22 @@ class ChapterController extends Controller
     }
 
     /**
+     * Toggle premium status of a chapter
+     */
+    public function togglePremium(Request $request, Chapter $chapter)
+    {
+        $request->validate([
+            'is_premium' => 'required|boolean'
+        ]);
+
+        $chapter->update([
+            'is_premium' => $request->is_premium
+        ]);
+
+        return redirect()->back()->with('success', 'Chapter premium status updated successfully');
+    }
+
+    /**
      * Upload image for chapter content (CKEditor)
      */
     public function uploadImage(Request $request)

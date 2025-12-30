@@ -295,6 +295,25 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     }
   };
 
+  const handleTogglePremium = (chapterId: number, newPremiumStatus: boolean) => {
+    router.patch(`/admin/chapters/${chapterId}/toggle-premium`, {
+      is_premium: newPremiumStatus
+    }, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setAlertMessage({ 
+          type: 'success', 
+          message: `Chapter set to ${newPremiumStatus ? 'Premium' : 'Free'} successfully!` 
+        });
+        setTimeout(() => setAlertMessage(null), 3000);
+      },
+      onError: () => {
+        setAlertMessage({ type: 'error', message: 'Failed to update chapter status. Please try again.' });
+        setTimeout(() => setAlertMessage(null), 5000);
+      }
+    });
+  };
+
   return (
     <AdminLayout>
       <Head title={`${series.title} - Series Management`} />
@@ -578,7 +597,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
               </div>
               
               {/* Actions */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 mb-2">
                 <button
                   onClick={() => openChapterModal(chapter)}
                   className="flex-1 px-2 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 transition-colors"
@@ -590,6 +609,23 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   className="flex-1 px-2 py-1.5 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 hover:border-red-300 transition-colors"
                 >
                   Delete
+                </button>
+              </div>
+              
+              {/* Premium Toggle */}
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                <span className="text-xs font-medium text-gray-700">Premium</span>
+                <button
+                  onClick={() => handleTogglePremium(chapter.id, !chapter.is_premium)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 ${
+                    chapter.is_premium ? 'bg-purple-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 ${
+                      chapter.is_premium ? 'translate-x-5' : 'translate-x-1'
+                    }`}
+                  />
                 </button>
               </div>
             </div>

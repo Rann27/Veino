@@ -19,6 +19,11 @@
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6459699146085990"
              crossorigin="anonymous"></script>
 
+        <!-- Clickadilla Main Script (Only for non-premium users) -->
+        @if(!Auth::check() || !Auth::user()->hasActiveMembership())
+        <script async src="https://js.wpadmngr.com/static/adManager.js" data-admpid="407305"></script>
+        @endif
+
         <!-- Theme CSS Custom Properties -->
         <style>
             :root {

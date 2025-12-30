@@ -3,7 +3,7 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
-import BannerAd from '@/Components/Ads/BannerAd';
+import AadsBanner from '@/Components/Ads/AadsBanner';
 
 interface User {
   id: number;
@@ -964,9 +964,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       <div className="h-16" />
 
       {/* Top Banner Ad (below navbar) */}
-      {!auth?.user?.membership_tier || auth.user.membership_tier === 'basic' ? (
-        <BannerAd position="top" />
-      ) : null}
+      <AadsBanner position="top" />
 
       {/* Main Content */}
       <main className={`transition-all duration-300 ${
@@ -978,13 +976,11 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       </main>
 
       {/* Bottom Banner Ad (above footer) */}
-      {!auth?.user?.membership_tier || auth.user.membership_tier === 'basic' ? (
-        <BannerAd position="bottom" />
-      ) : null}
+      <AadsBanner position="bottom" />
 
       {/* Footer */}
       <footer 
-        className="backdrop-blur-[50px] border-t py-8 mt-16"
+        className="backdrop-blur-[50px] border-t py-6"
         style={{
           backgroundColor: `${currentTheme.background}80`,
           borderColor: `${currentTheme.foreground}20`

@@ -6,8 +6,8 @@ import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import CommentSection from '@/Components/CommentSection';
 import ReactionBar from '@/Components/ReactionBar';
 import PremiumDiamond from '@/Components/PremiumDiamond';
-import InterstitialAd from '@/Components/Ads/InterstitialAd';
 import InTextAd from '@/Components/Ads/InTextAd';
+import InterstitialAd from '@/Components/Ads/InterstitialAd';
 import axios from 'axios';
 
 // Sanitize HTML to remove conflicting color styles
@@ -769,10 +769,10 @@ function ChapterShowContent({
                 triggerElement={readerSettingsButtonRef.current}
             />
 
-            {/* Interstitial Ad (shows once per chapter for basic users, including guests) */}
-            {!isPremiumMember && (
-                <InterstitialAd chapterId={chapter.id} />
-            )}
+            {/* Self-hosted Interstitial Ad (Premium Membership Promotion) - Every 3 chapters */}
+            <InterstitialAd chapterId={chapter.id} />
+
+            {/* Clickadilla ads are handled by smart script in app.blade.php */}
         </>
     );
 }

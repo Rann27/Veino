@@ -24,6 +24,21 @@ const InterstitialAd: React.FC<InterstitialAdProps> = ({ chapterId, onClose }) =
 
     useEffect(() => {
         const fetchAd = async () => {
+            // Counter logic: Show every 3 chapter visits
+            const counterKey = 'interstitial_chapter_counter';
+            const currentCount = parseInt(localStorage.getItem(counterKey) || '0', 10);
+            const newCount = currentCount + 1;
+            
+            localStorage.setItem(counterKey, newCount.toString());
+            
+            // Only show if counter reaches 3
+            if (newCount < 3) {
+                return;
+            }
+            
+            // Reset counter
+            localStorage.setItem(counterKey, '0');
+            
             // Check if already shown in this session for this chapter
             const sessionKey = `interstitial_shown_chapter_${chapterId}`;
             if (sessionStorage.getItem(sessionKey)) {

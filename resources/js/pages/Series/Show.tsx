@@ -98,7 +98,9 @@ interface Chapter {
 interface Series {
     id: number;
     title: string;
+    alternative_title?: string;
     author: string;
+    artist?: string;
     slug: string;
     synopsis: string;
     cover_url: string | null;
@@ -580,11 +582,25 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                     >
                                         {series.title}
                                     </h1>
+                                    {series.alternative_title && (
+                                        <p 
+                                            className="text-lg mb-2"
+                                            style={{ color: `${currentTheme.foreground}90` }}
+                                        >
+                                            {series.alternative_title}
+                                        </p>
+                                    )}
                                     <p 
-                                        className="text-lg mb-4"
+                                        className="text-base mb-4"
                                         style={{ color: `${currentTheme.foreground}80` }}
                                     >
-                                        by {series.author}
+                                        Author: {series.author}
+                                        {series.artist && (
+                                            <>
+                                                <span className="mx-4">|</span>
+                                                Artist: {series.artist}
+                                            </>
+                                        )}
                                     </p>
                                     
                                     <div className="flex flex-wrap items-center gap-4 mb-4">
@@ -880,64 +896,118 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                         backgroundColor: currentTheme.background 
                                                     }}
                                                 >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1 min-w-0">
-                                                            {/* Chapter Number and Premium Badge in same row */}
-                                                            <div className="flex items-center justify-between mb-3">
-                                                                <h3 
-                                                                    className="font-semibold text-sm"
-                                                                    style={{ color: currentTheme.foreground }}
-                                                                >
-                                                                    {chapter.volume 
-                                                                        ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
-                                                                        : `Chapter ${chapter.chapter_number}`
-                                                                    }
-                                                                </h3>
-                                                                {chapter.is_premium && (
-                                                                    <span 
-                                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                        style={{
-                                                                            backgroundColor: `${SHINY_PURPLE}15`,
-                                                                            color: SHINY_PURPLE
-                                                                        }}
+                                                    {isMobile ? (
+                                                        /* Mobile Layout - 2 rows */
+                                                        <div>
+                                                            {/* Row 1: Vol/Chapter + Premium Badge + Release Date */}
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <h3 
+                                                                        className="font-semibold text-sm"
+                                                                        style={{ color: currentTheme.foreground }}
                                                                     >
-                                                                        <PremiumDiamond size={14} />
-                                                                        <span className="font-semibold">Premium</span>
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            
-                                                            {/* Date, View Counter, and Owned Badge */}
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
-                                                                        <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
-                                                                        {formatDate(chapter.created_at)}
-                                                                    </div>
-                                                                    {chapter.is_owned && (
+                                                                        {chapter.volume 
+                                                                            ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                            : `Chapter ${chapter.chapter_number}`
+                                                                        }
+                                                                    </h3>
+                                                                    {chapter.is_premium && (
                                                                         <span 
-                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
+                                                                            className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded"
                                                                             style={{
-                                                                                backgroundColor: '#d1fae5',
-                                                                                color: '#059669'
+                                                                                backgroundColor: `${SHINY_PURPLE}15`,
+                                                                                color: SHINY_PURPLE
                                                                             }}
                                                                         >
-                                                                            <CheckIcon size={12} color="#059669" />
-                                                                            Owned
+                                                                            <PremiumDiamond size={10} />
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                {/* View Counter - Aligned Right */}
                                                                 <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
+                                                                    <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
+                                                                    {formatDate(chapter.created_at)}
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            {/* Row 2: Title (max 15 char) + View Count */}
+                                                            <div className="flex items-center justify-between">
+                                                                <p 
+                                                                    className="text-sm truncate flex-1 pr-2"
+                                                                    style={{ color: `${currentTheme.foreground}95` }}
+                                                                    title={chapter.title}
+                                                                >
+                                                                    {chapter.title && chapter.title.length > 45 
+                                                                        ? `${chapter.title.substring(0, 45)}...` 
+                                                                        : chapter.title || 'Untitled'
+                                                                    }
+                                                                </p>
+                                                                <div className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ color: `${currentTheme.foreground}60` }}>
                                                                     <EyeIcon className="w-3 h-3" />
                                                                     {formatNumber(chapter.views)}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}40` }}>
-                                                            <ChevronRightIcon size={16} color={`${currentTheme.foreground}40`} />
+                                                    ) : (
+                                                        /* Desktop Layout - Original */
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex-1 min-w-0">
+                                                                {/* Chapter Number and Premium Badge in same row */}
+                                                                <div className="flex items-center justify-between mb-3">
+                                                                    <h3 
+                                                                        className="font-semibold text-sm"
+                                                                        style={{ color: currentTheme.foreground }}
+                                                                    >
+                                                                        {chapter.volume 
+                                                                            ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                            : `Chapter ${chapter.chapter_number}`
+                                                                        }
+                                                                    </h3>
+                                                                    {chapter.is_premium && (
+                                                                        <span 
+                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
+                                                                            style={{
+                                                                                backgroundColor: `${SHINY_PURPLE}15`,
+                                                                                color: SHINY_PURPLE
+                                                                            }}
+                                                                        >
+                                                                            <PremiumDiamond size={14} />
+                                                                            <span className="font-semibold">Premium</span>
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                
+                                                                {/* Date, View Counter, and Owned Badge */}
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
+                                                                            <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
+                                                                            {formatDate(chapter.created_at)}
+                                                                        </div>
+                                                                        {chapter.is_owned && (
+                                                                            <span 
+                                                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
+                                                                                style={{
+                                                                                    backgroundColor: '#d1fae5',
+                                                                                    color: '#059669'
+                                                                                }}
+                                                                            >
+                                                                                <CheckIcon size={12} color="#059669" />
+                                                                                Owned
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {/* View Counter - Aligned Right */}
+                                                                    <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
+                                                                        <EyeIcon className="w-3 h-3" />
+                                                                        {formatNumber(chapter.views)}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}40` }}>
+                                                                <ChevronRightIcon size={16} color={`${currentTheme.foreground}40`} />
+                                                            </div>
                                                         </div>
-                                                    </div>
+                                                    )}
                                                 </Link>
                                             ))}
                                         </div>
