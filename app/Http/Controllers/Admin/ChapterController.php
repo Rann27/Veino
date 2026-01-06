@@ -130,6 +130,11 @@ class ChapterController extends Controller
                             
                             $validated['chapter_number'] = $maxChapterInVolume ? $maxChapterInVolume + 1 : 1;
                         }
+                        
+                        // Generate chapter_link for volume format: v{vol}c{num}
+                        $vol = rtrim(rtrim(number_format($validated['volume'], 2, '.', ''), '0'), '.');
+                        $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
+                        $validated['chapter_link'] = "v{$vol}c{$num}";
                     } else {
                         // Traditional webnovel style - no volume, auto-increment chapter
                         $validated['volume'] = null;
@@ -142,6 +147,10 @@ class ChapterController extends Controller
                             
                             $validated['chapter_number'] = $maxChapterNumber ? $maxChapterNumber + 1 : 1;
                         }
+                        
+                        // Generate chapter_link for non-volume format: just the number
+                        $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
+                        $validated['chapter_link'] = $num;
                     }
                     
                     // Remove the use_volume flag before creating
@@ -195,12 +204,21 @@ class ChapterController extends Controller
             if (empty($validated['chapter_number'])) {
                 $validated['chapter_number'] = $chapter->chapter_number; // Keep existing
             }
+            
+            // Generate chapter_link for volume format: v{vol}c{num}
+            $vol = rtrim(rtrim(number_format($validated['volume'], 2, '.', ''), '0'), '.');
+            $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
+            $validated['chapter_link'] = "v{$vol}c{$num}";
         } else {
             // No volume - traditional webnovel style
             $validated['volume'] = null;
             if (empty($validated['chapter_number'])) {
                 $validated['chapter_number'] = $chapter->chapter_number; // Keep existing
             }
+            
+            // Generate chapter_link for non-volume format: just the number
+            $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
+            $validated['chapter_link'] = $num;
         }
 
         // Remove the use_volume flag before updating

@@ -12,12 +12,12 @@ use Inertia\Inertia;
 
 class UserChapterController extends Controller
 {
-    public function show($seriesSlug, $chapterNumber)
+    public function show($seriesSlug, $chapterLink)
     {
         $series = Series::where('slug', $seriesSlug)->firstOrFail();
         
         $chapter = Chapter::where('series_id', $series->id)
-            ->where('chapter_number', $chapterNumber)
+            ->where('chapter_link', $chapterLink)
             ->firstOrFail();
 
         // Increment views
@@ -49,29 +49,29 @@ class UserChapterController extends Controller
             }
         }
 
-        // Get navigation chapters
-        $prevChapter = Chapter::where('series_id', $series->id)
-            ->where('chapter_number', '<', $chapterNumber)
-            ->orderBy('chapter_number', 'desc')
-            ->first(['chapter_number', 'title']);
-
-        $nextChapter = Chapter::where('series_id', $series->id)
-            ->where('chapter_number', '>', $chapterNumber)
-            ->orderBy('chapter_number')
-            ->first(['chapter_number', 'title']);
+        // Get navigation chapters (using model methods for proper volume handling)
+        $prevChapter = $chapter->getPreviousChapter();
+        $nextChapter = $chapter->getNextChapter();
 
         // Get all chapters for navigation dropdown
         $allChapters = Chapter::where('series_id', $series->id)
+            ->orderBy('volume')
             ->orderBy('chapter_number')
-            ->get(['chapter_number', 'title', 'is_premium']);
+            ->get(['chapter_link', 'chapter_number', 'volume', 'title', 'is_premium']);
 
         return Inertia::render('Chapter/Show', [
             'series' => $series,
             'chapter' => $chapter,
             'canAccess' => $canAccess,
             'isPremiumMember' => $isPremiumMember,
-            'prevChapter' => $prevChapter,
-            'nextChapter' => $nextChapter,
+            'prevChapter' => $prevChapter ? [
+                'chapter_link' => $prevChapter->chapter_link,
+                'title' => $prevChapter->title,
+            ] : null,
+            'nextChapter' => $nextChapter ? [
+                'chapter_link' => $nextChapter->chapter_link,
+                'title' => $nextChapter->title,
+            ] : null,
             'allChapters' => $allChapters,
         ]);
     }
@@ -80,7 +80,7 @@ class UserChapterController extends Controller
      * Deprecated: Chapter purchases now handled through premium membership
      * Redirects users to membership page
      */
-    public function purchase(Request $request, $seriesSlug, $chapterNumber)
+    public function purchase(Request $request, $seriesSlug, $chapterLink)
     {
         $user = Auth::user();
         if (!$user) {

@@ -25,7 +25,7 @@ class UserSeriesController extends Controller
         $chapters = Chapter::where('series_id', $series->id)
             ->orderBy('volume')
             ->orderBy('chapter_number')
-            ->get(['id', 'title', 'chapter_number', 'volume', 'is_premium', 'coin_price', 'created_at', 'views']);
+            ->get(['id', 'title', 'chapter_number', 'chapter_link', 'volume', 'is_premium', 'coin_price', 'created_at', 'views']);
 
         // Add ownership information if user is authenticated
         $isBookmarked = false;

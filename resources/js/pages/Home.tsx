@@ -19,6 +19,7 @@ interface Chapter {
   id: number;
   title: string;
   chapter_number: number;
+  chapter_link: string;
   volume?: number;
   is_premium: boolean;
 }
@@ -652,8 +653,8 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                       if (chs.length === 0) {
                         const latestNum = series.chapters_count || 1;
                         return [
-                          { chapter_number: latestNum, is_premium: false },
-                          latestNum > 1 ? { chapter_number: latestNum - 1, is_premium: false } : null,
+                          { chapter_number: latestNum, chapter_link: latestNum.toString(), is_premium: false },
+                          latestNum > 1 ? { chapter_number: latestNum - 1, chapter_link: (latestNum - 1).toString(), is_premium: false } : null,
                         ]
                           .filter(Boolean)
                           .map((c: any, idx: number) => (
@@ -663,7 +664,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                               style={{ backgroundColor: `${currentTheme.foreground}05` }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
                               }}
                             >
                               <span
@@ -677,7 +678,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                           ));
                       }
 
-                      const chsDesc = [...chs].sort((a, b) => b.chapter_number - a.chapter_number);
+                      const chsDesc = [...chs].sort((a, b) => { const volDiff = (b.volume || 0) - (a.volume || 0); return volDiff !== 0 ? volDiff : b.chapter_number - a.chapter_number; });
                       return chsDesc.map((c) => (
                         <div
                           key={c.id ?? c.chapter_number}
@@ -685,7 +686,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                           style={{ backgroundColor: `${currentTheme.foreground}05` }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
                           }}
                         >
                           <span
@@ -798,7 +799,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                               style={{ backgroundColor: `${currentTheme.foreground}05` }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
                               }}
                             >
                               <span
@@ -812,7 +813,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                           ));
                       }
 
-                      const chsDesc = [...chs].sort((a, b) => b.chapter_number - a.chapter_number);
+                      const chsDesc = [...chs].sort((a, b) => { const volDiff = (b.volume || 0) - (a.volume || 0); return volDiff !== 0 ? volDiff : b.chapter_number - a.chapter_number; });
                       return chsDesc.map((c) => (
                         <div
                           key={c.id ?? c.chapter_number}
@@ -820,7 +821,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                           style={{ backgroundColor: `${currentTheme.foreground}05` }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
                           }}
                         >
                           <span
@@ -933,7 +934,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                               style={{ backgroundColor: `${currentTheme.foreground}05` }}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
                               }}
                             >
                               <span
@@ -947,7 +948,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                           ));
                       }
 
-                      const chsDesc = [...chs].sort((a, b) => b.chapter_number - a.chapter_number);
+                      const chsDesc = [...chs].sort((a, b) => { const volDiff = (b.volume || 0) - (a.volume || 0); return volDiff !== 0 ? volDiff : b.chapter_number - a.chapter_number; });
                       return chsDesc.map((c) => (
                         <div
                           key={c.id ?? c.chapter_number}
@@ -955,7 +956,7 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                           style={{ backgroundColor: `${currentTheme.foreground}05` }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_number}`;
+                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
                           }}
                         >
                           <span

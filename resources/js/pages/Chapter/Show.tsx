@@ -39,18 +39,21 @@ interface Chapter {
     id: number;
     title: string;
     chapter_number: number;
+    chapter_link: string;
     content: string;
     is_premium: boolean;
     coin_price: number;
 }
 
 interface NavigationChapter {
-    chapter_number: number;
+    chapter_link: string;
     title: string;
 }
 
 interface ChapterOption {
+    chapter_link: string;
     chapter_number: number;
+    volume?: number;
     title: string;
     is_premium: boolean;
 }
@@ -170,8 +173,8 @@ function ChapterShowContent({
         };
     }, []);
 
-    const jumpToChapter = (chapterNumber: number) => {
-        router.get(route('chapters.show', [series.slug, chapterNumber]));
+    const jumpToChapter = (chapterLink: string) => {
+        router.get(route('chapters.show', [series.slug, chapterLink]));
         setShowChapterList(false);
     };
 
@@ -406,7 +409,7 @@ function ChapterShowContent({
                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                             {prevChapter && (
                                 <Link
-                                    href={route('chapters.show', [series.slug, prevChapter.chapter_number])}
+                                    href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
                                     className="p-2 rounded transition-all reading-bar-btn"
                                     style={{ color: currentTheme.foreground }}
                                     title={`Previous: ${prevChapter.title}`}
@@ -443,18 +446,18 @@ function ChapterShowContent({
                                     >
                                         {allChapters.map((ch) => (
                                             <button
-                                                key={ch.chapter_number}
-                                                onClick={() => jumpToChapter(ch.chapter_number)}
+                                                key={ch.chapter_link}
+                                                onClick={() => jumpToChapter(ch.chapter_link)}
                                                 className={`w-full text-left px-3 sm:px-4 py-2 transition-colors hover:opacity-70 flex items-center justify-between ${
-                                                    ch.chapter_number === chapter.chapter_number ? 'opacity-80' : ''
+                                                    ch.chapter_link === chapter.chapter_link ? 'opacity-80' : ''
                                                 }`}
                                                 style={{
-                                                    color: ch.chapter_number === chapter.chapter_number ? SHINY_PURPLE : currentTheme.foreground,
-                                                    backgroundColor: ch.chapter_number === chapter.chapter_number ? `${currentTheme.foreground}10` : 'transparent'
+                                                    color: ch.chapter_link === chapter.chapter_link ? SHINY_PURPLE : currentTheme.foreground,
+                                                    backgroundColor: ch.chapter_link === chapter.chapter_link ? `${currentTheme.foreground}10` : 'transparent'
                                                 }}
                                             >
                                                 <span className="truncate text-sm sm:text-base">
-                                                    {ch.chapter_number}: {ch.title}
+                                                    {ch.volume ? `Vol ${ch.volume} Ch ${ch.chapter_number}` : `Chapter ${ch.chapter_number}`}: {ch.title}
                                                 </span>
                                                 {ch.is_premium && (
                                                     <span className="ml-2 flex-shrink-0">
@@ -469,7 +472,7 @@ function ChapterShowContent({
                             
                             {nextChapter && (
                                 <Link
-                                    href={route('chapters.show', [series.slug, nextChapter.chapter_number])}
+                                    href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
                                     className="p-2 rounded transition-all reading-bar-btn"
                                     style={{ color: currentTheme.foreground }}
                                     title={`Next: ${nextChapter.title}`}
@@ -685,7 +688,7 @@ function ChapterShowContent({
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                             {prevChapter ? (
                                 <Link
-                                    href={route('chapters.show', [series.slug, prevChapter.chapter_number])}
+                                    href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
                                     className="w-full sm:w-auto px-6 py-3 rounded-lg transition-colors text-center"
                                     style={{
                                         backgroundColor: `${currentTheme.foreground}10`,
@@ -711,7 +714,7 @@ function ChapterShowContent({
                             
                             {nextChapter ? (
                                 <Link
-                                    href={route('chapters.show', [series.slug, nextChapter.chapter_number])}
+                                    href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
                                     className="w-full sm:w-auto px-6 py-3 rounded-lg transition-colors text-center"
                                     style={{
                                         backgroundColor: currentTheme.foreground,

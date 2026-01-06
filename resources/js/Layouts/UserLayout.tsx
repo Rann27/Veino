@@ -978,6 +978,26 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       {/* Bottom Banner Ad (above footer) */}
       <AadsBanner position="bottom" />
 
+      {/* Clickadilla Video Ads Container (Sticky in-page push style, only for non-premium) */}
+      {(!auth?.user || auth?.user?.membership_tier !== 'premium') && (
+        <div 
+          id="clickadilla-video-container" 
+          style={{
+            position: 'sticky',
+            bottom: '1rem',
+            float: 'right',
+            clear: 'both',
+            marginTop: '2rem',
+            marginBottom: '2rem',
+            width: '320px',
+            maxWidth: 'calc(100vw - 2rem)',
+            zIndex: 40,
+          }}
+        >
+          {/* Clickadilla will inject video here */}
+        </div>
+      )}
+
       {/* Footer */}
       <footer 
         className="backdrop-blur-[50px] border-t py-6"

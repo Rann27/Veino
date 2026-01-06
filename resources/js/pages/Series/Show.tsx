@@ -87,6 +87,7 @@ interface Chapter {
     id: number;
     title: string;
     chapter_number: number;
+    chapter_link: string;
     volume?: number;
     is_premium: boolean;
     is_owned?: boolean;
@@ -251,7 +252,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     const filteredChapters = chapters.filter(chapter => {
         if (!searchQuery) return true;
         const chapterDisplay = chapter.volume 
-            ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+            ? `Volume ${chapter.volume}`
             : `Chapter ${chapter.chapter_number}`;
         return chapterDisplay.toLowerCase().includes(searchQuery.toLowerCase()) ||
                chapter.chapter_number.toString().includes(searchQuery);
@@ -499,7 +500,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                     {/* Action Buttons */}
                                     <div className="flex flex-col gap-3">
                                         <Link
-                                            href={route('chapters.show', [series.slug, 1])}
+                                            href={route('chapters.show', [series.slug, '1'])}
                                             className="px-6 py-3 rounded-lg font-medium transition-all interactive-scale text-center"
                                             style={{
                                                 backgroundColor: currentTheme.foreground,
@@ -804,7 +805,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             {displayedChapters.map((chapter) => (
                                                 <Link
                                                     key={chapter.id}
-                                                    href={route('chapters.show', [series.slug, chapter.chapter_number])}
+                                                    href={route('chapters.show', [series.slug, chapter.chapter_link])}
                                                     className="block p-4 transition-all chapter-item rounded-lg"
                                                     style={{ borderBottomColor: `${currentTheme.foreground}10` }}
                                                 >
@@ -813,10 +814,10 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                             <div className="flex items-center gap-3 mb-1">
                                                                 <span 
                                                                     className="text-sm font-medium"
-                                                                    style={{ color: `${currentTheme.foreground}70` }}
+                                                                    style={{ color: `${currentTheme.foreground}95` }}
                                                                 >
                                                                     {chapter.volume 
-                                                                        ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                        ? `Volume ${chapter.volume}`
                                                                         : `Chapter ${chapter.chapter_number}`
                                                                     }
                                                                 </span>
@@ -889,7 +890,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             {displayedChapters.map((chapter) => (
                                                 <Link
                                                     key={chapter.id}
-                                                    href={route('chapters.show', [series.slug, chapter.chapter_number])}
+                                                    href={route('chapters.show', [series.slug, chapter.chapter_link])}
                                                     className="block p-4 border rounded-lg transition-all hover:shadow-md hover:border-opacity-60"
                                                     style={{ 
                                                         borderColor: `${currentTheme.foreground}20`,
@@ -907,7 +908,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                         style={{ color: currentTheme.foreground }}
                                                                     >
                                                                         {chapter.volume 
-                                                                            ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                            ? `Volume ${chapter.volume}`
                                                                             : `Chapter ${chapter.chapter_number}`
                                                                         }
                                                                     </h3>
@@ -958,7 +959,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                         style={{ color: currentTheme.foreground }}
                                                                     >
                                                                         {chapter.volume 
-                                                                            ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                                                                            ? `Volume ${chapter.volume}`
                                                                             : `Chapter ${chapter.chapter_number}`
                                                                         }
                                                                     </h3>
@@ -1085,7 +1086,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                         </h4>
                                                         <p 
                                                             className="text-xs mb-1"
-                                                            style={{ color: `${currentTheme.foreground}70` }}
+                                                            style={{ color: `${currentTheme.foreground}85` }}
                                                         >
                                                             by {related.author}
                                                         </p>

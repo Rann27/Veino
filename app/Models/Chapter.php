@@ -13,6 +13,7 @@ class Chapter extends Model
     protected $fillable = [
         'series_id',
         'chapter_number',
+        'chapter_link',
         'volume',
         'title',
         'content',
