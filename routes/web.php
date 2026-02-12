@@ -250,6 +250,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
         // Monitoring (Comments & Reactions)
     Route::get('/monitoring', [App\Http\Controllers\Admin\MonitoringController::class, 'index'])->name('monitoring.index');
     
+    // Homepage Configuration (Hero & Featured Series)
+    Route::get('/misc', [App\Http\Controllers\Admin\MiscController::class, 'index'])->name('misc.index');
+    Route::put('/misc', [App\Http\Controllers\Admin\MiscController::class, 'update'])->name('misc.update');
+    
     // Ebook Series Management
     Route::get('/ebookseries', [AdminEbookSeriesController::class, 'index'])->name('ebookseries.index');
     Route::get('/ebookseries/create', [AdminEbookSeriesController::class, 'create'])->name('ebookseries.create');

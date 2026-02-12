@@ -24,6 +24,7 @@ class Series extends Model
         'artist',
         'rating',
         'status',
+        'type',
         'is_mature',
         'native_language_id',
         'views',

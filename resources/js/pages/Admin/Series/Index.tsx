@@ -62,6 +62,7 @@ export default function SeriesIndex({
     artist: '',
     rating: '',
     status: 'ongoing',
+    type: 'web-novel',
     native_language_id: '',
     genre_ids: [] as number[],
     is_mature: false,
@@ -141,8 +142,10 @@ export default function SeriesIndex({
       artist: '',
       rating: '',
       status: 'ongoing',
+      type: 'web-novel',
       native_language_id: '',
       genre_ids: [],
+      is_mature: false,
     });
   };
 
@@ -165,6 +168,7 @@ export default function SeriesIndex({
     submitData.append('artist', formData.artist);
     submitData.append('rating', formData.rating);
     submitData.append('status', formData.status);
+    submitData.append('type', formData.type);
     submitData.append('native_language_id', formData.native_language_id);
     
     formData.genre_ids.forEach(id => {
@@ -306,36 +310,41 @@ export default function SeriesIndex({
       {/* Add Series Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+          <div className="relative top-10 mx-auto p-6 border w-full max-w-5xl shadow-lg rounded-md bg-white mb-10">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Series</h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Add New Series</h3>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Title *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Title *</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                     required
+                    placeholder="Enter series title"
                   />
                 </div>
 
+                {/* Alternative Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Alternative Title</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Alternative Title</label>
                   <input
                     type="text"
                     value={formData.alternative_title}
                     onChange={(e) => setFormData(prev => ({ ...prev, alternative_title: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                    placeholder="Alternative or original title"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cover</label>
+                {/* Cover Section */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">Cover Image</label>
                   
                   {/* Toggle CDN/File */}
-                  <div className="flex gap-4 mb-3">
+                  <div className="flex gap-6 mb-4">
                     <label className="inline-flex items-center cursor-pointer">
                       <input
                         type="radio"
@@ -343,9 +352,9 @@ export default function SeriesIndex({
                         value="cdn"
                         checked={coverType === 'cdn'}
                         onChange={() => setCoverType('cdn')}
-                        className="form-radio h-4 w-4 text-blue-600"
+                        className="form-radio h-5 w-5 text-blue-600"
                       />
-                      <span className="ml-2 text-sm text-gray-700">CDN URL</span>
+                      <span className="ml-3 text-base text-gray-700 font-medium">CDN URL</span>
                     </label>
                     <label className="inline-flex items-center cursor-pointer">
                       <input
@@ -354,9 +363,9 @@ export default function SeriesIndex({
                         value="file"
                         checked={coverType === 'file'}
                         onChange={() => setCoverType('file')}
-                        className="form-radio h-4 w-4 text-blue-600"
+                        className="form-radio h-5 w-5 text-blue-600"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Upload File</span>
+                      <span className="ml-3 text-base text-gray-700 font-medium">Upload File</span>
                     </label>
                   </div>
 
@@ -367,7 +376,7 @@ export default function SeriesIndex({
                       value={formData.cover_url}
                       onChange={(e) => setFormData(prev => ({ ...prev, cover_url: e.target.value }))}
                       placeholder="https://example.com/cover.jpg"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                     />
                   ) : (
                     <div>
@@ -375,51 +384,57 @@ export default function SeriesIndex({
                         type="file"
                         accept="image/jpeg,image/jpg,image/png,image/webp"
                         onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
-                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="block w-full text-base text-gray-700 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Max 2MB. Supported: JPG, PNG, WebP</p>
+                      <p className="mt-2 text-sm text-gray-500">Max 2MB. Supported: JPG, PNG, WebP</p>
                       {coverFile && (
-                        <p className="mt-2 text-sm text-green-600">Selected: {coverFile.name}</p>
+                        <p className="mt-2 text-base text-green-600 font-medium">✓ Selected: {coverFile.name}</p>
                       )}
                     </div>
                   )}
                 </div>
 
+                {/* Synopsis */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Synopsis</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Synopsis</label>
                   <textarea
                     value={formData.synopsis}
                     onChange={(e) => setFormData(prev => ({ ...prev, synopsis: e.target.value }))}
-                    rows={3}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    rows={6}
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                    placeholder="Enter series synopsis..."
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Author & Artist */}
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Author</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Author</label>
                     <input
                       type="text"
                       value={formData.author}
                       onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                      placeholder="Author name"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Artist</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Artist</label>
                     <input
                       type="text"
                       value={formData.artist}
                       onChange={(e) => setFormData(prev => ({ ...prev, artist: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                      placeholder="Artist/Illustrator name"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Rating, Status, Type */}
+                <div className="grid grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Rating (0-10)</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Rating (0-10)</label>
                     <input
                       type="number"
                       min="0"
@@ -427,16 +442,17 @@ export default function SeriesIndex({
                       step="0.1"
                       value={formData.rating}
                       onChange={(e) => setFormData(prev => ({ ...prev, rating: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                      placeholder="8.5"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Status *</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Status *</label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                       required
                     >
                       <option value="ongoing">Ongoing</option>
@@ -444,14 +460,28 @@ export default function SeriesIndex({
                       <option value="hiatus">Hiatus</option>
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Type *</label>
+                    <select
+                      value={formData.type}
+                      onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                      required
+                    >
+                      <option value="web-novel">Web Novel</option>
+                      <option value="light-novel">Light Novel</option>
+                    </select>
+                  </div>
                 </div>
 
+                {/* Native Language */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Native Language *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Native Language *</label>
                   <select
                     value={formData.native_language_id}
                     onChange={(e) => setFormData(prev => ({ ...prev, native_language_id: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                     required
                   >
                     <option value="">Select Language</option>
@@ -462,51 +492,55 @@ export default function SeriesIndex({
                 </div>
 
                 {/* Mature Content Toggle */}
-                <div className="border border-red-200 bg-red-50 rounded-md p-4">
+                <div className="border-2 border-red-200 bg-red-50 rounded-lg p-5">
                   <label className="flex items-start cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.is_mature}
                       onChange={(e) => setFormData(prev => ({ ...prev, is_mature: e.target.checked }))}
-                      className="mt-1 rounded border-red-300 text-red-600 focus:ring-red-500"
+                      className="mt-1 h-5 w-5 rounded border-red-300 text-red-600 focus:ring-red-500"
                     />
-                    <div className="ml-3">
-                      <span className="text-sm font-medium text-red-900">🔞 Mature Content (18+)</span>
-                      <p className="text-xs text-red-700 mt-1">
+                    <div className="ml-4">
+                      <span className="text-base font-bold text-red-900">🔞 Mature Content (18+)</span>
+                      <p className="text-sm text-red-700 mt-1">
                         Mark this series as mature content. Users will see an age verification warning before accessing.
                       </p>
                     </div>
                   </label>
                 </div>
 
+                {/* Genres */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Genres *</label>
-                  <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
-                    {genres.map((genre) => (
-                      <label key={genre.id} className="flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.genre_ids.includes(genre.id)}
-                          onChange={() => handleGenreToggle(genre.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{genre.name}</span>
-                      </label>
-                    ))}
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">Genres *</label>
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div className="grid grid-cols-4 gap-4">
+                      {genres.map((genre) => (
+                        <label key={genre.id} className="flex items-center cursor-pointer hover:bg-white p-2 rounded transition">
+                          <input
+                            type="checkbox"
+                            checked={formData.genre_ids.includes(genre.id)}
+                            onChange={() => handleGenreToggle(genre.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="ml-3 text-base text-gray-700">{genre.name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    className="px-6 py-3 text-base font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500 transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="px-6 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition shadow-md"
                   >
                     Create Series
                   </button>

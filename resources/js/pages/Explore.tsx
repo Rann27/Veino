@@ -49,6 +49,7 @@ interface Props {
         genres?: number[];
         language?: number;
         status?: string;
+        type?: string;
         sort: string;
     };
 }
@@ -62,6 +63,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
     const [selectedGenres, setSelectedGenres] = useState<number[]>(filters.genres || []);
     const [selectedLanguage, setSelectedLanguage] = useState(filters.language || '');
     const [selectedStatus, setSelectedStatus] = useState(filters.status || '');
+    const [selectedType, setSelectedType] = useState(filters.type || '');
     const [sortBy, setSortBy] = useState(filters.sort);
     const [showFilters, setShowFilters] = useState(false);
 
@@ -71,6 +73,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
             genres: selectedGenres.length > 0 ? selectedGenres : undefined,
             language: selectedLanguage || undefined,
             status: selectedStatus || undefined,
+            type: selectedType || undefined,
             sort: sortBy,
         };
 
@@ -93,6 +96,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
         setSelectedGenres([]);
         setSelectedLanguage('');
         setSelectedStatus('');
+        setSelectedType('');
         setSortBy('latest');
         
         router.get(route('explore'), { sort: 'latest' });
@@ -223,37 +227,30 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                 className="animate-in fade-in-up mt-6 pt-6 border-t"
                                 style={{ borderColor: `${currentTheme.foreground}20` }}
                             >
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {/* Genres Filter */}
+                                {/* Row 1: Type, Language, Status */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                    {/* Type Filter */}
                                     <div>
                                         <label 
                                             className="block text-sm font-medium mb-2"
                                             style={{ color: currentTheme.foreground }}
                                         >
-                                            Genres
+                                            Type
                                         </label>
-                                        <div className="max-h-32 overflow-y-auto space-y-2">
-                                            {genres.map((genre) => (
-                                                <label key={genre.id} className="flex items-center">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedGenres.includes(genre.id)}
-                                                        onChange={() => handleGenreToggle(genre.id)}
-                                                        className="rounded border focus:ring-2"
-                                                        style={{
-                                                            borderColor: `${currentTheme.foreground}40`,
-                                                            color: currentTheme.foreground
-                                                        }}
-                                                    />
-                                                    <span 
-                                                        className="ml-2 text-sm"
-                                                        style={{ color: `${currentTheme.foreground}80` }}
-                                                    >
-                                                        {genre.name}
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
+                                        <select
+                                            value={selectedType}
+                                            onChange={(e) => setSelectedType(e.target.value)}
+                                            className="w-full py-2 px-3 border rounded-lg focus:ring-2 transition-colors"
+                                            style={{
+                                                backgroundColor: currentTheme.background,
+                                                borderColor: `${currentTheme.foreground}30`,
+                                                color: currentTheme.foreground
+                                            }}
+                                        >
+                                            <option value="">All Types</option>
+                                            <option value="web-novel">Web Novel</option>
+                                            <option value="light-novel">Light Novel</option>
+                                        </select>
                                     </div>
 
                                     {/* Language Filter */}
@@ -305,6 +302,47 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                             <option value="hiatus">Hiatus</option>
                                             <option value="dropped">Dropped</option>
                                         </select>
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Genres (Full Width) */}
+                                <div>
+                                    <label 
+                                        className="block text-sm font-medium mb-3"
+                                        style={{ color: currentTheme.foreground }}
+                                    >
+                                        Genres
+                                    </label>
+                                    <div 
+                                        className="p-4 rounded-lg border grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3"
+                                        style={{
+                                            backgroundColor: `${currentTheme.foreground}05`,
+                                            borderColor: `${currentTheme.foreground}20`
+                                        }}
+                                    >
+                                        {genres.map((genre) => (
+                                            <label 
+                                                key={genre.id} 
+                                                className="flex items-center cursor-pointer hover:opacity-70 transition-opacity"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedGenres.includes(genre.id)}
+                                                    onChange={() => handleGenreToggle(genre.id)}
+                                                    className="rounded border focus:ring-2"
+                                                    style={{
+                                                        borderColor: `${currentTheme.foreground}40`,
+                                                        color: currentTheme.foreground
+                                                    }}
+                                                />
+                                                <span 
+                                                    className="ml-2 text-sm"
+                                                    style={{ color: `${currentTheme.foreground}80` }}
+                                                >
+                                                    {genre.name}
+                                                </span>
+                                            </label>
+                                        ))}
                                     </div>
                                 </div>
 

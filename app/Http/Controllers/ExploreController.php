@@ -43,6 +43,11 @@ class ExploreController extends Controller
             $query->where('status', $request->status);
         }
 
+        // Filter by type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
         // Sort options
         if ($request->filled('sort')) {
             switch ($request->sort) {
@@ -78,6 +83,7 @@ class ExploreController extends Controller
                 'genres' => $request->genres,
                 'language' => $request->language,
                 'status' => $request->status,
+                'type' => $request->type,
                 'sort' => $request->sort ?? 'latest',
             ],
         ]);

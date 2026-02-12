@@ -68,6 +68,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     artist: series.artist || '',
     rating: series.rating.toString(),
     status: series.status,
+    type: (series as any).type || 'web-novel',
     native_language_id: series.native_language.id.toString(),
     genre_ids: series.genres.map(g => g.id),
     show_epub_button: (series as any).show_epub_button || false,
@@ -188,6 +189,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
     submitData.append('artist', editFormData.artist);
     submitData.append('rating', editFormData.rating);
     submitData.append('status', editFormData.status);
+    submitData.append('type', editFormData.type);
     submitData.append('native_language_id', editFormData.native_language_id);
     submitData.append('show_epub_button', editFormData.show_epub_button ? '1' : '0');
     submitData.append('epub_series_slug', editFormData.epub_series_slug);
@@ -644,39 +646,42 @@ export default function SeriesShow({ series }: SeriesShowProps) {
       {/* Edit Series Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+          <div className="relative top-10 mx-auto p-6 border w-full max-w-5xl shadow-lg rounded-md bg-white mb-10">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Series</h3>
-              <form onSubmit={handleEditSubmit} className="space-y-4">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">Edit Series</h3>
+              <form onSubmit={handleEditSubmit} className="space-y-6">
+                {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Title *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Title *</label>
                   <input
                     ref={titleInputRef}
                     type="text"
                     value={editFormData.title}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                    placeholder="Enter series title..."
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                    placeholder="Enter series title"
                     required
                   />
                 </div>
 
+                {/* Alternative Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Alternative Title</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Alternative Title</label>
                   <input
                     type="text"
                     value={editFormData.alternative_title}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, alternative_title: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                    placeholder="Enter alternative title (optional)..."
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                    placeholder="Alternative or original title"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Cover</label>
+                {/* Cover Section */}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50">
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">Cover Image</label>
                   
                   {/* Toggle CDN/File */}
-                  <div className="flex gap-4 mb-3">
+                  <div className="flex gap-6 mb-4">
                     <label className="inline-flex items-center cursor-pointer">
                       <input
                         type="radio"
@@ -684,9 +689,9 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                         value="cdn"
                         checked={coverType === 'cdn'}
                         onChange={() => setCoverType('cdn')}
-                        className="form-radio h-4 w-4 text-blue-600"
+                        className="form-radio h-5 w-5 text-blue-600"
                       />
-                      <span className="ml-2 text-sm text-gray-700">CDN URL</span>
+                      <span className="ml-3 text-base text-gray-700 font-medium">CDN URL</span>
                     </label>
                     <label className="inline-flex items-center cursor-pointer">
                       <input
@@ -695,9 +700,9 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                         value="file"
                         checked={coverType === 'file'}
                         onChange={() => setCoverType('file')}
-                        className="form-radio h-4 w-4 text-blue-600"
+                        className="form-radio h-5 w-5 text-blue-600"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Upload File</span>
+                      <span className="ml-3 text-base text-gray-700 font-medium">Upload File</span>
                     </label>
                   </div>
 
@@ -708,7 +713,7 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                       value={editFormData.cover_url}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, cover_url: e.target.value }))}
                       placeholder="https://example.com/cover.jpg"
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                     />
                   ) : (
                     <div>
@@ -716,11 +721,11 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                         type="file"
                         accept="image/jpeg,image/jpg,image/png,image/webp"
                         onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
-                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="block w-full text-base text-gray-700 file:mr-4 file:py-3 file:px-6 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                       />
-                      <p className="mt-1 text-xs text-gray-500">Max 2MB. Supported: JPG, PNG, WebP</p>
+                      <p className="mt-2 text-sm text-gray-500">Max 2MB. Supported: JPG, PNG, WebP</p>
                       {coverFile && (
-                        <p className="mt-2 text-sm text-green-600">Selected: {coverFile.name}</p>
+                        <p className="mt-2 text-base text-green-600 font-medium">✓ Selected: {coverFile.name}</p>
                       )}
                       {!coverFile && series.cover_url && coverType === 'file' && (
                         <p className="mt-2 text-sm text-gray-500">Current: Using uploaded file</p>
@@ -729,43 +734,46 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   )}
                 </div>
 
+                {/* Synopsis */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Synopsis</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Synopsis</label>
                   <RichTextEditor
                     value={editFormData.synopsis}
                     onChange={(content) => setEditFormData(prev => ({ ...prev, synopsis: content }))}
                     placeholder="Enter series synopsis here..."
-                    height={200}
+                    height={250}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Author & Artist */}
+                <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Author</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Author</label>
                     <input
                       type="text"
                       value={editFormData.author}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, author: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                      placeholder="Enter author name..."
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                      placeholder="Author name"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Artist</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Artist</label>
                     <input
                       type="text"
                       value={editFormData.artist}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, artist: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                      placeholder="Enter artist name..."
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                      placeholder="Artist/Illustrator name"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                {/* Rating, Status, Type */}
+                <div className="grid grid-cols-3 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Rating (0-10)</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Rating (0-10)</label>
                     <input
                       type="number"
                       min="0"
@@ -773,17 +781,17 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                       step="0.1"
                       value={editFormData.rating}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, rating: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                       placeholder="8.5"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Status *</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Status *</label>
                     <select
                       value={editFormData.status}
                       onChange={(e) => setEditFormData(prev => ({ ...prev, status: e.target.value }))}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                       required
                     >
                       <option value="ongoing">Ongoing</option>
@@ -791,14 +799,28 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                       <option value="hiatus">Hiatus</option>
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Type *</label>
+                    <select
+                      value={editFormData.type}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, type: e.target.value }))}
+                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
+                      required
+                    >
+                      <option value="web-novel">Web Novel</option>
+                      <option value="light-novel">Light Novel</option>
+                    </select>
+                  </div>
                 </div>
 
+                {/* Native Language */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Native Language *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Native Language *</label>
                   <select
                     value={editFormData.native_language_id}
                     onChange={(e) => setEditFormData(prev => ({ ...prev, native_language_id: e.target.value }))}
-                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-base"
                     required
                   >
                     <option value="">Select Language</option>
@@ -808,27 +830,30 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                   </select>
                 </div>
 
+                {/* Genres */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Genres *</label>
-                  <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-gray-200 rounded-md p-3 bg-gray-50">
-                    {genres.map((genre) => (
-                      <label key={genre.id} className="flex items-center hover:bg-white p-1 rounded cursor-pointer transition-colors duration-150">
-                        <input
-                          type="checkbox"
-                          checked={editFormData.genre_ids.includes(genre.id)}
-                          onChange={() => handleGenreToggle(genre.id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">{genre.name}</span>
-                      </label>
-                    ))}
+                  <label className="block text-sm font-semibold text-gray-700 mb-3">Genres *</label>
+                  <div className="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div className="grid grid-cols-4 gap-4">
+                      {genres.map((genre) => (
+                        <label key={genre.id} className="flex items-center cursor-pointer hover:bg-white p-2 rounded transition">
+                          <input
+                            type="checkbox"
+                            checked={editFormData.genre_ids.includes(genre.id)}
+                            onChange={() => handleGenreToggle(genre.id)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="ml-3 text-base text-gray-700">{genre.name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
                 {/* Epub Backlink Section */}
-                <div className="space-y-4 p-4 bg-green-50 rounded-md border border-green-200">
-                  <div className="flex items-center">
-                    <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
+                <div className="border-2 border-green-200 bg-green-50 rounded-lg p-5">
+                  <div className="flex items-center mb-4">
+                    <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={editFormData.show_epub_button}
@@ -837,63 +862,66 @@ export default function SeriesShow({ series }: SeriesShowProps) {
                           show_epub_button: e.target.checked,
                           epub_series_slug: e.target.checked ? prev.epub_series_slug : '',
                         }))}
-                        className="rounded border-gray-300 text-green-600 focus:ring-green-500 focus:ring-2"
+                        className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
                       />
-                      <span className="ml-2 text-sm text-gray-700 font-medium">Show Epub Download Button</span>
+                      <span className="ml-3 text-base font-bold text-green-900">Show Epub Download Button</span>
                     </label>
                   </div>
                   
                   {editFormData.show_epub_button && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Epub Series Slug *</label>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">Epub Series Slug *</label>
                       <input
                         type="text"
                         value={editFormData.epub_series_slug}
                         onChange={(e) => setEditFormData(prev => ({ ...prev, epub_series_slug: e.target.value }))}
-                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-green-500 focus:ring-green-500 focus:ring-2 transition-all duration-200"
+                        className="block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:border-green-500 focus:ring-2 focus:ring-green-200 text-base"
                         placeholder="e.g., novel-series-name"
                         required={editFormData.show_epub_button}
                       />
-                      <p className="text-xs text-gray-500 mt-1">The slug of the Epub Series to link to</p>
+                      <p className="text-sm text-gray-600 mt-2">The slug of the Epub Series to link to</p>
                     </div>
                   )}
                 </div>
 
-                {/* Mature Content Warning */}
-                <div className="space-y-2 p-4 bg-red-50 rounded-md border border-red-200">
-                  <div className="flex items-center">
-                    <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
-                      <input
-                        type="checkbox"
-                        checked={(editFormData as any).is_mature || false}
-                        onChange={(e) => setEditFormData(prev => ({
-                          ...prev,
-                          is_mature: e.target.checked,
-                        } as any))}
-                        className="rounded border-gray-300 text-red-600 focus:ring-red-500 focus:ring-2"
-                      />
-                      <span className="ml-2 text-sm text-gray-700 font-medium">🔞 Mature Content (18+)</span>
-                    </label>
-                  </div>
-                  <p className="text-xs text-gray-600 ml-2">Readers will see an age verification warning before accessing this series</p>
+                {/* Mature Content Toggle */}
+                <div className="border-2 border-red-200 bg-red-50 rounded-lg p-5">
+                  <label className="flex items-start cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={(editFormData as any).is_mature || false}
+                      onChange={(e) => setEditFormData(prev => ({
+                        ...prev,
+                        is_mature: e.target.checked,
+                      } as any))}
+                      className="mt-1 h-5 w-5 rounded border-red-300 text-red-600 focus:ring-red-500"
+                    />
+                    <div className="ml-4">
+                      <span className="text-base font-bold text-red-900">🔞 Mature Content (18+)</span>
+                      <p className="text-sm text-red-700 mt-1">
+                        Readers will see an age verification warning before accessing this series
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
+                {/* Action Buttons */}
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
                     disabled={isSubmitting}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 text-base font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center space-x-2"
+                    className="px-6 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center space-x-2 transition shadow-md"
                   >
                     {isSubmitting && (
-                      <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>

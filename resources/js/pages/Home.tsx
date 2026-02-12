@@ -54,20 +54,24 @@ interface Blog {
 
 interface HomeProps {
   heroSeries: Series[];
-  popularSeries: Series[];
-  latestUpdates: Series[];
+  featuredSeries: Series[];
+  lightNovelUpdates: Series[];
+  webNovelUpdates: Series[];
   newSeries: Series[];
   blogs: Blog[];
   showPremiumCongrats?: boolean;
 }
 
-function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blogs, showPremiumCongrats }: HomeProps) {
+function HomeContent({ heroSeries, featuredSeries, lightNovelUpdates, webNovelUpdates, newSeries, blogs, showPremiumCongrats }: HomeProps) {
   const [currentHero, setCurrentHero] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [currentX, setCurrentX] = useState(0);
   const [hasMovedMouse, setHasMovedMouse] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [featuredSlideIndex, setFeaturedSlideIndex] = useState(0);
+  const [featuredTouchStart, setFeaturedTouchStart] = useState(0);
+  const [featuredTouchEnd, setFeaturedTouchEnd] = useState(0);
   const { currentTheme } = useTheme();
 
   useEffect(() => {
@@ -189,6 +193,34 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
     if (!hasMovedMouse && heroSeries[currentHero]) {
       window.location.href = `/series/${heroSeries[currentHero].slug}`;
     }
+  };
+
+  // Featured Series Touch Handlers
+  const handleFeaturedTouchStart = (e: React.TouchEvent) => {
+    setFeaturedTouchStart(e.touches[0].clientX);
+  };
+
+  const handleFeaturedTouchMove = (e: React.TouchEvent) => {
+    setFeaturedTouchEnd(e.touches[0].clientX);
+  };
+
+  const handleFeaturedTouchEnd = () => {
+    if (!featuredTouchStart || !featuredTouchEnd) return;
+    
+    const distance = featuredTouchStart - featuredTouchEnd;
+    const threshold = 50;
+    const maxIndex = Math.ceil(featuredSeries.length / 2) - 1;
+
+    if (distance > threshold && featuredSlideIndex < maxIndex) {
+      // Swipe left - next slide
+      setFeaturedSlideIndex(featuredSlideIndex + 1);
+    } else if (distance < -threshold && featuredSlideIndex > 0) {
+      // Swipe right - previous slide
+      setFeaturedSlideIndex(featuredSlideIndex - 1);
+    }
+
+    setFeaturedTouchStart(0);
+    setFeaturedTouchEnd(0);
   };
 
   // Generate theme-specific gradients
@@ -582,20 +614,50 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
         </section>
       )}
 
-      {/* Popular Series */}
+      {/* Featured Series */}
       <section 
         className="py-8 sm:py-12"
         style={{ backgroundColor: currentTheme.background }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 
-            className="text-xl sm:text-2xl font-bold mb-6"
-            style={{ color: currentTheme.foreground }}
-          >
-            Popular Series
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
-            {popularSeries.map((series, index) => (
+          <div className="flex items-center justify-between mb-6">
+            <h2 
+              className="text-xl sm:text-2xl font-bold"
+              style={{ color: currentTheme.foreground }}
+            >
+              Featured Series
+            </h2>
+            
+            {/* Mobile Navigation Buttons */}
+            <div className="flex gap-2 sm:hidden">
+              <button
+                onClick={() => setFeaturedSlideIndex(Math.max(0, featuredSlideIndex - 1))}
+                disabled={featuredSlideIndex === 0}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+                style={{ 
+                  backgroundColor: `${currentTheme.foreground}10`,
+                  color: currentTheme.foreground 
+                }}
+              >
+                ‹
+              </button>
+              <button
+                onClick={() => setFeaturedSlideIndex(Math.min(Math.ceil(featuredSeries.length / 2) - 1, featuredSlideIndex + 1))}
+                disabled={featuredSlideIndex >= Math.ceil(featuredSeries.length / 2) - 1}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+                style={{ 
+                  backgroundColor: `${currentTheme.foreground}10`,
+                  color: currentTheme.foreground 
+                }}
+              >
+                ›
+              </button>
+            </div>
+          </div>
+
+          {/* Desktop Grid */}
+          <div className="hidden sm:grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
+            {featuredSeries.map((series, index) => (
               <Link
                 key={series.id}
                 href={`/series/${series.slug}`}
@@ -715,23 +777,189 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
               </Link>
             ))}
           </div>
+
+          {/* Mobile Slider */}
+          <div 
+            className="sm:hidden overflow-hidden"
+            onTouchStart={handleFeaturedTouchStart}
+            onTouchMove={handleFeaturedTouchMove}
+            onTouchEnd={handleFeaturedTouchEnd}
+          >
+            <div 
+              className="flex transition-transform duration-300 ease-out gap-4"
+              style={{ 
+                transform: `translateX(-${featuredSlideIndex * 100}%)`,
+              }}
+            >
+              {featuredSeries.map((series, index) => (
+                <div
+                  key={series.id}
+                  className="w-1/2 flex-shrink-0"
+                >
+                  <Link
+                    href={`/series/${series.slug}`}
+                    className="group block"
+                  >
+                    <div 
+                      className="card-hover rounded-lg p-4 h-full flex flex-col min-h-[280px]"
+                      style={{
+                        backgroundColor: currentTheme.name === 'Light' 
+                          ? 'rgba(248, 250, 252, 0.8)' 
+                          : currentTheme.name === 'Dark'
+                          ? 'rgba(30, 41, 59, 0.6)'
+                          : currentTheme.name === 'Sepia'
+                          ? 'rgba(244, 236, 216, 0.6)'
+                          : currentTheme.name === 'Cool Dark'
+                          ? 'rgba(49, 50, 68, 0.6)'
+                          : currentTheme.name === 'Frost'
+                          ? 'rgba(205, 220, 237, 0.6)'
+                          : currentTheme.name === 'Solarized'
+                          ? 'rgba(253, 246, 227, 0.6)'
+                          : 'rgba(30, 41, 59, 0.6)',
+                        border: `1px solid ${currentTheme.foreground}10`,
+                        boxShadow: `0 1px 3px ${currentTheme.foreground}10`
+                      }}
+                    >
+                      <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
+                        {series.cover_url ? (
+                          <img
+                            src={series.cover_url}
+                            alt={series.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div 
+                            className="w-full h-full flex items-center justify-center text-xs"
+                            style={{ color: `${currentTheme.foreground}60` }}
+                          >
+                            No Cover
+                          </div>
+                        )}
+                      </div>
+                      
+                      <h3 
+                        className="font-semibold text-sm line-clamp-2 mb-3 leading-tight"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        {series.title}
+                      </h3>
+
+                      {/* Latest Chapters */}
+                      <div className="mb-3 flex-1 space-y-1">
+                        {(() => {
+                          const chs = (series.chapters || []).slice(0, 2);
+                          if (chs.length === 0) {
+                            const latestNum = series.chapters_count || 1;
+                            return [
+                              { chapter_number: latestNum, chapter_link: latestNum.toString(), is_premium: false },
+                              latestNum > 1 ? { chapter_number: latestNum - 1, chapter_link: (latestNum - 1).toString(), is_premium: false } : null,
+                            ]
+                              .filter(Boolean)
+                              .map((c: any, idx: number) => (
+                                <div
+                                  key={`fallback-${idx}`}
+                                  className="interactive-scale flex items-center justify-between gap-2 p-1.5 rounded transition-all cursor-pointer"
+                                  style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
+                                  }}
+                                >
+                                  <span
+                                    className="text-sm font-medium"
+                                    style={{ color: currentTheme.foreground }}
+                                  >
+                                    {formatChapterDisplay(c)}
+                                  </span>
+                                  {c.is_premium && <PremiumDiamond size={16} />}
+                                </div>
+                              ));
+                          }
+
+                          const chsDesc = [...chs].sort((a, b) => { const volDiff = (b.volume || 0) - (a.volume || 0); return volDiff !== 0 ? volDiff : b.chapter_number - a.chapter_number; });
+                          return chsDesc.map((c) => (
+                            <div
+                              key={c.id ?? c.chapter_number}
+                              className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                              style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
+                              }}
+                            >
+                              <span
+                                className="text-sm font-medium"
+                                style={{ color: currentTheme.foreground }}
+                              >
+                                {formatChapterDisplay(c)}
+                              </span>
+                              {c.is_premium && <PremiumDiamond size={16} />}
+                            </div>
+                          ));
+                        })()}
+                      </div>
+
+                      {/* Rating */}
+                      <div className="flex items-center mt-auto">
+                        <span className="star-icon text-yellow-500 text-sm inline-block">★</span>
+                        <span 
+                          className="text-sm ml-1 font-medium"
+                          style={{ color: `${currentTheme.foreground}80` }}
+                        >
+                          {series.rating}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+
+            {/* Slide Indicators */}
+            <div className="flex justify-center gap-2 mt-4">
+              {Array.from({ length: Math.ceil(featuredSeries.length / 2) }).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setFeaturedSlideIndex(index)}
+                  className="w-2 h-2 rounded-full transition-all"
+                  style={{
+                    backgroundColor: index === featuredSlideIndex 
+                      ? currentTheme.foreground 
+                      : `${currentTheme.foreground}30`
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Latest Updates */}
+      {/* Light Novel Updates */}
       <section 
         className="py-8 sm:py-12"
         style={{ backgroundColor: currentTheme.background }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 
-            className="text-xl sm:text-2xl font-bold mb-6"
-            style={{ color: currentTheme.foreground }}
-          >
-            Latest Updates
-          </h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 
+              className="text-xl sm:text-2xl font-bold"
+              style={{ color: currentTheme.foreground }}
+            >
+              Light Novel Updates
+            </h2>
+            <Link
+              href="/explore?sort=latest&type=light-novel"
+              className="text-sm sm:text-base font-medium hover:opacity-70 transition-opacity flex items-center gap-1"
+              style={{ color: currentTheme.foreground }}
+            >
+              View All
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
-            {latestUpdates.map((series, index) => (
+            {lightNovelUpdates.map((series, index) => (
               <Link
                 key={series.id}
                 href={`/series/${series.slug}`}
@@ -794,43 +1022,47 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
                           .filter(Boolean)
                           .map((c: any, idx: number) => (
                             <div
-                              key={`fallback-lu-${idx}`}
+                              key={`fallback-ln-${idx}`}
                               className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
                               style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
-                              }}
                             >
                               <span
-                                className="text-sm font-medium"
-                                style={{ color: currentTheme.foreground }}
+                                className="text-xs truncate"
+                                style={{ color: `${currentTheme.foreground}80`, fontWeight: 500 }}
                               >
-                                {formatChapterDisplay(c)}
+                                Ch {c.chapter_number}
                               </span>
-                              {c.is_premium && <PremiumDiamond size={16} />}
                             </div>
                           ));
                       }
-
-                      const chsDesc = [...chs].sort((a, b) => { const volDiff = (b.volume || 0) - (a.volume || 0); return volDiff !== 0 ? volDiff : b.chapter_number - a.chapter_number; });
-                      return chsDesc.map((c) => (
+                      
+                      // Sort chapters by volume then chapter_number descending
+                      const sorted = [...chs].sort((a, b) => {
+                        if ((a.volume || 0) !== (b.volume || 0)) {
+                          return (b.volume || 0) - (a.volume || 0);
+                        }
+                        return b.chapter_number - a.chapter_number;
+                      });
+                      
+                      return sorted.map((chapter) => (
                         <div
-                          key={c.id ?? c.chapter_number}
+                          key={`actual-ln-${chapter.id}`}
                           className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
                           style={{ backgroundColor: `${currentTheme.foreground}05` }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            window.location.href = `/series/${series.slug}/chapter/${c.chapter_link}`;
-                          }}
                         >
                           <span
-                            className="text-sm font-medium"
-                            style={{ color: currentTheme.foreground }}
+                            className="text-xs truncate"
+                            style={{ color: `${currentTheme.foreground}80`, fontWeight: 500 }}
                           >
-                            {formatChapterDisplay(c)}
+                            {chapter.volume
+                              ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                              : `Ch ${chapter.chapter_number}`}
                           </span>
-                          {c.is_premium && <PremiumDiamond size={16} />}
+                          {chapter.is_premium && (
+                            <span className="flex-shrink-0" style={{ color: SHINY_PURPLE }}>
+                              <PremiumDiamond size={10} />
+                            </span>
+                          )}
                         </div>
                       ));
                     })()}
@@ -838,9 +1070,159 @@ function HomeContent({ heroSeries, popularSeries, latestUpdates, newSeries, blog
 
                   {/* Rating */}
                   <div className="flex items-center mt-auto">
-                    <span className="text-yellow-500 text-sm">★</span>
+                    <span className="star-icon text-yellow-500 text-sm inline-block">★</span>
                     <span 
-                      className="text-sm ml-1"
+                      className="text-sm ml-1 font-medium"
+                      style={{ color: `${currentTheme.foreground}80` }}
+                    >
+                      {series.rating}
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Web Novel Updates */}
+      <section 
+        className="py-8 sm:py-12"
+        style={{ backgroundColor: currentTheme.background }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 
+              className="text-xl sm:text-2xl font-bold"
+              style={{ color: currentTheme.foreground }}
+            >
+              Web Novel Updates
+            </h2>
+            <Link
+              href="/explore?sort=latest&type=web-novel"
+              className="text-sm sm:text-base font-medium hover:opacity-70 transition-opacity flex items-center gap-1"
+              style={{ color: currentTheme.foreground }}
+            >
+              View All
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-5">
+            {webNovelUpdates.map((series, index) => (
+              <Link
+                key={series.id}
+                href={`/series/${series.slug}`}
+                className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 6)}`}
+              >
+                <div 
+                  className="card-hover rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
+                  style={{
+                    backgroundColor: currentTheme.name === 'Light' 
+                      ? 'rgba(248, 250, 252, 0.8)' 
+                      : currentTheme.name === 'Dark'
+                      ? 'rgba(30, 41, 59, 0.6)'
+                      : currentTheme.name === 'Sepia'
+                      ? 'rgba(244, 236, 216, 0.6)'
+                      : currentTheme.name === 'Cool Dark'
+                      ? 'rgba(49, 50, 68, 0.6)'
+                      : currentTheme.name === 'Frost'
+                      ? 'rgba(205, 220, 237, 0.6)'
+                      : currentTheme.name === 'Solarized'
+                      ? 'rgba(253, 246, 227, 0.6)'
+                      : 'rgba(30, 41, 59, 0.6)',
+                    border: `1px solid ${currentTheme.foreground}10`,
+                    boxShadow: `0 1px 3px ${currentTheme.foreground}10`
+                  }}
+                >
+                  <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
+                    {series.cover_url ? (
+                      <img
+                        src={series.cover_url}
+                        alt={series.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div 
+                        className="w-full h-full flex items-center justify-center text-xs"
+                        style={{ color: `${currentTheme.foreground}60` }}
+                      >
+                        No Cover
+                      </div>
+                    )}
+                  </div>
+                  
+                  <h3 
+                    className="font-semibold text-sm md:text-base line-clamp-2 mb-3 leading-tight"
+                    style={{ color: currentTheme.foreground }}
+                  >
+                    {series.title}
+                  </h3>
+
+                  {/* Latest Chapters */}
+                  <div className="mb-3 flex-1 space-y-1">
+                    {(() => {
+                      const chs = (series.chapters || []).slice(0, 2);
+                      if (chs.length === 0) {
+                        const latestNum = series.chapters_count || 1;
+                        return [
+                          { chapter_number: latestNum, is_premium: false },
+                          latestNum > 1 ? { chapter_number: latestNum - 1, is_premium: false } : null,
+                        ]
+                          .filter(Boolean)
+                          .map((c: any, idx: number) => (
+                            <div
+                              key={`fallback-wn-${idx}`}
+                              className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                              style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                            >
+                              <span
+                                className="text-xs truncate"
+                                style={{ color: `${currentTheme.foreground}80`, fontWeight: 500 }}
+                              >
+                                Ch {c.chapter_number}
+                              </span>
+                            </div>
+                          ));
+                      }
+
+                      const sorted = [...chs].sort((a, b) => {
+                        if ((a.volume || 0) !== (b.volume || 0)) {
+                          return (b.volume || 0) - (a.volume || 0);
+                        }
+                        return b.chapter_number - a.chapter_number;
+                      });
+                      
+                      return sorted.map((chapter) => (
+                        <div
+                          key={`actual-wn-${chapter.id}`}
+                          className="flex items-center justify-between gap-2 p-1 rounded hover:bg-opacity-20 transition-all cursor-pointer"
+                          style={{ backgroundColor: `${currentTheme.foreground}05` }}
+                        >
+                          <span
+                            className="text-xs truncate"
+                            style={{ color: `${currentTheme.foreground}80`, fontWeight: 500 }}
+                          >
+                            {chapter.volume
+                              ? `Vol ${chapter.volume} Ch ${chapter.chapter_number}`
+                              : `Ch ${chapter.chapter_number}`}
+                          </span>
+                          {chapter.is_premium && (
+                            <span className="flex-shrink-0" style={{ color: SHINY_PURPLE }}>
+                              <PremiumDiamond size={10} />
+                            </span>
+                          )}
+                        </div>
+                      ));
+                    })()}
+                  </div>
+
+                  {/* Rating */}
+                  <div className="flex items-center mt-auto">
+                    <span className="star-icon text-yellow-500 text-sm inline-block">★</span>
+                    <span 
+                      className="text-sm ml-1 font-medium"
                       style={{ color: `${currentTheme.foreground}80` }}
                     >
                       {series.rating}
