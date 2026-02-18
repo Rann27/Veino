@@ -26,7 +26,7 @@ class SitemapController extends Controller
                 'priority' => '0.9'
             ],
             [
-                'url' => route('buy-coins'),
+                'url' => route('shop'),
                 'lastmod' => Carbon::now()->toISOString(),
                 'changefreq' => 'weekly',
                 'priority' => '0.7'

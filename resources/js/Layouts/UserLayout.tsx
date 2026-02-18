@@ -3,7 +3,7 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
-import AadsBanner from '@/Components/Ads/AadsBanner';
+import HomeAdBanner from '@/Components/Home/HomeAdBanner';
 
 interface User {
   id: number;
@@ -287,18 +287,11 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   Epub Novels
                 </Link>
                 <Link 
-                  href="/buy-coins" 
+                  href="/shop" 
                   className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
-                  Buy Coins
-                </Link>
-                <Link 
-                  href="/membership" 
-                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
-                  style={{ color: currentTheme.foreground }}
-                >
-                  Membership
+                  Shop
                 </Link>
                 <a 
                   href="https://discord.gg/5HcJf7p3ZG" 
@@ -670,7 +663,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   Epub Novels
                 </Link>
                 <Link 
-                  href="/buy-coins" 
+                  href="/shop" 
                   className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
                   style={{ 
                     color: currentTheme.foreground,
@@ -678,18 +671,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   }}
                   onClick={toggleMobileSidebar}
                 >
-                  Buy Coins
-                </Link>
-                <Link 
-                  href="/membership" 
-                  className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
-                  style={{ 
-                    color: currentTheme.foreground,
-                    backgroundColor: `${currentTheme.foreground}05`
-                  }}
-                  onClick={toggleMobileSidebar}
-                >
-                  Membership
+                  Shop
                 </Link>
                 <a 
                   href="https://discord.gg/5HcJf7p3ZG" 
@@ -963,8 +945,8 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       {/* Spacer for fixed navbar */}
       <div className="h-16" />
 
-      {/* Top Banner Ad (below navbar) */}
-      <AadsBanner position="top" />
+      {/* Top Ad Banner Grid (below navbar) */}
+      <HomeAdBanner position="top" />
 
       {/* Main Content */}
       <main className={`transition-all duration-300 ${
@@ -975,8 +957,8 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
         {children}
       </main>
 
-      {/* Bottom Banner Ad (above footer) */}
-      <AadsBanner position="bottom" />
+      {/* Bottom Ad Banner Grid (above footer) */}
+      <HomeAdBanner position="bottom" />
 
       {/* Clickadilla Video Ads Container (Sticky in-page push style, only for non-premium) */}
       {(!auth?.user || auth?.user?.membership_tier !== 'premium') && (

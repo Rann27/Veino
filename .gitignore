@@ -27,6 +27,9 @@ yarn-error.log
 *.md
 !README.md
 
+# Batch Panel (Python third-party tool)
+/batch-panel
+
 # Ignore deployment archives
 *.zip
 *.rar

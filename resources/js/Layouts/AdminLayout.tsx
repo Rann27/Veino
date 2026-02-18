@@ -24,6 +24,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
     { href: '/admin/voucher', label: 'Voucher', icon: '🎟️' },
     { href: '/admin/advertisement-management', label: 'Ads', icon: '📢' },
     { href: '/admin/monitoring', label: 'Monitoring', icon: '📈' },
+    { href: '/admin/misc', label: 'Misc', icon: '⚙️' },
   ];
 
   const isActive = (href: string) => {

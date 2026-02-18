@@ -443,733 +443,696 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                 className="min-h-screen"
                 style={{ backgroundColor: currentTheme.background }}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    {/* Breadcrumb */}
-                    <nav className="mb-6">
-                        <div className="flex items-center space-x-2 text-sm">
-                            <Link 
-                                href={route('home')} 
-                                className="hover:opacity-70 transition-opacity"
-                                style={{ color: currentTheme.foreground }}
-                            >
-                                Home
-                            </Link>
-                            <span style={{ color: `${currentTheme.foreground}40` }}>{'>'}</span>
-                            <Link 
-                                href={route('explore')} 
-                                className="hover:opacity-70 transition-opacity"
-                                style={{ color: currentTheme.foreground }}
-                            >
-                                Explore
-                            </Link>
-                            <span style={{ color: `${currentTheme.foreground}40` }}>{'>'}</span>
-                            <span style={{ color: `${currentTheme.foreground}80` }}>{series.title}</span>
-                        </div>
-                    </nav>
-
-                    {/* Main Content - Full Width */}
-                    <div className="space-y-6">
-                        {/* Series Info - Full Width */}
-                        <div 
-                            className="rounded-lg shadow-sm border p-6"
+                {/* ─── Cinematic Hero Banner ─── */}
+                <div className="relative w-full overflow-hidden">
+                    {/* Blurred background cover */}
+                    {series.cover_url && (
+                        <div
+                            className="absolute inset-0 bg-cover bg-center"
                             style={{
-                                backgroundColor: currentTheme.background,
-                                borderColor: `${currentTheme.foreground}20`
+                                backgroundImage: `url(${series.cover_url})`,
+                                transform: 'scale(1.2)',
+                                filter: 'blur(3px)',
                             }}
-                        >
-                            <div className="flex flex-col md:flex-row gap-6">
-                                {/* Cover Image */}
-                                <div className="w-full md:w-48 flex-shrink-0">
-                                    <div className="aspect-[3/4] relative mb-4">
+                        />
+                    )}
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background: `linear-gradient(90deg, ${currentTheme.background} 0%, ${currentTheme.background}E6 30%, ${currentTheme.background}99 60%, ${currentTheme.background}66 100%)`,
+                        }}
+                    />
+                    <div
+                        className="absolute inset-0"
+                        style={{
+                            background: `linear-gradient(to top, ${currentTheme.background} 0%, transparent 50%)`,
+                        }}
+                    />
+
+                    <div className="relative z-10 w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-8 sm:py-12">
+                        {/* Breadcrumb */}
+                        <nav className="mb-6">
+                            <div className="flex items-center space-x-2 text-sm">
+                                <Link 
+                                    href={route('home')} 
+                                    className="hover:opacity-70 transition-opacity"
+                                    style={{ color: `${currentTheme.foreground}90` }}
+                                >
+                                    Home
+                                </Link>
+                                <span style={{ color: `${currentTheme.foreground}40` }}>›</span>
+                                <Link 
+                                    href={route('explore')} 
+                                    className="hover:opacity-70 transition-opacity"
+                                    style={{ color: `${currentTheme.foreground}90` }}
+                                >
+                                    Explore
+                                </Link>
+                                <span style={{ color: `${currentTheme.foreground}40` }}>›</span>
+                                <span className="truncate max-w-[200px] sm:max-w-none" style={{ color: `${currentTheme.foreground}60` }}>{series.title}</span>
+                            </div>
+                        </nav>
+
+                        {/* Series Info Hero */}
+                        <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
+                            {/* Cover Image + Action Buttons (below cover) */}
+                            <div className="flex-shrink-0 flex flex-col items-center md:items-start w-full md:w-auto">
+                                <div className="w-48 sm:w-52 md:w-56 relative">
+                                    <div
+                                        className="aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl"
+                                        style={{ boxShadow: `0 25px 60px ${currentTheme.foreground}20` }}
+                                    >
                                         {series.cover_url ? (
                                             <img
                                                 src={series.cover_url}
                                                 alt={series.title}
-                                                className="w-full h-full object-cover rounded-lg"
+                                                className="w-full h-full object-cover"
                                             />
                                         ) : (
                                             <div 
-                                                className="w-full h-full rounded-lg flex items-center justify-center"
+                                                className="w-full h-full flex items-center justify-center"
                                                 style={{ backgroundColor: `${currentTheme.foreground}10` }}
                                             >
                                                 <span style={{ color: `${currentTheme.foreground}50` }}>No Cover</span>
                                             </div>
                                         )}
-                                    </div>
-                                    
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-col gap-3">
-                                        <Link
-                                            href={route('chapters.show', [series.slug, '1'])}
-                                            className="px-6 py-3 rounded-lg font-medium transition-all interactive-scale text-center"
-                                            style={{
-                                                backgroundColor: currentTheme.foreground,
-                                                color: currentTheme.background
-                                            }}
-                                        >
-                                            Read First Chapter
-                                        </Link>
-                                        
-                                        {/* Epub Download Button */}
-                                        {series.show_epub_button && series.epub_series_slug && (
-                                            <Link
-                                                href={route('epub-novels.show', series.epub_series_slug)}
-                                                className="px-6 py-3 border rounded-lg text-sm font-medium transition-all interactive-scale flex items-center justify-center gap-2"
-                                                style={{
-                                                    borderColor: currentTheme.foreground,
-                                                    color: currentTheme.foreground,
-                                                    backgroundColor: `${currentTheme.foreground}05`
-                                                }}
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                </svg>
-                                                Download Epub
-                                            </Link>
-                                        )}
-                                        
-                                        <button 
-                                            className="px-6 py-3 border rounded-lg font-medium transition-all interactive-scale flex items-center justify-center gap-2"
-                                            style={{
-                                                borderColor: bookmarked ? currentTheme.foreground : `${currentTheme.foreground}30`,
-                                                color: currentTheme.foreground,
-                                                backgroundColor: bookmarked ? `${currentTheme.foreground}10` : 'transparent'
-                                            }}
-                                            onClick={handleBookmarkToggle}
-                                        >
-                                            <svg className="w-5 h-5" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                            </svg>
-                                            {bookmarked ? 'Bookmarked' : 'Bookmark'}
-                                        </button>
-                                        
-                                        {/* Counters */}
-                                        <div 
-                                            className="flex items-center justify-center gap-3 px-4 py-2"
-                                            style={{
-                                                color: `${currentTheme.foreground}60`
-                                            }}
-                                        >
-                                            {/* Bookmark Counter */}
-                                            <div className="flex items-center gap-1.5">
-                                                <BookmarkIcon className="w-4 h-4" />
-                                                <span className="text-sm font-medium">{formatNumber(series.bookmarks_count)}</span>
-                                            </div>
-                                            
-                                            <span className="text-xs">•</span>
-                                            
-                                            {/* View Counter */}
-                                            <div className="flex items-center gap-1.5">
-                                                <EyeIcon className="w-4 h-4" />
-                                                <span className="text-sm font-medium">{formatNumber(series.views)}</span>
-                                            </div>
-                                            
-                                            <span className="text-xs">•</span>
-                                            
-                                            {/* Comment Counter */}
-                                            <div className="flex items-center gap-1.5">
-                                                <CommentIcon className="w-4 h-4" />
-                                                <span className="text-sm font-medium">{formatNumber(series.comments_count)}</span>
-                                            </div>
-                                        </div>
+                                        {/* Shine overlay */}
+                                        <div
+                                            className="absolute inset-0 opacity-20 pointer-events-none"
+                                            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%)' }}
+                                        />
                                     </div>
                                 </div>
 
-                                {/* Series Details */}
-                                <div className="flex-1">
-                                    <h1 
-                                        className="text-3xl font-bold mb-2"
-                                        style={{ color: currentTheme.foreground }}
+                                {/* Action Buttons - Below Cover */}
+                                <div className="w-48 sm:w-52 md:w-56 mt-4 flex flex-col gap-2.5">
+                                    <Link
+                                        href={route('chapters.show', [series.slug, '1'])}
+                                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all hover:opacity-90 hover:shadow-lg text-sm"
+                                        style={{
+                                            backgroundColor: currentTheme.foreground,
+                                            color: currentTheme.background,
+                                        }}
                                     >
-                                        {series.title}
-                                    </h1>
-                                    {series.alternative_title && (
-                                        <p 
-                                            className="text-lg mb-2"
-                                            style={{ color: `${currentTheme.foreground}90` }}
+                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
+                                        </svg>
+                                        Read First Chapter
+                                    </Link>
+
+                                    {series.show_epub_button && series.epub_series_slug && (
+                                        <Link
+                                            href={route('epub-novels.show', series.epub_series_slug)}
+                                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                                            style={{
+                                                borderColor: `${currentTheme.foreground}30`,
+                                                color: currentTheme.foreground,
+                                                backgroundColor: `${currentTheme.foreground}06`,
+                                            }}
                                         >
-                                            {series.alternative_title}
-                                        </p>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            Download Epub
+                                        </Link>
                                     )}
-                                    <p 
-                                        className="text-base mb-4"
-                                        style={{ color: `${currentTheme.foreground}80` }}
+
+                                    <button 
+                                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border rounded-xl font-semibold transition-all hover:opacity-80 text-sm"
+                                        style={{
+                                            borderColor: bookmarked ? currentTheme.foreground : `${currentTheme.foreground}30`,
+                                            color: currentTheme.foreground,
+                                            backgroundColor: bookmarked ? `${currentTheme.foreground}10` : `${currentTheme.foreground}06`,
+                                        }}
+                                        onClick={handleBookmarkToggle}
                                     >
-                                        Author: {series.author}
-                                        {series.artist && (
-                                            <>
-                                                <span className="mx-4">|</span>
-                                                Artist: {series.artist}
-                                            </>
-                                        )}
-                                    </p>
-                                    
-                                    <div className="flex flex-wrap items-center gap-4 mb-4">
-                                        <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(series.status)}`}>
-                                            {series.status}
-                                        </span>
-                                        <div className="flex items-center">
-                                            <span className="text-yellow-400 text-lg">★</span>
-                                            <span 
-                                                className="ml-1"
-                                                style={{ color: `${currentTheme.foreground}80` }}
-                                            >
-                                                {series.rating || 'N/A'}
-                                            </span>
+                                        <svg className="w-4 h-4" fill={bookmarked ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                        </svg>
+                                        {bookmarked ? 'Bookmarked' : 'Bookmark'}
+                                    </button>
+
+                                    {/* Stat counters */}
+                                    <div 
+                                        className="flex items-center justify-center gap-3 text-xs mt-1"
+                                        style={{ color: `${currentTheme.foreground}55` }}
+                                    >
+                                        <div className="flex items-center gap-1">
+                                            <BookmarkIcon className="w-3.5 h-3.5" />
+                                            <span className="font-medium">{formatNumber(series.bookmarks_count)}</span>
                                         </div>
-                                        <span style={{ color: `${currentTheme.foreground}80` }}>
-                                            {series.chapters_count} chapters
-                                        </span>
-                                        <span style={{ color: `${currentTheme.foreground}80` }}>
-                                            {series.native_language.name}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2 mb-6">
-                                        {series.genres.map((genre) => (
-                                            <span
-                                                key={genre.id}
-                                                className="px-3 py-1 text-sm rounded-full"
-                                                style={{
-                                                    backgroundColor: `${currentTheme.foreground}15`,
-                                                    color: `${currentTheme.foreground}90`
-                                                }}
-                                            >
-                                                {genre.name}
-                                            </span>
-                                        ))}
-                                    </div>
-
-                                    {/* Synopsis */}
-                                    <div className="mb-6">
-                                        <h3 
-                                            className="text-lg font-semibold mb-3"
-                                            style={{ color: currentTheme.foreground }}
-                                        >
-                                            Synopsis
-                                        </h3>
-                                        <div className="prose max-w-none relative">
-                                            <div 
-                                                className={`leading-relaxed transition-all duration-300 ${
-                                                    isExpanded ? '' : (series.show_epub_button ? 'line-clamp-8' : 'line-clamp-4') + ' overflow-hidden'
-                                                }`}
-                                                style={{ 
-                                                    color: `${currentTheme.foreground}90`
-                                                }}
-                                                dangerouslySetInnerHTML={{
-                                                    __html: sanitizeContent(series.synopsis) || 'No synopsis available.'
-                                                }}
-                                            />
-                                            
-                                            {/* Expand/Collapse Button with Gradient */}
-                                            {(series.synopsis && series.synopsis.length > (series.show_epub_button ? 400 : 200)) && (
-                                                <div className="relative">
-                                                    {!isExpanded && (
-                                                        <div 
-                                                            className="absolute bottom-8 left-0 right-0 h-16 pointer-events-none"
-                                                            style={{
-                                                                background: `linear-gradient(to bottom, transparent, ${currentTheme.background})`
-                                                            }}
-                                                        />
-                                                    )}
-                                                    <button
-                                                        onClick={() => setIsExpanded(!isExpanded)}
-                                                        className="w-full mt-2 py-2 px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
-                                                        style={{
-                                                            background: `linear-gradient(to bottom, transparent, ${currentTheme.background})`,
-                                                            color: `${currentTheme.foreground}80`,
-                                                            border: 'none'
-                                                        }}
-                                                    >
-                                                        <span className="text-sm font-medium">
-                                                            {isExpanded ? 'Show Less' : 'Show More'}
-                                                        </span>
-                                                        <svg 
-                                                            className={`w-4 h-4 transition-transform duration-200 ${
-                                                                isExpanded ? 'rotate-180' : ''
-                                                            }`} 
-                                                            fill="none" 
-                                                            stroke="currentColor" 
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            )}
+                                        <span>•</span>
+                                        <div className="flex items-center gap-1">
+                                            <EyeIcon className="w-3.5 h-3.5" />
+                                            <span className="font-medium">{formatNumber(series.views)}</span>
+                                        </div>
+                                        <span>•</span>
+                                        <div className="flex items-center gap-1">
+                                            <CommentIcon className="w-3.5 h-3.5" />
+                                            <span className="font-medium">{formatNumber(series.comments_count)}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Two Column Layout for Chapter List and Related Series */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Chapter List */}
-                            <div className="lg:col-span-2">
-                                <div 
-                                    className="rounded-lg shadow-sm border"
-                                    style={{
-                                        backgroundColor: currentTheme.background,
-                                        borderColor: `${currentTheme.foreground}20`
-                                    }}
+                            {/* Series Details + Synopsis */}
+                            <div className="flex-1 min-w-0">
+                                <h1 
+                                    className="text-2xl sm:text-3xl lg:text-4xl font-extrabold mb-2 leading-tight"
+                                    style={{ color: currentTheme.foreground }}
                                 >
-                                    <div 
-                                        className="p-6 border-b"
-                                        style={{ borderColor: `${currentTheme.foreground}20` }}
+                                    {series.title}
+                                </h1>
+                                {series.alternative_title && (
+                                    <p 
+                                        className="text-base sm:text-lg mb-3"
+                                        style={{ color: `${currentTheme.foreground}70` }}
                                     >
-                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                            <h2 
-                                                className="text-xl font-semibold"
-                                                style={{ color: currentTheme.foreground }}
-                                            >
-                                                Chapters ({filteredChapters.length})
-                                            </h2>
-                                            <div className="flex items-center gap-3">
-                                                {/* Search Bar */}
-                                                <div className="relative">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search chapter..."
-                                                        value={searchQuery}
-                                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                                        className="px-3 py-2 pr-8 border rounded-lg focus:ring-2 transition-colors text-sm w-40"
+                                        {series.alternative_title}
+                                    </p>
+                                )}
+                                <p 
+                                    className="text-sm sm:text-base mb-4"
+                                    style={{ color: `${currentTheme.foreground}70` }}
+                                >
+                                    Author: {series.author}
+                                    {series.artist && (
+                                        <>
+                                            <span className="mx-3 opacity-30">|</span>
+                                            Artist: {series.artist}
+                                        </>
+                                    )}
+                                </p>
+                                
+                                {/* Status / Rating / Chapters / Language */}
+                                <div className="flex flex-wrap items-center gap-3 mb-5">
+                                    <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${getStatusColor(series.status)}`}>
+                                        {series.status}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-yellow-400 text-lg">★</span>
+                                        <span className="font-semibold" style={{ color: currentTheme.foreground }}>
+                                            {series.rating || 'N/A'}
+                                        </span>
+                                    </div>
+                                    <span className="w-1 h-1 rounded-full" style={{ backgroundColor: `${currentTheme.foreground}30` }} />
+                                    <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>
+                                        {series.chapters_count} chapters
+                                    </span>
+                                    <span className="w-1 h-1 rounded-full" style={{ backgroundColor: `${currentTheme.foreground}30` }} />
+                                    <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>
+                                        {series.native_language.name}
+                                    </span>
+                                </div>
+
+                                {/* Genre Pills */}
+                                <div className="flex flex-wrap gap-2 mb-5">
+                                    {series.genres.map((genre) => (
+                                        <span
+                                            key={genre.id}
+                                            className="px-3 py-1 text-xs font-semibold rounded-full uppercase tracking-wider"
+                                            style={{
+                                                backgroundColor: `${currentTheme.foreground}10`,
+                                                color: `${currentTheme.foreground}80`,
+                                                border: `1px solid ${currentTheme.foreground}12`,
+                                            }}
+                                        >
+                                            {genre.name}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* ─── Synopsis (inline) ─── */}
+                                <div 
+                                    className="pt-4 mt-1"
+                                    style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}
+                                >
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-1 h-5 rounded-full" style={{ backgroundColor: currentTheme.foreground }} />
+                                        <h3 className="text-base font-bold" style={{ color: currentTheme.foreground }}>
+                                            Synopsis
+                                        </h3>
+                                    </div>
+                                    <div className="prose max-w-none relative">
+                                        <div 
+                                            className={`leading-relaxed text-sm sm:text-base transition-all duration-300 ${
+                                                isExpanded ? '' : (series.show_epub_button ? 'line-clamp-8' : 'line-clamp-4') + ' overflow-hidden'
+                                            }`}
+                                            style={{ color: `${currentTheme.foreground}80` }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: sanitizeContent(series.synopsis) || 'No synopsis available.'
+                                            }}
+                                        />
+                                        
+                                        {(series.synopsis && series.synopsis.length > (series.show_epub_button ? 400 : 200)) && (
+                                            <div className="relative">
+                                                {!isExpanded && (
+                                                    <div 
+                                                        className="absolute bottom-8 left-0 right-0 h-16 pointer-events-none"
                                                         style={{
-                                                            backgroundColor: currentTheme.background,
-                                                            borderColor: `${currentTheme.foreground}30`,
-                                                            color: currentTheme.foreground
+                                                            background: `linear-gradient(to bottom, transparent, ${currentTheme.background}00)`
                                                         }}
                                                     />
-                                                    <div className="absolute right-2 top-2.5 opacity-40">
-                                                        <SearchIcon size={16} color={currentTheme.foreground} />
-                                                    </div>
-                                                </div>
-
-                                                {/* View Mode Toggle - Hidden on Mobile */}
-                                                {!isMobile && (
-                                                    <div className="flex items-center border rounded-lg overflow-hidden" style={{ borderColor: `${currentTheme.foreground}30` }}>
-                                                        <button
-                                                            onClick={() => updateViewMode('detailed')}
-                                                            className={`px-3 py-2 text-sm transition-colors flex items-center gap-2 ${viewMode === 'detailed' ? 'font-medium' : ''}`}
-                                                            style={{
-                                                                backgroundColor: viewMode === 'detailed' ? currentTheme.foreground : 'transparent',
-                                                                color: viewMode === 'detailed' ? currentTheme.background : currentTheme.foreground
-                                                            }}
-                                                        >
-                                                            <ListIcon size={14} color={viewMode === 'detailed' ? currentTheme.background : currentTheme.foreground} />
-                                                            Detailed
-                                                        </button>
-                                                        <button
-                                                            onClick={() => updateViewMode('simple')}
-                                                            className={`px-3 py-2 text-sm transition-colors flex items-center gap-2 ${viewMode === 'simple' ? 'font-medium' : ''}`}
-                                                            style={{
-                                                                backgroundColor: viewMode === 'simple' ? currentTheme.foreground : 'transparent',
-                                                                color: viewMode === 'simple' ? currentTheme.background : currentTheme.foreground
-                                                            }}
-                                                        >
-                                                            <GridIcon size={14} color={viewMode === 'simple' ? currentTheme.background : currentTheme.foreground} />
-                                                            Simple
-                                                        </button>
-                                                    </div>
                                                 )}
-
-                                                {/* Sort Dropdown */}
-                                                <select
-                                                    value={sortOrder}
-                                                    onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                                    className="px-3 py-2 border rounded-lg focus:ring-2 transition-colors text-sm"
-                                                    style={{
-                                                        backgroundColor: currentTheme.background,
-                                                        borderColor: `${currentTheme.foreground}30`,
-                                                        color: currentTheme.foreground
-                                                    }}
+                                                <button
+                                                    onClick={() => setIsExpanded(!isExpanded)}
+                                                    className="mt-2 py-1.5 px-4 rounded-lg transition-all duration-200 flex items-center gap-2"
+                                                    style={{ color: `${currentTheme.foreground}70` }}
                                                 >
-                                                    <option value="asc">Oldest First</option>
-                                                    <option value="desc">Newest First</option>
-                                                </select>
+                                                    <span className="text-sm font-medium">
+                                                        {isExpanded ? 'Show Less' : 'Show More'}
+                                                    </span>
+                                                    <svg 
+                                                        className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} 
+                                                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                                    >
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
                                             </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─── Two Column: Chapters + Related ─── */}
+                <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Chapter List */}
+                        <div className="lg:col-span-2">
+                            <div
+                                className="rounded-2xl overflow-hidden"
+                                style={{
+                                    backgroundColor: `${currentTheme.foreground}04`,
+                                    border: `1px solid ${currentTheme.foreground}08`,
+                                }}
+                            >
+                                {/* Chapter header with controls */}
+                                <div className="p-5 sm:p-6" style={{ borderBottom: `1px solid ${currentTheme.foreground}08` }}>
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1 h-6 rounded-full" style={{ backgroundColor: currentTheme.foreground }} />
+                                            <h2 className="text-lg sm:text-xl font-bold" style={{ color: currentTheme.foreground }}>
+                                                Chapters ({filteredChapters.length})
+                                            </h2>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            {/* Search */}
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search chapter..."
+                                                    value={searchQuery}
+                                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                                    className="px-3 py-2 pr-8 rounded-lg focus:ring-2 transition-colors text-sm w-40"
+                                                    style={{
+                                                        backgroundColor: `${currentTheme.foreground}06`,
+                                                        border: `1px solid ${currentTheme.foreground}12`,
+                                                        color: currentTheme.foreground,
+                                                    }}
+                                                />
+                                                <div className="absolute right-2.5 top-2.5 opacity-40">
+                                                    <SearchIcon size={16} color={currentTheme.foreground} />
+                                                </div>
+                                            </div>
+
+                                            {/* View Mode Toggle - Desktop only */}
+                                            {!isMobile && (
+                                                <div
+                                                    className="flex items-center rounded-lg overflow-hidden"
+                                                    style={{ border: `1px solid ${currentTheme.foreground}12` }}
+                                                >
+                                                    <button
+                                                        onClick={() => updateViewMode('detailed')}
+                                                        className="px-3 py-2 text-sm transition-colors flex items-center gap-2"
+                                                        style={{
+                                                            backgroundColor: viewMode === 'detailed' ? currentTheme.foreground : 'transparent',
+                                                            color: viewMode === 'detailed' ? currentTheme.background : `${currentTheme.foreground}80`,
+                                                        }}
+                                                    >
+                                                        <ListIcon size={14} color={viewMode === 'detailed' ? currentTheme.background : `${currentTheme.foreground}80`} />
+                                                        Detailed
+                                                    </button>
+                                                    <button
+                                                        onClick={() => updateViewMode('simple')}
+                                                        className="px-3 py-2 text-sm transition-colors flex items-center gap-2"
+                                                        style={{
+                                                            backgroundColor: viewMode === 'simple' ? currentTheme.foreground : 'transparent',
+                                                            color: viewMode === 'simple' ? currentTheme.background : `${currentTheme.foreground}80`,
+                                                        }}
+                                                    >
+                                                        <GridIcon size={14} color={viewMode === 'simple' ? currentTheme.background : `${currentTheme.foreground}80`} />
+                                                        Simple
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            {/* Sort */}
+                                            <select
+                                                value={sortOrder}
+                                                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+                                                className="px-3 py-2 rounded-lg focus:ring-2 transition-colors text-sm"
+                                                style={{
+                                                    backgroundColor: `${currentTheme.foreground}06`,
+                                                    border: `1px solid ${currentTheme.foreground}12`,
+                                                    color: currentTheme.foreground,
+                                                }}
+                                            >
+                                                <option value="asc">Oldest First</option>
+                                                <option value="desc">Newest First</option>
+                                            </select>
                                         </div>
                                     </div>
+                                </div>
 
-                                    {/* Chapter Content - Conditional Based on View Mode */}
-                                    {viewMode === 'detailed' ? (
-                                        /* Detailed Mode - List View with Scrolling */
-                                        <div 
-                                            style={{ 
-                                                borderTopColor: `${currentTheme.foreground}20`,
-                                                maxHeight: 'calc(100vh - 300px)',
-                                                minHeight: '600px'
-                                            }} 
-                                            className="divide-y overflow-y-auto"
-                                        >
-                                            {displayedChapters.map((chapter) => (
-                                                <Link
-                                                    key={chapter.id}
-                                                    href={route('chapters.show', [series.slug, chapter.chapter_link])}
-                                                    className="block p-4 transition-all chapter-item rounded-lg"
-                                                    style={{ borderBottomColor: `${currentTheme.foreground}10` }}
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1">
-                                                            <div className="flex items-center gap-3 mb-1">
-                                                                <span 
-                                                                    className="text-sm font-medium"
-                                                                    style={{ color: `${currentTheme.foreground}95` }}
-                                                                >
-                                                                    {chapter.volume 
-                                                                        ? `Volume ${chapter.volume}`
-                                                                        : `Chapter ${chapter.chapter_number}`
-                                                                    }
-                                                                </span>
-                                                                <h3 
-                                                                    className="font-medium flex-1"
-                                                                    style={{ color: currentTheme.foreground }}
-                                                                >
-                                                                    {chapter.title}
-                                                                </h3>
+                                {/* Chapter Content */}
+                                {viewMode === 'detailed' ? (
+                                    <div 
+                                        className="divide-y overflow-y-auto themed-scrollbar"
+                                        style={{ 
+                                            maxHeight: 'calc(100vh - 300px)',
+                                            minHeight: '500px',
+                                            borderTopColor: `${currentTheme.foreground}08`,
+                                            '--scrollbar-thumb': `${currentTheme.foreground}25`,
+                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
+                                            '--scrollbar-track': `${currentTheme.foreground}06`,
+                                        } as React.CSSProperties} 
+                                    >
+                                        {displayedChapters.map((chapter) => (
+                                            <Link
+                                                key={chapter.id}
+                                                href={route('chapters.show', [series.slug, chapter.chapter_link])}
+                                                className="block px-5 py-4 transition-all hover:brightness-95"
+                                                style={{ borderBottomColor: `${currentTheme.foreground}06` }}
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-3 mb-1">
+                                                            <span 
+                                                                className="text-sm font-semibold"
+                                                                style={{ color: `${currentTheme.foreground}90` }}
+                                                            >
+                                                                {chapter.volume 
+                                                                    ? `Volume ${chapter.volume}`
+                                                                    : `Chapter ${chapter.chapter_number}`
+                                                                }
+                                                            </span>
+                                                            <h3 
+                                                                className="font-medium text-sm truncate"
+                                                                style={{ color: `${currentTheme.foreground}70` }}
+                                                            >
+                                                                {chapter.title}
+                                                            </h3>
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex items-center gap-1">
+                                                                    <CalendarIcon size={12} color={`${currentTheme.foreground}50`} />
+                                                                    <span className="text-xs" style={{ color: `${currentTheme.foreground}50` }}>
+                                                                        {formatDate(chapter.created_at)}
+                                                                    </span>
+                                                                </div>
+                                                                {chapter.is_premium && (
+                                                                    <span 
+                                                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
+                                                                        style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}
+                                                                    >
+                                                                        <PremiumDiamond size={12} />
+                                                                        Premium
+                                                                    </span>
+                                                                )}
+                                                                {chapter.is_owned && (
+                                                                    <span 
+                                                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
+                                                                        style={{ backgroundColor: '#d1fae5', color: '#059669' }}
+                                                                    >
+                                                                        <CheckIcon size={10} color="#059669" />
+                                                                        Owned
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                            <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-1" style={{ color: `${currentTheme.foreground}45` }}>
+                                                                <EyeIcon className="w-3 h-3" />
+                                                                <span className="text-xs">{formatNumber(chapter.views)}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}30` }}>
+                                                        <ChevronRightIcon size={18} color={`${currentTheme.foreground}30`} />
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div 
+                                        className={`grid gap-3 p-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} overflow-y-auto themed-scrollbar`}
+                                        style={{ 
+                                            maxHeight: 'calc(100vh - 300px)', 
+                                            minHeight: '500px',
+                                            '--scrollbar-thumb': `${currentTheme.foreground}25`,
+                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
+                                            '--scrollbar-track': `${currentTheme.foreground}06`,
+                                        } as React.CSSProperties}
+                                    >
+                                        {displayedChapters.map((chapter) => (
+                                            <Link
+                                                key={chapter.id}
+                                                href={route('chapters.show', [series.slug, chapter.chapter_link])}
+                                                className="block p-4 rounded-xl transition-all hover:shadow-md"
+                                                style={{ 
+                                                    border: `1px solid ${currentTheme.foreground}08`,
+                                                    backgroundColor: `${currentTheme.foreground}03`,
+                                                }}
+                                            >
+                                                {isMobile ? (
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="font-semibold text-sm" style={{ color: currentTheme.foreground }}>
+                                                                    {chapter.volume ? `Volume ${chapter.volume}` : `Chapter ${chapter.chapter_number}`}
+                                                                </h3>
+                                                                {chapter.is_premium && (
+                                                                    <span className="inline-flex items-center px-1.5 py-0.5 text-xs rounded" style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}>
+                                                                        <PremiumDiamond size={10} />
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}50` }}>
+                                                                <CalendarIcon size={12} color={`${currentTheme.foreground}50`} />
+                                                                {formatDate(chapter.created_at)}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center justify-between">
+                                                            <p className="text-sm truncate flex-1 pr-2" style={{ color: `${currentTheme.foreground}80` }}>
+                                                                {chapter.title && chapter.title.length > 45 ? `${chapter.title.substring(0, 45)}...` : chapter.title || 'Untitled'}
+                                                            </p>
+                                                            <div className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ color: `${currentTheme.foreground}50` }}>
+                                                                <EyeIcon className="w-3 h-3" />
+                                                                {formatNumber(chapter.views)}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <h3 className="font-semibold text-sm" style={{ color: currentTheme.foreground }}>
+                                                                    {chapter.volume ? `Volume ${chapter.volume}` : `Chapter ${chapter.chapter_number}`}
+                                                                </h3>
+                                                                {chapter.is_premium && (
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full" style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}>
+                                                                        <PremiumDiamond size={12} />
+                                                                        Premium
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center justify-between gap-2">
                                                                 <div className="flex items-center gap-3">
-                                                                    <div className="flex items-center gap-1">
-                                                                        <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
-                                                                        <span 
-                                                                            className="text-sm"
-                                                                            style={{ color: `${currentTheme.foreground}60` }}
-                                                                        >
-                                                                            {formatDate(chapter.created_at)}
-                                                                        </span>
+                                                                    <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}50` }}>
+                                                                        <CalendarIcon size={12} color={`${currentTheme.foreground}50`} />
+                                                                        {formatDate(chapter.created_at)}
                                                                     </div>
-                                                                    {chapter.is_premium && (
-                                                                        <span 
-                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                            style={{
-                                                                                backgroundColor: `${SHINY_PURPLE}15`,
-                                                                                color: SHINY_PURPLE
-                                                                            }}
-                                                                        >
-                                                                            <PremiumDiamond size={14} />
-                                                                            <span className="font-semibold">Premium</span>
-                                                                        </span>
-                                                                    )}
                                                                     {chapter.is_owned && (
-                                                                        <span 
-                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                            style={{
-                                                                                backgroundColor: '#d1fae5',
-                                                                                color: '#059669'
-                                                                            }}
-                                                                        >
-                                                                            <CheckIcon size={12} color="#059669" />
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full" style={{ backgroundColor: '#d1fae5', color: '#059669' }}>
+                                                                            <CheckIcon size={10} color="#059669" />
                                                                             Owned
                                                                         </span>
                                                                     )}
                                                                 </div>
-                                                                {/* View Counter - Aligned Right */}
-                                                                <div className="flex items-center gap-1" style={{ color: `${currentTheme.foreground}60` }}>
-                                                                    <EyeIcon className="w-3 h-3" />
-                                                                    <span className="text-xs">{formatNumber(chapter.views)}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center" style={{ color: `${currentTheme.foreground}40` }}>
-                                                            <ChevronRightIcon size={20} color={`${currentTheme.foreground}40`} />
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        /* Simple Mode - Card Grid with Scrolling */
-                                        <div 
-                                            className={`grid gap-3 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} overflow-y-auto`}
-                                            style={{
-                                                maxHeight: 'calc(100vh - 300px)',
-                                                minHeight: '600px'
-                                            }}
-                                        >
-                                            {displayedChapters.map((chapter) => (
-                                                <Link
-                                                    key={chapter.id}
-                                                    href={route('chapters.show', [series.slug, chapter.chapter_link])}
-                                                    className="block p-4 border rounded-lg transition-all hover:shadow-md hover:border-opacity-60"
-                                                    style={{ 
-                                                        borderColor: `${currentTheme.foreground}20`,
-                                                        backgroundColor: currentTheme.background 
-                                                    }}
-                                                >
-                                                    {isMobile ? (
-                                                        /* Mobile Layout - 2 rows */
-                                                        <div>
-                                                            {/* Row 1: Vol/Chapter + Premium Badge + Release Date */}
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <h3 
-                                                                        className="font-semibold text-sm"
-                                                                        style={{ color: currentTheme.foreground }}
-                                                                    >
-                                                                        {chapter.volume 
-                                                                            ? `Volume ${chapter.volume}`
-                                                                            : `Chapter ${chapter.chapter_number}`
-                                                                        }
-                                                                    </h3>
-                                                                    {chapter.is_premium && (
-                                                                        <span 
-                                                                            className="inline-flex items-center px-1.5 py-0.5 text-xs font-medium rounded"
-                                                                            style={{
-                                                                                backgroundColor: `${SHINY_PURPLE}15`,
-                                                                                color: SHINY_PURPLE
-                                                                            }}
-                                                                        >
-                                                                            <PremiumDiamond size={10} />
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
-                                                                    <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
-                                                                    {formatDate(chapter.created_at)}
-                                                                </div>
-                                                            </div>
-                                                            
-                                                            {/* Row 2: Title (max 15 char) + View Count */}
-                                                            <div className="flex items-center justify-between">
-                                                                <p 
-                                                                    className="text-sm truncate flex-1 pr-2"
-                                                                    style={{ color: `${currentTheme.foreground}95` }}
-                                                                    title={chapter.title}
-                                                                >
-                                                                    {chapter.title && chapter.title.length > 45 
-                                                                        ? `${chapter.title.substring(0, 45)}...` 
-                                                                        : chapter.title || 'Untitled'
-                                                                    }
-                                                                </p>
-                                                                <div className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ color: `${currentTheme.foreground}60` }}>
+                                                                <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}50` }}>
                                                                     <EyeIcon className="w-3 h-3" />
                                                                     {formatNumber(chapter.views)}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ) : (
-                                                        /* Desktop Layout - Original */
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex-1 min-w-0">
-                                                                {/* Chapter Number and Premium Badge in same row */}
-                                                                <div className="flex items-center justify-between mb-3">
-                                                                    <h3 
-                                                                        className="font-semibold text-sm"
-                                                                        style={{ color: currentTheme.foreground }}
-                                                                    >
-                                                                        {chapter.volume 
-                                                                            ? `Volume ${chapter.volume}`
-                                                                            : `Chapter ${chapter.chapter_number}`
-                                                                        }
-                                                                    </h3>
-                                                                    {chapter.is_premium && (
-                                                                        <span 
-                                                                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                            style={{
-                                                                                backgroundColor: `${SHINY_PURPLE}15`,
-                                                                                color: SHINY_PURPLE
-                                                                            }}
-                                                                        >
-                                                                            <PremiumDiamond size={14} />
-                                                                            <span className="font-semibold">Premium</span>
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                
-                                                                {/* Date, View Counter, and Owned Badge */}
-                                                                <div className="flex items-center justify-between gap-2">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
-                                                                            <CalendarIcon size={12} color={`${currentTheme.foreground}60`} />
-                                                                            {formatDate(chapter.created_at)}
-                                                                        </div>
-                                                                        {chapter.is_owned && (
-                                                                            <span 
-                                                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full"
-                                                                                style={{
-                                                                                    backgroundColor: '#d1fae5',
-                                                                                    color: '#059669'
-                                                                                }}
-                                                                            >
-                                                                                <CheckIcon size={12} color="#059669" />
-                                                                                Owned
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    {/* View Counter - Aligned Right */}
-                                                                    <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}60` }}>
-                                                                        <EyeIcon className="w-3 h-3" />
-                                                                        {formatNumber(chapter.views)}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}40` }}>
-                                                                <ChevronRightIcon size={16} color={`${currentTheme.foreground}40`} />
-                                                            </div>
+                                                        <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}30` }}>
+                                                            <ChevronRightIcon size={16} color={`${currentTheme.foreground}30`} />
                                                         </div>
-                                                    )}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
+                                                    </div>
+                                                )}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                )}
 
-                                    {/* No Results */}
-                                    {filteredChapters.length === 0 && (
-                                        <div className="text-center py-12">
-                                            <div className="mb-4 flex justify-center">
-                                                <BookIcon size={48} color={`${currentTheme.foreground}60`} />
-                                            </div>
-                                            <p className="text-lg" style={{ color: currentTheme.foreground }}>
-                                                {searchQuery ? 'No chapters found' : 'No chapters available'}
+                                {/* No Results */}
+                                {filteredChapters.length === 0 && (
+                                    <div className="text-center py-12">
+                                        <div className="mb-4 flex justify-center">
+                                            <BookIcon size={48} color={`${currentTheme.foreground}40`} />
+                                        </div>
+                                        <p className="text-lg" style={{ color: currentTheme.foreground }}>
+                                            {searchQuery ? 'No chapters found' : 'No chapters available'}
+                                        </p>
+                                        {searchQuery && (
+                                            <p className="text-sm mt-2" style={{ color: `${currentTheme.foreground}50` }}>
+                                                Try adjusting your search terms
                                             </p>
-                                            {searchQuery && (
-                                                <p className="text-sm mt-2" style={{ color: `${currentTheme.foreground}60` }}>
-                                                    Try adjusting your search terms
-                                                </p>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Related Series Sidebar */}
-                            <div className="space-y-6">
-                                {relatedSeries.length > 0 && (
-                                    <div 
-                                        className="rounded-lg shadow-sm border p-6"
-                                        style={{
-                                            backgroundColor: currentTheme.background,
-                                            borderColor: `${currentTheme.foreground}20`
-                                        }}
-                                    >
-                                        <h3 
-                                            className="text-lg font-semibold mb-4"
-                                            style={{ color: currentTheme.foreground }}
-                                        >
-                                            You Might Also Like
-                                        </h3>
-                                        <div className="space-y-4">
-                                            {relatedSeries.map((related) => (
-                                                <Link
-                                                    key={related.id}
-                                                    href={route('series.show', related.slug)}
-                                                    className="flex gap-3 p-2 rounded-lg transition-all recommendation-card"
-                                                >
-                                                    <div className="w-16 h-20 flex-shrink-0">
-                                                        {related.cover_url ? (
-                                                            <img
-                                                                src={related.cover_url}
-                                                                alt={related.title}
-                                                                className="w-full h-full object-cover rounded"
-                                                            />
-                                                        ) : (
-                                                            <div 
-                                                                className="w-full h-full rounded flex items-center justify-center"
-                                                                style={{ backgroundColor: `${currentTheme.foreground}10` }}
-                                                            >
-                                                                <span 
-                                                                    className="text-xs"
-                                                                    style={{ color: `${currentTheme.foreground}50` }}
-                                                                >
-                                                                    No Cover
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <h4 
-                                                            className="font-medium text-sm line-clamp-2 mb-1"
-                                                            style={{ color: currentTheme.foreground }}
-                                                        >
-                                                            {related.title}
-                                                        </h4>
-                                                        <p 
-                                                            className="text-xs mb-1"
-                                                            style={{ color: `${currentTheme.foreground}85` }}
-                                                        >
-                                                            by {related.author}
-                                                        </p>
-                                                        <div 
-                                                            className="flex items-center text-xs"
-                                                            style={{ color: `${currentTheme.foreground}60` }}
-                                                        >
-                                                            <span className="text-yellow-400">★</span>
-                                                            <span className="ml-1">{related.rating || 'N/A'}</span>
-                                                            <span className="mx-1">•</span>
-                                                            <span>{related.chapters_count} ch</span>
-                                                        </div>
-                                                    </div>
-                                                </Link>
-                                            ))}
-                                        </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Reactions Section */}
-                        <div className="mt-8">
-                            <div 
-                                className="rounded-lg border p-8 text-center"
-                                style={{
-                                    backgroundColor: currentTheme.background,
-                                    borderColor: `${currentTheme.foreground}20`
-                                }}
-                            >
-                                <h3 
-                                    className="text-2xl font-bold mb-6"
-                                    style={{ color: currentTheme.foreground }}
+                        {/* Related Series Sidebar */}
+                        <div className="space-y-6">
+                            {relatedSeries.length > 0 && (
+                                <div
+                                    className="rounded-2xl p-5 sm:p-6"
+                                    style={{
+                                        backgroundColor: `${currentTheme.foreground}04`,
+                                        border: `1px solid ${currentTheme.foreground}08`,
+                                    }}
                                 >
-                                    How do you feel about this series?
-                                </h3>
-                                <ReactionBar
-                                    reactableType="series"
-                                    reactableId={series.id}
-                                    isAuthenticated={!!auth?.user}
-                                    size="large"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Comment Section */}
-                        <div className="mt-8">
-                            <CommentSection
-                                commentableType="series"
-                                commentableId={series.id}
-                                isAuthenticated={!!auth?.user}
-                                currentUserId={auth?.user?.id}
-                            />
+                                    <div className="flex items-center gap-3 mb-5">
+                                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: currentTheme.foreground }} />
+                                        <h3 className="text-lg font-bold" style={{ color: currentTheme.foreground }}>
+                                            You Might Also Like
+                                        </h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {relatedSeries.map((related) => (
+                                            <Link
+                                                key={related.id}
+                                                href={route('series.show', related.slug)}
+                                                className="flex gap-3 p-3 rounded-xl transition-all hover:shadow-md group"
+                                                style={{
+                                                    backgroundColor: `${currentTheme.foreground}03`,
+                                                    border: `1px solid ${currentTheme.foreground}06`,
+                                                }}
+                                            >
+                                                <div className="w-14 h-20 flex-shrink-0 rounded-lg overflow-hidden">
+                                                    {related.cover_url ? (
+                                                        <img
+                                                            src={related.cover_url}
+                                                            alt={related.title}
+                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                        />
+                                                    ) : (
+                                                        <div 
+                                                            className="w-full h-full flex items-center justify-center"
+                                                            style={{ backgroundColor: `${currentTheme.foreground}10` }}
+                                                        >
+                                                            <span className="text-[10px]" style={{ color: `${currentTheme.foreground}40` }}>
+                                                                No Cover
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0 py-0.5">
+                                                    <h4 
+                                                        className="font-semibold text-sm line-clamp-2 mb-1 group-hover:opacity-80 transition-opacity"
+                                                        style={{ color: currentTheme.foreground }}
+                                                    >
+                                                        {related.title}
+                                                    </h4>
+                                                    <p className="text-xs mb-1" style={{ color: `${currentTheme.foreground}60` }}>
+                                                        by {related.author}
+                                                    </p>
+                                                    <div className="flex items-center text-xs" style={{ color: `${currentTheme.foreground}50` }}>
+                                                        <span className="text-yellow-400">★</span>
+                                                        <span className="ml-1 font-medium">{related.rating || 'N/A'}</span>
+                                                        <span className="mx-1.5">•</span>
+                                                        <span>{related.chapters_count} ch</span>
+                                                    </div>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
+                </section>
+
+                {/* ─── Reactions Section ─── */}
+                <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-6">
+                    <div
+                        className="rounded-2xl p-8 text-center"
+                        style={{
+                            backgroundColor: `${currentTheme.foreground}04`,
+                            border: `1px solid ${currentTheme.foreground}08`,
+                        }}
+                    >
+                        <h3 
+                            className="text-xl sm:text-2xl font-bold mb-6"
+                            style={{ color: currentTheme.foreground }}
+                        >
+                            How do you feel about this series?
+                        </h3>
+                        <ReactionBar
+                            reactableType="series"
+                            reactableId={series.id}
+                            isAuthenticated={!!auth?.user}
+                            size="large"
+                        />
+                    </div>
+                </section>
+
+                {/* ─── Comment Section ─── */}
+                <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-10">
+                    <CommentSection
+                        commentableType="series"
+                        commentableId={series.id}
+                        isAuthenticated={!!auth?.user}
+                        currentUserId={auth?.user?.id}
+                    />
+                </section>
             </div>
             )}
 
-            {/* Notification Modal */}
+            {/* Notification Toast */}
             {showNotification && (
                 <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-2 duration-300">
-                    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-4 max-w-sm">
-                        <div className="flex items-center gap-3">
-                            <div className="flex-shrink-0">
-                                <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900">
-                                    {notificationMessage}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowNotification(false)}
-                                className="flex-shrink-0 text-gray-400 hover:text-gray-600"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                    <div 
+                        className="rounded-xl shadow-2xl p-4 max-w-sm flex items-center gap-3"
+                        style={{
+                            backgroundColor: currentTheme.background,
+                            border: `1px solid ${currentTheme.foreground}15`,
+                            boxShadow: `0 10px 30px ${currentTheme.foreground}12`,
+                        }}
+                    >
+                        <div className="flex-shrink-0">
+                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
                         </div>
+                        <p className="text-sm font-medium flex-1" style={{ color: currentTheme.foreground }}>
+                            {notificationMessage}
+                        </p>
+                        <button
+                            onClick={() => setShowNotification(false)}
+                            className="flex-shrink-0 opacity-40 hover:opacity-70 transition-opacity"
+                            style={{ color: currentTheme.foreground }}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
             )}

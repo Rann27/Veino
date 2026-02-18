@@ -120,6 +120,7 @@ class EbookSeriesController extends Controller
                 'summary' => $item->summary,
                 'price_coins' => $item->price_coins,
                 'order' => $item->order,
+                'has_pdf_file' => !empty($item->pdf_file_path),
                 'is_in_cart' => $userId ? $item->isInCartOf($userId) : false,
                 'is_purchased' => $userId ? $item->isPurchasedBy($userId) : false,
             ];

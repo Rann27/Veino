@@ -189,7 +189,7 @@ class EbookSeriesController extends Controller
             'price_coins' => 'required|integer|min:0',
             'order' => 'required|integer|min:0',
             'cover' => 'nullable|image|max:2048',
-            'file' => 'nullable|file|mimes:epub|max:51200', // 50MB max
+            'file' => 'required|file|mimes:epub|max:51200', // 50MB max (required)
             'pdf_file' => 'nullable|file|mimes:pdf|max:51200', // 50MB max
         ]);
 
@@ -235,6 +235,13 @@ class EbookSeriesController extends Controller
             'file' => 'nullable|file|mimes:epub|max:51200',
             'pdf_file' => 'nullable|file|mimes:pdf|max:51200',
         ]);
+
+        // EPUB must always exist (either existing file or newly uploaded file)
+        if (!$item->file_path && !$request->hasFile('file')) {
+            return back()->withErrors([
+                'file' => 'EPUB file is required.',
+            ])->withInput();
+        }
 
         // Handle cover upload
         if ($request->hasFile('cover')) {

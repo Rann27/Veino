@@ -16,6 +16,7 @@ interface EbookItem {
     summary: string;
     price_coins: number;
     order: number;
+    has_pdf_file: boolean;
     is_in_cart: boolean;
     is_purchased: boolean;
 }
@@ -382,13 +383,15 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                             EPUB
                                                         </button>
                                                         <button
-                                                            onClick={() => downloadPdf(item.id)}
-                                                            className="flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-1.5"
+                                                            onClick={() => item.has_pdf_file && downloadPdf(item.id)}
+                                                            disabled={!item.has_pdf_file}
+                                                            className="flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 disabled:cursor-not-allowed"
                                                             style={{
-                                                                backgroundColor: '#f59e0b',
-                                                                color: 'white',
+                                                                backgroundColor: item.has_pdf_file ? '#f59e0b' : `${currentTheme.foreground}20`,
+                                                                color: item.has_pdf_file ? 'white' : `${currentTheme.foreground}55`,
                                                                 fontFamily: 'Poppins, sans-serif'
                                                             }}
+                                                            title={item.has_pdf_file ? 'Download PDF' : 'PDF not available'}
                                                         >
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

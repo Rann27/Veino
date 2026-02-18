@@ -25,6 +25,7 @@ use App\Http\Controllers\EbookSeriesController;
 use App\Http\Controllers\ChartController;
 use App\Http\Controllers\BookshelfController;
 use App\Http\Controllers\Admin\EbookSeriesController as AdminEbookSeriesController;
+use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Auth;
 
 // Authentication Routes
@@ -76,6 +77,7 @@ Route::post('/logout', function (Illuminate\Http\Request $request) {
 
 // User-facing routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/api/home/latest-updates', [HomeController::class, 'latestUpdates'])->name('home.latest-updates');
 Route::get('/explore', [ExploreController::class, 'index'])->name('explore');
 
 // Advertise page
@@ -83,9 +85,15 @@ Route::get('/advertise', function () {
     return Inertia::render('Advertise');
 })->name('advertise');
 
-// Membership routes
+// Unified Shop page (Coins + Membership)
+Route::get('/shop', [ShopController::class, 'index'])->middleware('auth')->name('shop');
+
+// Backward-compatible redirects for old URLs
+Route::get('/buy-coins', function () { return redirect('/shop?tab=coins'); })->name('buy-coins');
+Route::get('/membership', function () { return redirect('/shop?tab=membership'); })->name('membership.index');
+
+// Membership action routes
 Route::middleware('auth')->group(function () {
-    Route::get('/membership', [MembershipController::class, 'index'])->name('membership.index');
     Route::post('/membership/purchase', [MembershipController::class, 'purchase'])->name('membership.purchase');
     Route::get('/membership/status/{history}', [MembershipController::class, 'status'])->name('membership.status');
     
@@ -95,17 +103,6 @@ Route::middleware('auth')->group(function () {
 
 // Membership webhooks (public)
 Route::post('/membership/webhook/{provider}', [MembershipController::class, 'webhook'])->name('membership.webhook');
-
-// Buy Coins route
-Route::get('/buy-coins', function () {
-    $packages = \App\Models\CoinPackage::where('is_active', true)
-        ->orderBy('coin_amount')
-        ->get();
-    
-    return inertia('BuyCoins', [
-        'packages' => $packages
-    ]);
-})->middleware('auth')->name('buy-coins');
 
 // Search routes
 Route::get('/search', [SearchController::class, 'search'])->name('search');
@@ -253,6 +250,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // Homepage Configuration (Hero & Featured Series)
     Route::get('/misc', [App\Http\Controllers\Admin\MiscController::class, 'index'])->name('misc.index');
     Route::put('/misc', [App\Http\Controllers\Admin\MiscController::class, 'update'])->name('misc.update');
+    Route::post('/misc/upload-banner', [App\Http\Controllers\Admin\MiscController::class, 'uploadBanner'])->name('misc.upload-banner');
+    Route::delete('/misc/delete-banner', [App\Http\Controllers\Admin\MiscController::class, 'deleteBanner'])->name('misc.delete-banner');
     
     // Ebook Series Management
     Route::get('/ebookseries', [AdminEbookSeriesController::class, 'index'])->name('ebookseries.index');

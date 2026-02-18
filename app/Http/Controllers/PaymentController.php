@@ -438,7 +438,7 @@ class PaymentController extends Controller
             
             if (!$pendingPayment) {
                 Log::error('PayPal success: No pending payment session found');
-                return redirect()->route('buy-coins')->with('error', 'Payment session expired. Please try again.');
+                return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Payment session expired. Please try again.');
             }
 
             // Verify the order ID matches
@@ -447,7 +447,7 @@ class PaymentController extends Controller
                     'expected' => $pendingPayment['order_id'],
                     'received' => $token
                 ]);
-                return redirect()->route('buy-coins')->with('error', 'Invalid payment session.');
+                return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Invalid payment session.');
             }
 
             $paypalService = new PayPalService();
@@ -458,7 +458,7 @@ class PaymentController extends Controller
             
             if (!$orderStatus['success']) {
                 Log::error('PayPal: Failed to get order status', ['error' => $orderStatus['error']]);
-                return redirect()->route('buy-coins')->with('error', 'Failed to verify order status.');
+                return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Failed to verify order status.');
             }
             
             Log::info('PayPal order status', ['status' => $orderStatus['data']['status'] ?? 'unknown']);
@@ -471,7 +471,7 @@ class PaymentController extends Controller
                 $coinPackage = CoinPackage::find($pendingPayment['package_id']);
                 if (!$coinPackage) {
                     Log::error('PayPal success: Coin package not found', ['package_id' => $pendingPayment['package_id']]);
-                    return redirect()->route('buy-coins')->with('error', 'Invalid coin package.');
+                    return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Invalid coin package.');
                 }
 
                 $user = Auth::user();
@@ -527,7 +527,8 @@ class PaymentController extends Controller
                     'amount_paid' => $pendingPayment['amount']
                 ]);
 
-                return redirect()->route('buy-coins', [
+                return redirect()->route('shop', [
+                    'tab' => 'coins',
                     'payment' => 'success',
                     'coins' => $coinPackage->coin_amount,
                     'balance' => $newBalance
@@ -547,7 +548,7 @@ class PaymentController extends Controller
 
             if (!$captureResult['success']) {
                 Log::error('PayPal capture failed: ' . $captureResult['error']);
-                return redirect()->route('buy-coins')->with('error', 'Payment verification failed. Please contact support.');
+                return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Payment verification failed. Please contact support.');
             }
 
             Log::info('PayPal capture successful, adding coins to user');
@@ -556,7 +557,7 @@ class PaymentController extends Controller
             $coinPackage = CoinPackage::find($pendingPayment['package_id']);
             if (!$coinPackage) {
                 Log::error('PayPal success: Coin package not found', ['package_id' => $pendingPayment['package_id']]);
-                return redirect()->route('buy-coins')->with('error', 'Invalid coin package.');
+                return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Invalid coin package.');
             }
 
             $user = Auth::user();
@@ -617,7 +618,8 @@ class PaymentController extends Controller
                 'amount_paid' => $pendingPayment['amount']
             ]);
 
-            return redirect()->route('buy-coins', [
+            return redirect()->route('shop', [
+                'tab' => 'coins',
                 'payment' => 'success',
                 'coins' => $coinPackage->coin_amount,
                 'balance' => $newBalance
@@ -644,7 +646,7 @@ class PaymentController extends Controller
                 ]);
             }
             
-            return redirect()->route('buy-coins')->with('error', 
+            return redirect()->route('shop', ['tab' => 'coins'])->with('error', 
                 'Payment processing failed. Please contact support if you were charged.'
             );
         }
@@ -676,7 +678,7 @@ class PaymentController extends Controller
         // Clear pending payment session
         session()->forget('pending_payment');
         
-        return redirect()->route('buy-coins')->with('info', 'Payment was cancelled.');
+        return redirect()->route('shop', ['tab' => 'coins'])->with('info', 'Payment was cancelled.');
     }
 
     /**

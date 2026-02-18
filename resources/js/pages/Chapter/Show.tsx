@@ -220,14 +220,11 @@ function ChapterShowContent({
     };
 
     if (!canAccess && chapter.is_premium) {
-        const SHINY_PURPLE = '#a78bfa';
-        
         return (
-            <UserLayout>
-                <div 
-                    className="min-h-screen pt-20 relative overflow-hidden"
-                    style={{ backgroundColor: currentTheme.background }}
-                >
+            <div 
+                className="min-h-screen pt-20 relative overflow-hidden"
+                style={{ backgroundColor: currentTheme.background }}
+            >
                     {/* Premium Background Effect */}
                     <div className="absolute inset-0 opacity-10">
                         <div 
@@ -332,7 +329,7 @@ function ChapterShowContent({
                             
                             <div className="space-y-4">
                                 <Link
-                                    href="/membership"
+                                    href="/shop?tab=membership"
                                     className="inline-block px-8 py-4 font-bold text-lg rounded-xl transition-all hover:scale-105 hover:shadow-xl"
                                     style={{
                                         background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #e879f9 100%)`,
@@ -355,8 +352,7 @@ function ChapterShowContent({
                             </div>
                         </div>
                     </div>
-                </div>
-            </UserLayout>
+            </div>
         );
     }
 
@@ -438,11 +434,14 @@ function ChapterShowContent({
                                 
                                 {showChapterList && (
                                     <div 
-                                        className="absolute top-full left-1/2 transform -translate-x-1/2 sm:left-0 sm:transform-none mt-1 w-72 sm:w-80 border rounded-lg shadow-lg max-h-96 overflow-y-auto z-10"
+                                        className="absolute top-full left-1/2 transform -translate-x-1/2 sm:left-0 sm:transform-none mt-1 w-72 sm:w-80 border rounded-xl shadow-2xl max-h-96 overflow-y-auto z-10 themed-scrollbar"
                                         style={{
                                             backgroundColor: currentTheme.background,
-                                            borderColor: `${currentTheme.foreground}20`
-                                        }}
+                                            borderColor: `${currentTheme.foreground}15`,
+                                            '--scrollbar-thumb': `${currentTheme.foreground}25`,
+                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
+                                            '--scrollbar-track': `${currentTheme.foreground}06`,
+                                        } as React.CSSProperties}
                                     >
                                         {allChapters.map((ch) => (
                                             <button
@@ -510,24 +509,26 @@ function ChapterShowContent({
                 style={{ backgroundColor: currentTheme.background }}
             >
                 <div 
-                    className="mx-auto px-2 sm:px-6 lg:px-8 py-8 rounded-lg border-2"
+                    className="mx-auto px-4 sm:px-8 lg:px-12 py-10 rounded-2xl"
                     style={{ 
                         maxWidth: `${readerSettings.contentWidth}%`,
                         width: '100%',
-                        borderColor: `${currentTheme.foreground}20`
+                        backgroundColor: `${currentTheme.foreground}03`,
+                        border: `1px solid ${currentTheme.foreground}08`,
+                        boxShadow: `0 4px 24px ${currentTheme.foreground}04`,
                     }}
                 >
                     {/* Chapter Header */}
-                    <div className="mb-8 text-center">
+                    <div className="mb-10 text-center">
                         <h1 
-                            className="text-3xl font-bold mb-2"
+                            className="text-2xl sm:text-3xl font-bold mb-2"
                             style={{ color: currentTheme.foreground }}
                         >
                             {chapter.title}
                         </h1>
                         <Link
                             href={route('series.show', series.slug)}
-                            className="text-lg transition-colors hover:opacity-70"
+                            className="text-base sm:text-lg transition-colors hover:opacity-70"
                             style={{ color: SHINY_PURPLE }}
                         >
                             {series.title}
@@ -547,6 +548,10 @@ function ChapterShowContent({
                                 </span>
                             </div>
                         )}
+                        <div 
+                            className="mt-6 mx-auto w-16 h-px"
+                            style={{ backgroundColor: `${currentTheme.foreground}15` }}
+                        />
                     </div>
 
                     {/* Chapter Content */}
@@ -682,17 +687,18 @@ function ChapterShowContent({
 
                     {/* Chapter Navigation Footer */}
                     <div 
-                        className="mt-12 pt-8 border-t"
-                        style={{ borderColor: `${currentTheme.foreground}20` }}
+                        className="mt-14 pt-8"
+                        style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}
                     >
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                             {prevChapter ? (
                                 <Link
                                     href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-lg transition-colors text-center"
+                                    className="w-full sm:w-auto px-6 py-3 rounded-xl transition-all hover:opacity-80 text-center text-sm font-medium"
                                     style={{
-                                        backgroundColor: `${currentTheme.foreground}10`,
-                                        color: currentTheme.foreground
+                                        backgroundColor: `${currentTheme.foreground}08`,
+                                        color: currentTheme.foreground,
+                                        border: `1px solid ${currentTheme.foreground}10`,
                                     }}
                                 >
                                     ← Previous Chapter
@@ -703,10 +709,10 @@ function ChapterShowContent({
                             
                             <Link
                                 href={route('series.show', series.slug)}
-                                className="px-6 py-3 border rounded-lg transition-colors"
+                                className="px-6 py-3 rounded-xl transition-all hover:opacity-80 text-sm font-medium"
                                 style={{
-                                    borderColor: `${currentTheme.foreground}30`,
-                                    color: currentTheme.foreground
+                                    border: `1px solid ${currentTheme.foreground}15`,
+                                    color: `${currentTheme.foreground}80`,
                                 }}
                             >
                                 Back to Series
@@ -715,10 +721,10 @@ function ChapterShowContent({
                             {nextChapter ? (
                                 <Link
                                     href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-lg transition-colors text-center"
+                                    className="w-full sm:w-auto px-6 py-3 rounded-xl transition-all hover:opacity-90 hover:shadow-lg text-center text-sm font-semibold"
                                     style={{
                                         backgroundColor: currentTheme.foreground,
-                                        color: currentTheme.background
+                                        color: currentTheme.background,
                                     }}
                                 >
                                     Next Chapter →
@@ -729,16 +735,16 @@ function ChapterShowContent({
                         </div>
 
                         {/* Reactions Section */}
-                        <div className="mt-8">
+                        <div className="mt-10">
                             <div 
-                                className="rounded-lg border p-8 text-center"
+                                className="rounded-2xl p-8 text-center"
                                 style={{
-                                    backgroundColor: currentTheme.background,
-                                    borderColor: `${currentTheme.foreground}20`
+                                    backgroundColor: `${currentTheme.foreground}04`,
+                                    border: `1px solid ${currentTheme.foreground}08`,
                                 }}
                             >
                                 <h3 
-                                    className="text-2xl font-bold mb-6"
+                                    className="text-xl sm:text-2xl font-bold mb-6"
                                     style={{ color: currentTheme.foreground }}
                                 >
                                     How was this chapter?

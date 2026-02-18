@@ -15,6 +15,7 @@ interface Item {
     price_coins: number;
     order: number;
     has_file: boolean;
+    has_pdf_file: boolean;
 }
 
 interface Series {
@@ -132,7 +133,7 @@ export default function Edit({ series, items, genres }: Props) {
             });
             setItemCoverPreview(item.cover_url);
             setHasExistingFile(item.has_file);
-            setHasExistingPdfFile((item as any).has_pdf_file || false);
+            setHasExistingPdfFile(item.has_pdf_file || false);
             setExistingFileName(item.has_file ? item.title : null);
         } else {
             setEditingItemId(null);
@@ -552,7 +553,7 @@ export default function Edit({ series, items, genres }: Props) {
                                 {/* PDF File */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                        PDF File (.pdf) {!editingItemId && '*'}
+                                        PDF File (.pdf) (Optional)
                                     </label>
                                     
                                     {/* Existing PDF file indicator */}
@@ -572,7 +573,6 @@ export default function Edit({ series, items, genres }: Props) {
                                         accept=".pdf"
                                         onChange={(e) => setItemData(prev => ({ ...prev, pdf_file: e.target.files?.[0] || null }))}
                                         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                                        required={!editingItemId}
                                     />
                                     
                                     {hasExistingPdfFile && (

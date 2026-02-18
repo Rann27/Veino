@@ -42,7 +42,7 @@ class CryptomusService
                 'amount' => number_format($amount, 2, '.', ''),
                 'currency' => $currency,
                 'order_id' => $orderId,
-                'url_return' => $callbackUrl ?? route('membership.index'),
+                'url_return' => $callbackUrl ?? route('shop', ['tab' => 'membership']),
                 'url_callback' => route('membership.webhook', ['provider' => 'cryptomus']),
                 'is_payment_multiple' => false,
                 'lifetime' => 3600, // 1 hour

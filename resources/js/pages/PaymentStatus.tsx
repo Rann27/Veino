@@ -462,7 +462,7 @@ function PaymentStatusInner({ purchase, hasRefreshed, onContinuePayment, showCon
                             
                             {(purchase.status === 'failed' || purchase.status === 'cancelled') && (
                                 <button
-                                    onClick={() => router.visit('/buy-coins')}
+                                    onClick={() => router.visit('/shop?tab=coins')}
                                     className="px-6 py-3 rounded-lg font-semibold transition-all"
                                     style={{
                                         backgroundColor: COIN_COLOR,

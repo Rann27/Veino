@@ -243,7 +243,7 @@ function DashboardContent({ user, membershipStatus, coinBalance, transactions = 
                                     >
                                         <span>Free Member</span>
                                         <Link 
-                                            href="/membership"
+                                            href="/shop?tab=membership"
                                             className="text-sm font-semibold"
                                             style={{ color: SHINY_PURPLE }}
                                         >
@@ -581,7 +581,7 @@ function DashboardContent({ user, membershipStatus, coinBalance, transactions = 
                                         {activeTab === 'ebooks' && 'No ebook purchases yet'}
                                     </p>
                                     <Link
-                                        href="/buy-coins"
+                                        href="/shop?tab=coins"
                                         className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all hover:shadow-lg"
                                         style={{
                                             backgroundColor: SHINY_PURPLE,

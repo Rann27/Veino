@@ -777,7 +777,7 @@ function MembershipInner({
                                             Need ¢{(selectedPkg.coin_price - userCoins).toLocaleString()} more
                                         </p>
                                         <a
-                                            href="/buy-coins"
+                                            href="/shop?tab=coins"
                                             className="inline-block px-4 py-2 rounded-lg text-sm font-semibold transition-all"
                                             style={{
                                                 backgroundColor: '#f59e0b',

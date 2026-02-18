@@ -231,7 +231,7 @@ class MembershipController extends Controller
     {
         try {
             $returnUrl = route('membership.status', ['history' => $history->id]);
-            $cancelUrl = route('membership.index');
+            $cancelUrl = route('shop', ['tab' => 'membership']);
 
             Log::info('Creating payment order', [
                 'method' => $method,

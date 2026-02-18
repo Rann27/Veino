@@ -7,6 +7,7 @@ interface MembershipPackage {
   name: string;
   gimmick_price: number | null;
   price_usd: number;
+  coin_price: number;
   discount_percentage: number;
   is_active: boolean;
 }
@@ -39,7 +40,7 @@ export default function PaymentIndex({ membershipPackages, coinPackages, payment
   const [packageFormData, setPackageFormData] = useState({
     name: '',
     gimmick_price: '',
-    price_usd: '',
+    coin_price: '',
     is_active: true,
   });
 
@@ -57,7 +58,7 @@ export default function PaymentIndex({ membershipPackages, coinPackages, payment
     setPackageFormData({
       name: pkg.name,
       gimmick_price: pkg.gimmick_price?.toString() || '',
-      price_usd: pkg.price_usd.toString(),
+      coin_price: pkg.coin_price.toString(),
       is_active: pkg.is_active,
     });
   };
@@ -68,12 +69,12 @@ export default function PaymentIndex({ membershipPackages, coinPackages, payment
       router.put(`/admin/membership-packages/${editingPackage.id}`, {
         name: packageFormData.name,
         gimmick_price: packageFormData.gimmick_price ? parseFloat(packageFormData.gimmick_price) : null,
-        price_usd: parseFloat(packageFormData.price_usd),
+        coin_price: parseInt(packageFormData.coin_price),
         is_active: packageFormData.is_active,
       }, {
         onSuccess: () => {
           setEditingPackage(null);
-          setPackageFormData({ name: '', gimmick_price: '', price_usd: '', is_active: true });
+          setPackageFormData({ name: '', gimmick_price: '', coin_price: '', is_active: true });
         }
       });
     }
@@ -121,11 +122,11 @@ export default function PaymentIndex({ membershipPackages, coinPackages, payment
             {membershipPackages.map((pkg) => {
               // Convert to numbers for calculation
               const gimmickPrice = pkg.gimmick_price ? parseFloat(pkg.gimmick_price.toString()) : 0;
-              const realPrice = parseFloat(pkg.price_usd.toString());
+              const coinPrice = parseInt(pkg.coin_price.toString());
               
               // Calculate discount percentage
-              const discountPercentage = gimmickPrice && gimmickPrice > realPrice
-                ? Math.round(((gimmickPrice - realPrice) / gimmickPrice) * 100)
+              const discountPercentage = gimmickPrice && gimmickPrice > coinPrice
+                ? Math.round(((gimmickPrice - coinPrice) / gimmickPrice) * 100)
                 : 0;
 
               return (
@@ -149,16 +150,17 @@ export default function PaymentIndex({ membershipPackages, coinPackages, payment
                     
                     {/* Price Display */}
                     <div className="mt-2">
-                      {gimmickPrice > 0 && gimmickPrice > realPrice && (
+                      {gimmickPrice > 0 && gimmickPrice > coinPrice && (
                         <div className="text-gray-500 line-through text-sm">
-                          ${gimmickPrice.toFixed(2)}
+                          ¢{gimmickPrice.toLocaleString()}
                         </div>
                       )}
                       <div className="mt-1">
                         <span className="text-2xl font-bold text-purple-600">
-                          ${realPrice.toFixed(2)}
+                          ¢{coinPrice.toLocaleString()}
                         </span>
                       </div>
+                      <div className="text-xs text-gray-500 mt-1">coins</div>
                     </div>
 
                     <div className="mt-3">
@@ -555,44 +557,44 @@ export default function PaymentIndex({ membershipPackages, coinPackages, payment
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Gimmick Price (USD)</label>
+                  <label className="block text-sm font-medium text-gray-700">Gimmick Price (Coins)</label>
                   <input
                     type="number"
                     min="0"
-                    step="0.01"
+                    step="1"
                     value={packageFormData.gimmick_price}
                     onChange={(e) => setPackageFormData(prev => ({ ...prev, gimmick_price: e.target.value }))}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="10.00"
+                    placeholder="1000"
                   />
                   <p className="mt-1 text-xs text-gray-500">Original price (strikethrough display) - Optional</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Real Price (USD)</label>
+                  <label className="block text-sm font-medium text-gray-700">Real Price (Coins)</label>
                   <input
                     type="number"
-                    min="0.01"
-                    step="0.01"
-                    value={packageFormData.price_usd}
-                    onChange={(e) => setPackageFormData(prev => ({ ...prev, price_usd: e.target.value }))}
+                    min="1"
+                    step="1"
+                    value={packageFormData.coin_price}
+                    onChange={(e) => setPackageFormData(prev => ({ ...prev, coin_price: e.target.value }))}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    placeholder="7.95"
+                    placeholder="549"
                     required
                   />
-                  <p className="mt-1 text-xs text-gray-500">Actual price charged to gateway</p>
+                  <p className="mt-1 text-xs text-gray-500">Actual coin price users will pay</p>
                 </div>
 
                 {/* Auto-calculated Discount Preview */}
-                {packageFormData.gimmick_price && packageFormData.price_usd && 
-                 parseFloat(packageFormData.gimmick_price) > parseFloat(packageFormData.price_usd) && (
+                {packageFormData.gimmick_price && packageFormData.coin_price && 
+                 parseFloat(packageFormData.gimmick_price) > parseFloat(packageFormData.coin_price) && (
                   <div className="bg-purple-50 border border-purple-200 rounded-md p-3">
                     <div className="flex items-center">
                       <svg className="w-4 h-4 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                       <span className="text-sm font-medium text-purple-800">
-                        Discount: {Math.round(((parseFloat(packageFormData.gimmick_price) - parseFloat(packageFormData.price_usd)) / parseFloat(packageFormData.gimmick_price)) * 100)}% 
+                        Discount: {Math.round(((parseFloat(packageFormData.gimmick_price) - parseFloat(packageFormData.coin_price)) / parseFloat(packageFormData.gimmick_price)) * 100)}% 
                         (will be auto-calculated)
                       </span>
                     </div>

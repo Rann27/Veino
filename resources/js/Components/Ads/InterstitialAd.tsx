@@ -92,7 +92,7 @@ const InterstitialAd: React.FC<InterstitialAdProps> = ({ chapterId, onClose }) =
 
     const handleRemoveAds = () => {
         // Redirect to membership page
-        router.visit('/membership');
+        router.visit('/shop?tab=membership');
     };
 
     const handleAdClick = () => {

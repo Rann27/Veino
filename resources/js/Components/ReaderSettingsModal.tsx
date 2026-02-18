@@ -125,57 +125,71 @@ export default function ReaderSettingsModal({
             {/* Floating Modal */}
             <div 
                 ref={modalRef}
-                className="absolute rounded-xl shadow-2xl w-80 max-h-96 overflow-y-auto pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200"
+                className="absolute rounded-2xl shadow-2xl w-80 max-h-[32rem] overflow-y-auto pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200 themed-scrollbar"
                 style={{
                     top: `${position.top}px`,
                     left: `${position.left}px`,
                     backgroundColor: currentTheme.background,
-                    borderColor: `${currentTheme.foreground}20`,
-                    border: `1px solid ${currentTheme.foreground}20`
-                }}
+                    border: `1px solid ${currentTheme.foreground}12`,
+                    boxShadow: `0 20px 60px ${currentTheme.foreground}15`,
+                    '--scrollbar-thumb': `${currentTheme.foreground}25`,
+                    '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
+                    '--scrollbar-track': `${currentTheme.foreground}06`,
+                } as React.CSSProperties}
             >
                 {/* Header */}
                 <div 
-                    className="flex items-center justify-between p-4 border-b"
-                    style={{ borderColor: `${currentTheme.foreground}20` }}
+                    className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 rounded-t-2xl"
+                    style={{ 
+                        borderBottom: `1px solid ${currentTheme.foreground}10`,
+                        backgroundColor: currentTheme.background,
+                    }}
                 >
                     <h2 
-                        className="text-lg font-semibold flex items-center"
+                        className="text-base font-bold flex items-center gap-2.5"
                         style={{ color: currentTheme.foreground }}
                     >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
+                        <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: `${currentTheme.foreground}08` }}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </div>
                         Reader Settings
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-1 transition-colors hover:opacity-70"
-                        style={{ color: `${currentTheme.foreground}60` }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center transition-colors hover:opacity-70"
+                        style={{ 
+                            color: `${currentTheme.foreground}50`,
+                            backgroundColor: `${currentTheme.foreground}06`,
+                        }}
                     >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                <div className="p-4 space-y-4">
+                <div className="px-5 py-4 space-y-5">
                     {/* Font Family */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
                             Font Family
                         </label>
                         <select
                             value={settings.fontFamily}
                             onChange={(e) => handleSettingChange('fontFamily', e.target.value)}
-                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 rounded-lg focus:ring-2 transition-colors text-sm"
                             style={{
-                                backgroundColor: currentTheme.background,
-                                borderColor: `${currentTheme.foreground}30`,
+                                backgroundColor: `${currentTheme.foreground}06`,
+                                border: `1px solid ${currentTheme.foreground}12`,
                                 color: currentTheme.foreground
                             }}
                         >
@@ -186,11 +200,12 @@ export default function ReaderSettingsModal({
                             ))}
                         </select>
                         <div 
-                            className="mt-2 p-2 rounded text-sm"
+                            className="mt-2 p-3 rounded-lg text-sm leading-relaxed"
                             style={{ 
-                                backgroundColor: `${currentTheme.foreground}10`,
-                                color: `${currentTheme.foreground}80`,
-                                fontFamily: settings.fontFamily 
+                                backgroundColor: `${currentTheme.foreground}05`,
+                                color: `${currentTheme.foreground}70`,
+                                fontFamily: settings.fontFamily,
+                                border: `1px solid ${currentTheme.foreground}06`,
                             }}
                         >
                             The quick brown fox jumps over the lazy dog. This is a preview of the selected font.
@@ -200,10 +215,11 @@ export default function ReaderSettingsModal({
                     {/* Font Size */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
-                            Font Size: {settings.fontSize}px
+                            <span>Font Size</span>
+                            <span className="text-xs font-medium normal-case tracking-normal" style={{ color: `${currentTheme.foreground}90` }}>{settings.fontSize}px</span>
                         </label>
                         <div className="space-y-2">
                             <input
@@ -230,10 +246,11 @@ export default function ReaderSettingsModal({
                     {/* Line Height */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
-                            Line Spacing: {settings.lineHeight}
+                            <span>Line Spacing</span>
+                            <span className="text-xs font-medium normal-case tracking-normal" style={{ color: `${currentTheme.foreground}90` }}>{settings.lineHeight}</span>
                         </label>
                         <div className="space-y-2">
                             <input
@@ -260,10 +277,11 @@ export default function ReaderSettingsModal({
                     {/* Content Width */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
-                            Content Width: {settings.contentWidth}%
+                            <span>Content Width</span>
+                            <span className="text-xs font-medium normal-case tracking-normal" style={{ color: `${currentTheme.foreground}90` }}>{settings.contentWidth}%</span>
                         </label>
                         <div className="space-y-2">
                             <input
@@ -290,10 +308,11 @@ export default function ReaderSettingsModal({
                     {/* Paragraph Spacing */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
-                            Paragraph Spacing: {settings.paragraphSpacing}em
+                            <span>Paragraph Spacing</span>
+                            <span className="text-xs font-medium normal-case tracking-normal" style={{ color: `${currentTheme.foreground}90` }}>{settings.paragraphSpacing}em</span>
                         </label>
                         <div className="space-y-2">
                             <input
@@ -320,8 +339,8 @@ export default function ReaderSettingsModal({
                     {/* Text Alignment */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
                             Text Alignment
                         </label>
@@ -330,17 +349,17 @@ export default function ReaderSettingsModal({
                                 <button
                                     key={align}
                                     onClick={() => handleSettingChange('textAlign', align)}
-                                    className={`px-3 py-2 text-sm rounded-lg border transition-colors ${
-                                        settings.textAlign === align ? 'font-medium' : ''
+                                    className={`px-3 py-2 text-xs font-medium rounded-lg transition-all ${
+                                        settings.textAlign === align ? '' : 'hover:opacity-80'
                                     }`}
                                     style={{
                                         backgroundColor: settings.textAlign === align 
                                             ? currentTheme.foreground 
-                                            : currentTheme.background,
+                                            : `${currentTheme.foreground}06`,
                                         color: settings.textAlign === align 
                                             ? currentTheme.background 
-                                            : currentTheme.foreground,
-                                        borderColor: `${currentTheme.foreground}30`
+                                            : `${currentTheme.foreground}80`,
+                                        border: `1px solid ${settings.textAlign === align ? currentTheme.foreground : `${currentTheme.foreground}12`}`,
                                     }}
                                 >
                                     {align.charAt(0).toUpperCase() + align.slice(1)}
@@ -352,10 +371,11 @@ export default function ReaderSettingsModal({
                     {/* Text Indent */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
-                            Text Indent: {settings.textIndent}em
+                            <span>Text Indent</span>
+                            <span className="text-xs font-medium normal-case tracking-normal" style={{ color: `${currentTheme.foreground}90` }}>{settings.textIndent}em</span>
                         </label>
                         <div className="space-y-2">
                             <input
@@ -382,8 +402,8 @@ export default function ReaderSettingsModal({
                     {/* Hyphenation Toggle */}
                     <div>
                         <label 
-                            className="flex items-center justify-between text-sm font-medium"
-                            style={{ color: currentTheme.foreground }}
+                            className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
                             <span>Word Hyphenation</span>
                             <button
@@ -415,17 +435,17 @@ export default function ReaderSettingsModal({
                     {/* Theme Selector */}
                     <div>
                         <label 
-                            className="block text-sm font-medium mb-2"
-                            style={{ color: currentTheme.foreground }}
+                            className="block text-xs font-semibold uppercase tracking-wider mb-2"
+                            style={{ color: `${currentTheme.foreground}60` }}
                         >
                             Theme
                         </label>
                         <button
                             onClick={() => setShowThemeSelector(!showThemeSelector)}
-                            className="w-full p-3 border rounded-lg hover:opacity-80 transition-opacity flex items-center justify-between"
+                            className="w-full p-3 rounded-lg hover:opacity-80 transition-opacity flex items-center justify-between text-sm"
                             style={{
-                                backgroundColor: currentTheme.background,
-                                borderColor: `${currentTheme.foreground}30`,
+                                backgroundColor: `${currentTheme.foreground}06`,
+                                border: `1px solid ${currentTheme.foreground}12`,
                                 color: currentTheme.foreground
                             }}
                         >
@@ -446,10 +466,10 @@ export default function ReaderSettingsModal({
 
                         {showThemeSelector && (
                             <div 
-                                className="mt-2 p-3 border rounded-lg"
+                                className="mt-2 p-2 rounded-lg"
                                 style={{
-                                    backgroundColor: `${currentTheme.foreground}05`,
-                                    borderColor: `${currentTheme.foreground}20`
+                                    backgroundColor: `${currentTheme.foreground}04`,
+                                    border: `1px solid ${currentTheme.foreground}08`,
                                 }}
                             >
                                 <div className="grid grid-cols-1 gap-2">
@@ -500,19 +520,26 @@ export default function ReaderSettingsModal({
 
                     {/* Action Buttons */}
                     <div 
-                        className="flex justify-between pt-3 border-t"
-                        style={{ borderColor: `${currentTheme.foreground}20` }}
+                        className="flex justify-between items-center pt-4 mt-1"
+                        style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}
                     >
                         <button
                             onClick={resetToDefaults}
-                            className="px-4 py-2 text-sm transition-opacity hover:opacity-70"
-                            style={{ color: `${currentTheme.foreground}70` }}
+                            className="px-3 py-1.5 text-xs transition-all hover:opacity-70 rounded-lg"
+                            style={{ 
+                                color: `${currentTheme.foreground}60`,
+                                backgroundColor: `${currentTheme.foreground}05`,
+                            }}
                         >
-                            Reset to Defaults
+                            Reset Defaults
                         </button>
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                            className="px-5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                            style={{
+                                backgroundColor: currentTheme.foreground,
+                                color: currentTheme.background,
+                            }}
                         >
                             Done
                         </button>
@@ -523,20 +550,25 @@ export default function ReaderSettingsModal({
             <style>{`
                 .slider::-webkit-slider-thumb {
                     appearance: none;
-                    width: 16px;
-                    height: 16px;
-                    background: #3b82f6;
+                    width: 14px;
+                    height: 14px;
+                    background: ${currentTheme.foreground};
                     border-radius: 50%;
                     cursor: pointer;
+                    box-shadow: 0 1px 4px ${currentTheme.foreground}30;
+                    transition: transform 0.15s ease;
                 }
-                
+                .slider::-webkit-slider-thumb:hover {
+                    transform: scale(1.15);
+                }
                 .slider::-moz-range-thumb {
-                    width: 16px;
-                    height: 16px;
-                    background: #3b82f6;
+                    width: 14px;
+                    height: 14px;
+                    background: ${currentTheme.foreground};
                     border-radius: 50%;
                     cursor: pointer;
                     border: none;
+                    box-shadow: 0 1px 4px ${currentTheme.foreground}30;
                 }
             `}</style>
         </div>

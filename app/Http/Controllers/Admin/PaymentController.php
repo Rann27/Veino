@@ -35,14 +35,14 @@ class PaymentController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'gimmick_price' => 'nullable|numeric|min:0',
-            'price_usd' => 'required|numeric|min:0.01',
+            'gimmick_price' => 'nullable|integer|min:0',
+            'coin_price' => 'required|integer|min:1',
             'is_active' => 'boolean',
         ]);
 
         // Auto-calculate discount percentage if gimmick_price is provided
-        if (!empty($validated['gimmick_price']) && $validated['gimmick_price'] > $validated['price_usd']) {
-            $validated['discount_percentage'] = round((($validated['gimmick_price'] - $validated['price_usd']) / $validated['gimmick_price']) * 100);
+        if (!empty($validated['gimmick_price']) && $validated['gimmick_price'] > $validated['coin_price']) {
+            $validated['discount_percentage'] = round((($validated['gimmick_price'] - $validated['coin_price']) / $validated['gimmick_price']) * 100);
         } else {
             $validated['discount_percentage'] = 0;
         }

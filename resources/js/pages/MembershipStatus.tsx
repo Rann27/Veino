@@ -295,7 +295,7 @@ function MembershipStatusInner({ history, hasRefreshed }: any) {
                                     // Redirect to home with premium activated parameter to show congratulations modal
                                     window.location.href = '/?premium=activated';
                                 } else {
-                                    router.visit('/membership');
+                                    router.visit('/shop?tab=membership');
                                 }
                             }}
                             className="w-full py-3 rounded-lg font-semibold transition-all duration-300 hover:transform hover:scale-105 hover:shadow-lg"

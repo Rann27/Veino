@@ -68,7 +68,7 @@ class ExploreController extends Controller
             }
         }
 
-        $series = $query->paginate(12)->withQueryString();
+        $series = $query->paginate(18)->withQueryString();
 
         // Get filter options
         $genres = Genre::orderBy('name')->get();

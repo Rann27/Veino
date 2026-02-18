@@ -88,7 +88,7 @@ class UserChapterController extends Controller
         }
 
         // Redirect to membership page
-        return redirect()->route('membership.index')
+        return redirect()->route('shop', ['tab' => 'membership'])
             ->with('info', 'Premium chapters are now unlocked with Premium Membership. Get unlimited access to all premium content!');
     }
 }
