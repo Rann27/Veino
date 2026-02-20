@@ -1,6 +1,22 @@
-import React, { useState, FormEvent } from 'react';
+﻿import React, { useState, FormEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { useTheme } from '@/Contexts/ThemeContext';
+
+//  colour helpers 
+function hexToRgb(hex: string) {
+    const h = hex.replace('#', '');
+    const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function isLight(hex: string) {
+    const { r, g, b } = hexToRgb(hex);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 128;
+}
+function wa(hex: string, a: number) {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r},${g},${b},${a})`;
+}
 
 interface Genre {
     id: number;
@@ -11,7 +27,37 @@ interface Props {
     genres: Genre[];
 }
 
-export default function Create({ genres }: Props) {
+function CreateContent({ genres }: Props) {
+    const { currentTheme } = useTheme();
+    const light    = isLight(currentTheme.background);
+    const fg       = currentTheme.foreground;
+    const muted    = wa(fg, 0.45);
+    const border   = wa(fg, 0.12);
+    const cardBg   = light ? wa(fg, 0.03) : wa(fg, 0.06);
+    const inputBg  = light ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
+    const accent   = light ? '#b45309' : '#fbbf24';
+
+    //  themed helpers 
+    const TLabel = ({ children }: { children: React.ReactNode }) => (
+        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: fg, marginBottom: '0.5rem' }}>
+            {children}
+        </label>
+    );
+
+    const inputStyle = (hasError?: boolean): React.CSSProperties => ({
+        width: '100%',
+        padding: '0.5rem 1rem',
+        borderRadius: '0.5rem',
+        border: `1px solid ${hasError ? '#ef4444' : border}`,
+        background: inputBg,
+        color: fg,
+        outline: 'none',
+        boxSizing: 'border-box',
+        fontFamily: 'inherit',
+        fontSize: '0.875rem',
+    });
+
+    //  state 
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -22,7 +68,7 @@ export default function Create({ genres }: Props) {
         synopsis: '',
         author: '',
         artist: '',
-        genre_ids: [] as number[]
+        genre_ids: [] as number[],
     });
 
     const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -40,7 +86,7 @@ export default function Create({ genres }: Props) {
             ...prev,
             genre_ids: prev.genre_ids.includes(genreId)
                 ? prev.genre_ids.filter(id => id !== genreId)
-                : [...prev.genre_ids, genreId]
+                : [...prev.genre_ids, genreId],
         }));
     };
 
@@ -59,144 +105,128 @@ export default function Create({ genres }: Props) {
         formData.genre_ids.forEach(id => data.append('genre_ids[]', id.toString()));
 
         router.post(route('admin.ebookseries.store'), data, {
-            onError: (errors) => {
-                setErrors(errors);
-                setSubmitting(false);
-            },
-            onFinish: () => {
-                setSubmitting(false);
-            }
+            onError: (errors) => { setErrors(errors); setSubmitting(false); },
+            onFinish: () => { setSubmitting(false); },
         });
     };
 
     return (
-        <AdminLayout>
-            <Head title="Create Ebook Series" />
+        <div style={{ color: fg, padding: '2rem 1rem', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
 
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">
+                <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: fg, marginBottom: '2rem' }}>
                     Create New Ebook Series
                 </h1>
 
-                <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg border border-gray-200">
+                <form
+                    onSubmit={handleSubmit}
+                    style={{
+                        background: cardBg,
+                        border: `1px solid ${border}`,
+                        borderRadius: '0.75rem',
+                        padding: '1.75rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1.5rem',
+                    }}
+                >
                     {/* Title */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Title *
-                        </label>
+                        <TLabel>Title *</TLabel>
                         <input
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                                errors.title ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                            style={inputStyle(!!errors.title)}
                             required
                         />
-                        {errors.title && (
-                            <p className="text-red-500 text-sm mt-1">{errors.title}</p>
-                        )}
+                        {errors.title && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{errors.title}</p>}
                     </div>
 
                     {/* Alternative Title */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Alternative Title
-                        </label>
+                        <TLabel>Alternative Title</TLabel>
                         <input
                             type="text"
                             value={formData.alternative_title}
                             onChange={(e) => setFormData(prev => ({ ...prev, alternative_title: e.target.value }))}
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            style={inputStyle()}
                         />
                     </div>
 
                     {/* Cover */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Cover Image *
-                        </label>
+                        <TLabel>Cover Image *</TLabel>
                         <input
                             type="file"
                             accept="image/*"
                             onChange={handleCoverChange}
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                                errors.cover ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                            style={inputStyle(!!errors.cover)}
                             required
                         />
                         {coverPreview && (
-                            <div className="mt-2">
-                                <img src={coverPreview} alt="Cover preview" className="w-32 rounded-lg" />
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <img src={coverPreview} alt="Cover preview" style={{ width: '8rem', borderRadius: '0.5rem' }} />
                             </div>
                         )}
-                        {errors.cover && (
-                            <p className="text-red-500 text-sm mt-1">{errors.cover}</p>
-                        )}
+                        {errors.cover && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{errors.cover}</p>}
                     </div>
 
                     {/* Synopsis */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Synopsis *
-                        </label>
+                        <TLabel>Synopsis *</TLabel>
                         <textarea
                             value={formData.synopsis}
                             onChange={(e) => setFormData(prev => ({ ...prev, synopsis: e.target.value }))}
                             rows={6}
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                                errors.synopsis ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none`}
+                            style={{ ...inputStyle(!!errors.synopsis), resize: 'none' }}
                             required
                         />
-                        {errors.synopsis && (
-                            <p className="text-red-500 text-sm mt-1">{errors.synopsis}</p>
-                        )}
+                        {errors.synopsis && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{errors.synopsis}</p>}
                     </div>
 
                     {/* Author & Artist */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                Author
-                            </label>
+                            <TLabel>Author</TLabel>
                             <input
                                 type="text"
                                 value={formData.author}
                                 onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                style={inputStyle()}
                             />
                         </div>
-
                         <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                Artist
-                            </label>
+                            <TLabel>Artist</TLabel>
                             <input
                                 type="text"
                                 value={formData.artist}
                                 onChange={(e) => setFormData(prev => ({ ...prev, artist: e.target.value }))}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                style={inputStyle()}
                             />
                         </div>
                     </div>
 
                     {/* Genres */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Genres
-                        </label>
-                        <div className="flex flex-wrap gap-2">
+                        <TLabel>Genres</TLabel>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                             {genres.map((genre) => (
                                 <button
                                     key={genre.id}
                                     type="button"
                                     onClick={() => toggleGenre(genre.id)}
-                                    className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                                        formData.genre_ids.includes(genre.id)
-                                            ? 'bg-amber-500 text-white'
-                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                    }`}
+                                    style={{
+                                        padding: '0.375rem 1rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.875rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s',
+                                        border: `1px solid ${formData.genre_ids.includes(genre.id) ? accent : border}`,
+                                        background: formData.genre_ids.includes(genre.id) ? accent : wa(fg, 0.05),
+                                        color: formData.genre_ids.includes(genre.id) ? (light ? '#fff' : '#000') : fg,
+                                    }}
                                 >
                                     {genre.name}
                                 </button>
@@ -205,24 +235,54 @@ export default function Create({ genres }: Props) {
                     </div>
 
                     {/* Submit */}
-                    <div className="flex gap-4 pt-4">
+                    <div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem' }}>
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg font-semibold transition disabled:opacity-50"
+                            style={{
+                                background: accent,
+                                color: light ? '#fff' : '#000',
+                                border: 'none',
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 600,
+                                cursor: submitting ? 'not-allowed' : 'pointer',
+                                opacity: submitting ? 0.5 : 1,
+                                fontSize: '0.9375rem',
+                            }}
                         >
                             {submitting ? 'Creating...' : 'Create Series'}
                         </button>
 
                         <a
                             href={route('admin.ebookseries.index')}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-3 rounded-lg font-semibold transition inline-block"
+                            style={{
+                                background: wa(fg, 0.07),
+                                color: fg,
+                                border: `1px solid ${border}`,
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                display: 'inline-block',
+                                fontSize: '0.9375rem',
+                            }}
                         >
                             Cancel
                         </a>
                     </div>
                 </form>
+
             </div>
+        </div>
+    );
+}
+
+export default function Create({ genres }: Props) {
+    return (
+        <AdminLayout title="Create Ebook Series">
+            <Head title="Create Ebook Series" />
+            <CreateContent genres={genres} />
         </AdminLayout>
     );
 }

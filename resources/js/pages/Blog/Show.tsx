@@ -104,6 +104,76 @@ function BlogShowContent({ blog }: Props) {
                                 .prose a:hover {
                                     opacity: 0.7;
                                 }
+                                /* Image rendering */
+                                .prose img {
+                                    max-width: 100%;
+                                    height: auto;
+                                    border-radius: 0.5rem;
+                                    margin: 1.25rem auto;
+                                    display: block;
+                                    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+                                }
+                                .prose figure {
+                                    margin: 1.5rem 0;
+                                    text-align: center;
+                                }
+                                .prose figcaption {
+                                    font-size: 0.8125rem;
+                                    opacity: 0.6;
+                                    margin-top: 0.5rem;
+                                    font-style: italic;
+                                }
+                                /* Side-image layout from CKEditor */
+                                .prose .image-style-side {
+                                    float: right;
+                                    margin-left: 1.5rem;
+                                    margin-bottom: 1rem;
+                                    max-width: 50%;
+                                }
+                                .prose .image-style-side img {
+                                    margin: 0;
+                                }
+                                .prose .image-style-inline img {
+                                    display: inline;
+                                    margin: 0 0.25rem;
+                                    vertical-align: middle;
+                                    border-radius: 0.25rem;
+                                }
+                                /* Clearfix for float images */
+                                .prose::after {
+                                    content: '';
+                                    display: table;
+                                    clear: both;
+                                }
+                                /* Headings */
+                                .prose h1, .prose h2, .prose h3, .prose h4 {
+                                    color: ${currentTheme.foreground};
+                                    font-weight: 700;
+                                    margin-top: 1.5rem;
+                                    margin-bottom: 0.75rem;
+                                }
+                                /* Blockquote */
+                                .prose blockquote {
+                                    border-left: 4px solid ${currentTheme.foreground}30;
+                                    padding-left: 1rem;
+                                    margin-left: 0;
+                                    font-style: italic;
+                                    opacity: 0.75;
+                                }
+                                /* Code */
+                                .prose code {
+                                    background: ${currentTheme.foreground}12;
+                                    padding: 0.125em 0.375em;
+                                    border-radius: 0.25em;
+                                    font-size: 0.875em;
+                                    font-family: 'Courier New', monospace;
+                                }
+                                .prose pre {
+                                    background: ${currentTheme.foreground}10;
+                                    padding: 1rem;
+                                    border-radius: 0.5rem;
+                                    overflow-x: auto;
+                                }
                             `}</style>
                             <div dangerouslySetInnerHTML={{ __html: blog.content }} />
                         </div>

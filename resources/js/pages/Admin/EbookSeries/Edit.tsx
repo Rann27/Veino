@@ -1,11 +1,24 @@
-import React, { useState, FormEvent } from 'react';
+﻿import React, { useState, FormEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { useTheme } from '@/Contexts/ThemeContext';
 
-interface Genre {
-    id: number;
-    name: string;
+//  colour helpers 
+function hexToRgb(hex: string) {
+    const h = hex.replace('#', '');
+    const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
+function isLight(hex: string) {
+    const { r, g, b } = hexToRgb(hex);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 128;
+}
+function wa(hex: string, a: number) {
+    const { r, g, b } = hexToRgb(hex);
+    return `rgba(${r},${g},${b},${a})`;
+}
+
+interface Genre { id: number; name: string; }
 
 interface Item {
     id: number;
@@ -36,11 +49,40 @@ interface Props {
     genres: Genre[];
 }
 
-export default function Edit({ series, items, genres }: Props) {
+function EditContent({ series, items, genres }: Props) {
+    const { currentTheme } = useTheme();
+    const light    = isLight(currentTheme.background);
+    const fg       = currentTheme.foreground;
+    const muted    = wa(fg, 0.45);
+    const border   = wa(fg, 0.12);
+    const cardBg   = light ? wa(fg, 0.03) : wa(fg, 0.06);
+    const panelBg  = light ? wa(fg, 0.06) : wa(fg, 0.09);
+    const inputBg  = light ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
+    const accent   = light ? '#b45309' : '#fbbf24';
+
+    const inputStyle = (hasError?: boolean): React.CSSProperties => ({
+        width: '100%',
+        padding: '0.5rem 1rem',
+        borderRadius: '0.5rem',
+        border: `1px solid ${hasError ? '#ef4444' : border}`,
+        background: inputBg,
+        color: fg,
+        outline: 'none',
+        boxSizing: 'border-box',
+        fontFamily: 'inherit',
+        fontSize: '0.875rem',
+    });
+
+    const TLabel = ({ children }: { children: React.ReactNode }) => (
+        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: fg, marginBottom: '0.5rem' }}>
+            {children}
+        </label>
+    );
+
+    //  state 
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
-    // Series form state
     const [seriesData, setSeriesData] = useState({
         title: series.title,
         alternative_title: series.alternative_title || '',
@@ -55,7 +97,6 @@ export default function Edit({ series, items, genres }: Props) {
 
     const [coverPreview, setCoverPreview] = useState<string>(series.cover_url);
 
-    // Item form state
     const [showItemForm, setShowItemForm] = useState(false);
     const [editingItemId, setEditingItemId] = useState<number | null>(null);
     const [itemData, setItemData] = useState({
@@ -65,7 +106,7 @@ export default function Edit({ series, items, genres }: Props) {
         file: null as File | null,
         pdf_file: null as File | null,
         price_coins: '',
-        order: ''
+        order: '',
     });
 
     const [itemCoverPreview, setItemCoverPreview] = useState<string | null>(null);
@@ -74,6 +115,7 @@ export default function Edit({ series, items, genres }: Props) {
     const [hasExistingFile, setHasExistingFile] = useState(false);
     const [hasExistingPdfFile, setHasExistingPdfFile] = useState(false);
 
+    //  handlers 
     const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -87,7 +129,7 @@ export default function Edit({ series, items, genres }: Props) {
             ...prev,
             genre_ids: prev.genre_ids.includes(genreId)
                 ? prev.genre_ids.filter(id => id !== genreId)
-                : [...prev.genre_ids, genreId]
+                : [...prev.genre_ids, genreId],
         }));
     };
 
@@ -109,13 +151,8 @@ export default function Edit({ series, items, genres }: Props) {
         data.append('_method', 'PUT');
 
         router.post(route('admin.ebookseries.update', series.id), data, {
-            onError: (errors) => {
-                setErrors(errors);
-                setSubmitting(false);
-            },
-            onFinish: () => {
-                setSubmitting(false);
-            }
+            onError: (errors) => { setErrors(errors); setSubmitting(false); },
+            onFinish: () => { setSubmitting(false); },
         });
     };
 
@@ -129,7 +166,7 @@ export default function Edit({ series, items, genres }: Props) {
                 file: null,
                 pdf_file: null,
                 price_coins: item.price_coins.toString(),
-                order: item.order.toString()
+                order: item.order.toString(),
             });
             setItemCoverPreview(item.cover_url);
             setHasExistingFile(item.has_file);
@@ -144,7 +181,7 @@ export default function Edit({ series, items, genres }: Props) {
                 file: null,
                 pdf_file: null,
                 price_coins: '',
-                order: (items.length + 1).toString()
+                order: (items.length + 1).toString(),
             });
             setItemCoverPreview(null);
             setHasExistingFile(false);
@@ -157,15 +194,7 @@ export default function Edit({ series, items, genres }: Props) {
     const closeItemForm = () => {
         setShowItemForm(false);
         setEditingItemId(null);
-        setItemData({
-            title: '',
-            cover: null,
-            summary: '',
-            file: null,
-            pdf_file: null,
-            price_coins: '',
-            order: ''
-        });
+        setItemData({ title: '', cover: null, summary: '', file: null, pdf_file: null, price_coins: '', order: '' });
         setItemCoverPreview(null);
         setHasExistingFile(false);
         setHasExistingPdfFile(false);
@@ -197,12 +226,12 @@ export default function Edit({ series, items, genres }: Props) {
             data.append('_method', 'PUT');
             router.post(route('admin.ebookseries.items.update', [series.id, editingItemId]), data, {
                 onSuccess: () => closeItemForm(),
-                onFinish: () => setSubmitting(false)
+                onFinish: () => setSubmitting(false),
             });
         } else {
             router.post(route('admin.ebookseries.items.store', series.id), data, {
                 onSuccess: () => closeItemForm(),
-                onFinish: () => setSubmitting(false)
+                onFinish: () => setSubmitting(false),
             });
         }
     };
@@ -211,128 +240,130 @@ export default function Edit({ series, items, genres }: Props) {
         if (confirm(`Delete item "${title}"?`)) {
             setDeletingItemId(itemId);
             router.delete(route('admin.ebookseries.items.destroy', [series.id, itemId]), {
-                onFinish: () => setDeletingItemId(null)
+                onFinish: () => setDeletingItemId(null),
             });
         }
     };
 
+    //  JSX 
     return (
-        <AdminLayout>
-            <Head title={`Edit ${series.title}`} />
+        <div style={{ color: fg, padding: '2rem 1rem', minHeight: '100vh' }}>
+            <div style={{ maxWidth: '72rem', margin: '0 auto' }}>
 
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">
+                <h1 style={{ fontSize: '1.875rem', fontWeight: 700, color: fg, marginBottom: '2rem' }}>
                     Edit: {series.title}
                 </h1>
 
                 {/* Series Form */}
-                <form onSubmit={handleSeriesSubmit} className="space-y-6 mb-12 bg-white p-6 rounded-lg border border-gray-200">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                <form
+                    onSubmit={handleSeriesSubmit}
+                    style={{
+                        background: cardBg,
+                        border: `1px solid ${border}`,
+                        borderRadius: '0.75rem',
+                        padding: '1.75rem',
+                        marginBottom: '3rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1.5rem',
+                    }}
+                >
+                    <h2 style={{ fontSize: '1.375rem', fontWeight: 700, color: fg, margin: 0 }}>
                         Series Information
                     </h2>
 
                     {/* Title */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Title *
-                        </label>
+                        <TLabel>Title *</TLabel>
                         <input
                             type="text"
                             value={seriesData.title}
                             onChange={(e) => setSeriesData(prev => ({ ...prev, title: e.target.value }))}
-                            className={`w-full px-4 py-2 rounded-lg border ${
-                                errors.title ? 'border-red-500' : 'border-gray-300'
-                            } focus:outline-none focus:ring-2 focus:ring-amber-500`}
+                            style={inputStyle(!!errors.title)}
                             required
                         />
+                        {errors.title && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{errors.title}</p>}
                     </div>
 
                     {/* Alternative Title */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Alternative Title
-                        </label>
+                        <TLabel>Alternative Title</TLabel>
                         <input
                             type="text"
                             value={seriesData.alternative_title}
                             onChange={(e) => setSeriesData(prev => ({ ...prev, alternative_title: e.target.value }))}
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            style={inputStyle()}
                         />
                     </div>
 
                     {/* Cover */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Cover Image
-                        </label>
+                        <TLabel>Cover Image</TLabel>
                         <input
                             type="file"
                             accept="image/*"
                             onChange={handleCoverChange}
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            style={inputStyle()}
                         />
-                        <div className="mt-2">
-                            <img src={coverPreview} alt="Cover" className="w-32 rounded-lg" />
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <img src={coverPreview} alt="Cover" style={{ width: '8rem', borderRadius: '0.5rem' }} />
                         </div>
                     </div>
 
                     {/* Synopsis */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Synopsis *
-                        </label>
+                        <TLabel>Synopsis *</TLabel>
                         <textarea
                             value={seriesData.synopsis}
                             onChange={(e) => setSeriesData(prev => ({ ...prev, synopsis: e.target.value }))}
                             rows={6}
-                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                            style={{ ...inputStyle(), resize: 'none' }}
                             required
                         />
                     </div>
 
                     {/* Author & Artist */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                Author
-                            </label>
+                            <TLabel>Author</TLabel>
                             <input
                                 type="text"
                                 value={seriesData.author}
                                 onChange={(e) => setSeriesData(prev => ({ ...prev, author: e.target.value }))}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                style={inputStyle()}
                             />
                         </div>
-
                         <div>
-                            <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                Artist
-                            </label>
+                            <TLabel>Artist</TLabel>
                             <input
                                 type="text"
                                 value={seriesData.artist}
                                 onChange={(e) => setSeriesData(prev => ({ ...prev, artist: e.target.value }))}
-                                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                style={inputStyle()}
                             />
                         </div>
                     </div>
 
                     {/* Genres */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                            Genres
-                        </label>
-                        <div className="flex flex-wrap gap-2">
+                        <TLabel>Genres</TLabel>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                             {genres.map((genre) => (
                                 <button
                                     key={genre.id}
                                     type="button"
                                     onClick={() => toggleGenre(genre.id)}
-                                    className={`px-4 py-2 rounded-full text-sm font-semibold transition ${
-                                        seriesData.genre_ids.includes(genre.id)
-                                            ? 'bg-amber-500 text-white'
-                                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                                    }`}
+                                    style={{
+                                        padding: '0.375rem 1rem',
+                                        borderRadius: '9999px',
+                                        fontSize: '0.875rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s',
+                                        border: `1px solid ${seriesData.genre_ids.includes(genre.id) ? accent : border}`,
+                                        background: seriesData.genre_ids.includes(genre.id) ? accent : wa(fg, 0.05),
+                                        color: seriesData.genre_ids.includes(genre.id) ? (light ? '#fff' : '#000') : fg,
+                                    }}
                                 >
                                     {genre.name}
                                 </button>
@@ -340,55 +371,84 @@ export default function Edit({ series, items, genres }: Props) {
                         </div>
                     </div>
 
-                    {/* Trial Reading Backlink Section */}
-                    <div className="space-y-4 p-4 bg-blue-50 rounded-md border border-blue-200">
-                        <div className="flex items-center">
-                            <label className="flex items-center hover:bg-white p-2 rounded cursor-pointer transition-colors duration-150">
-                                <input
-                                    type="checkbox"
-                                    checked={seriesData.show_trial_button}
-                                    onChange={(e) => setSeriesData(prev => ({
-                                        ...prev,
-                                        show_trial_button: e.target.checked,
-                                        series_slug: e.target.checked ? prev.series_slug : '',
-                                    }))}
-                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
-                                />
-                                <span className="ml-2 text-sm text-gray-700 font-medium">Show Trial Reading Button</span>
-                            </label>
-                        </div>
-                        
+                    {/* Trial Reading Section */}
+                    <div
+                        style={{
+                            padding: '1rem',
+                            borderRadius: '0.5rem',
+                            border: `1px solid ${wa(fg, 0.15)}`,
+                            background: light ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.1)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1rem',
+                        }}
+                    >
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                            <input
+                                type="checkbox"
+                                checked={seriesData.show_trial_button}
+                                onChange={(e) => setSeriesData(prev => ({
+                                    ...prev,
+                                    show_trial_button: e.target.checked,
+                                    series_slug: e.target.checked ? prev.series_slug : '',
+                                }))}
+                                style={{ width: '1rem', height: '1rem', accentColor: '#3b82f6' }}
+                            />
+                            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: fg }}>
+                                Show Trial Reading Button
+                            </span>
+                        </label>
+
                         {seriesData.show_trial_button && (
                             <div>
-                                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                    Series Slug *
-                                </label>
+                                <TLabel>Series Slug *</TLabel>
                                 <input
                                     type="text"
                                     value={seriesData.series_slug}
                                     onChange={(e) => setSeriesData(prev => ({ ...prev, series_slug: e.target.value }))}
-                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="e.g., novel-series-name"
+                                    style={inputStyle()}
                                     required={seriesData.show_trial_button}
                                 />
-                                <p className="text-xs text-gray-500 mt-1">The slug of the Series (on-site novel) to link to</p>
+                                <p style={{ fontSize: '0.75rem', color: muted, marginTop: '0.25rem' }}>
+                                    The slug of the Series (on-site novel) to link to
+                                </p>
                             </div>
                         )}
                     </div>
 
                     {/* Submit */}
-                    <div className="flex gap-4 pt-4">
+                    <div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem' }}>
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg font-semibold transition disabled:opacity-50"
+                            style={{
+                                background: accent,
+                                color: light ? '#fff' : '#000',
+                                border: 'none',
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 600,
+                                cursor: submitting ? 'not-allowed' : 'pointer',
+                                opacity: submitting ? 0.5 : 1,
+                                fontSize: '0.9375rem',
+                            }}
                         >
                             {submitting ? 'Saving...' : 'Save Changes'}
                         </button>
-
                         <a
                             href={route('admin.ebookseries.index')}
-                            className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-3 rounded-lg font-semibold transition inline-block"
+                            style={{
+                                background: wa(fg, 0.07),
+                                color: fg,
+                                border: `1px solid ${border}`,
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 600,
+                                textDecoration: 'none',
+                                display: 'inline-block',
+                                fontSize: '0.9375rem',
+                            }}
                         >
                             Back to List
                         </a>
@@ -396,51 +456,88 @@ export default function Edit({ series, items, genres }: Props) {
                 </form>
 
                 {/* Items Section */}
-                <div className="border-t border-gray-200 pt-8">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-900">
+                <div style={{ borderTop: `1px solid ${border}`, paddingTop: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '1.375rem', fontWeight: 700, color: fg, margin: 0 }}>
                             Items ({items.length})
                         </h2>
-
                         <button
                             onClick={() => openItemForm()}
-                            className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg font-semibold transition"
+                            style={{
+                                background: accent,
+                                color: light ? '#fff' : '#000',
+                                border: 'none',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                            }}
                         >
                             + Add Item
                         </button>
                     </div>
 
                     {items.length > 0 ? (
-                        <div className="space-y-3">
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {items.map((item) => (
-                                <div 
+                                <div
                                     key={item.id}
-                                    className="bg-white border border-gray-200 rounded-lg p-3 flex gap-3"
+                                    style={{
+                                        background: cardBg,
+                                        border: `1px solid ${border}`,
+                                        borderRadius: '0.75rem',
+                                        padding: '0.875rem',
+                                        display: 'flex',
+                                        gap: '0.875rem',
+                                        alignItems: 'flex-start',
+                                    }}
                                 >
-                                    <div className="w-16 flex-shrink-0">
-                                        <img src={item.cover_url} alt={item.title} className="w-full rounded" />
+                                    <div style={{ width: '4rem', flexShrink: 0 }}>
+                                        <img
+                                            src={item.cover_url}
+                                            alt={item.title}
+                                            style={{ width: '100%', borderRadius: '0.375rem', display: 'block' }}
+                                        />
                                     </div>
 
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-gray-900 mb-1">
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <h3 style={{ fontWeight: 700, color: fg, margin: '0 0 0.25rem 0', fontSize: '0.9375rem' }}>
                                             {item.title}
                                         </h3>
-                                        <p className="text-sm text-gray-600 mb-2">
-                                            Order: {item.order} | Price: ¢{item.price_coins.toLocaleString()}
+                                        <p style={{ fontSize: '0.8125rem', color: muted, margin: '0 0 0.625rem 0' }}>
+                                            Order: {item.order} | Price: {item.price_coins.toLocaleString()} coins
                                         </p>
-
-                                        <div className="flex gap-2">
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
                                             <button
                                                 onClick={() => openItemForm(item)}
-                                                className="bg-gray-900 hover:bg-gray-800 text-white px-3 py-1 rounded text-xs font-semibold"
+                                                style={{
+                                                    background: wa(fg, 0.09),
+                                                    color: fg,
+                                                    border: `1px solid ${border}`,
+                                                    padding: '0.25rem 0.75rem',
+                                                    borderRadius: '0.375rem',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.75rem',
+                                                    cursor: 'pointer',
+                                                }}
                                             >
                                                 Edit
                                             </button>
-
                                             <button
                                                 onClick={() => deleteItem(item.id, item.title)}
                                                 disabled={deletingItemId === item.id}
-                                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-semibold disabled:opacity-50"
+                                                style={{
+                                                    background: 'rgba(239,68,68,0.1)',
+                                                    color: '#ef4444',
+                                                    border: '1px solid rgba(239,68,68,0.3)',
+                                                    padding: '0.25rem 0.75rem',
+                                                    borderRadius: '0.375rem',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.75rem',
+                                                    cursor: deletingItemId === item.id ? 'not-allowed' : 'pointer',
+                                                    opacity: deletingItemId === item.id ? 0.5 : 1,
+                                                }}
                                             >
                                                 {deletingItemId === item.id ? 'Deleting...' : 'Delete'}
                                             </button>
@@ -450,101 +547,125 @@ export default function Edit({ series, items, genres }: Props) {
                             ))}
                         </div>
                     ) : (
-                        <p className="text-center py-8 text-gray-600 bg-white rounded-lg border border-gray-200">
+                        <div
+                            style={{
+                                textAlign: 'center',
+                                padding: '3rem 2rem',
+                                background: cardBg,
+                                border: `1px solid ${border}`,
+                                borderRadius: '0.75rem',
+                                color: muted,
+                            }}
+                        >
                             No items yet. Add your first item!
-                        </p>
+                        </div>
                     )}
                 </div>
 
-                {/* Item Form Modal */}
+                {/* Item Modal */}
                 {showItemForm && (
-                    <div 
-                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                    <div
                         onClick={closeItemForm}
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            background: 'rgba(0,0,0,0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 50,
+                            padding: '1rem',
+                        }}
                     >
-                        <div 
-                            className="bg-white max-w-2xl w-full rounded-lg p-6 max-h-[90vh] overflow-y-auto"
+                        <div
                             onClick={(e) => e.stopPropagation()}
+                            style={{
+                                background: currentTheme.background,
+                                border: `1px solid ${border}`,
+                                borderRadius: '0.75rem',
+                                padding: '1.75rem',
+                                width: '100%',
+                                maxWidth: '42rem',
+                                maxHeight: '90vh',
+                                overflowY: 'auto',
+                            }}
                         >
-                            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                            <h3 style={{ fontSize: '1.375rem', fontWeight: 700, color: fg, marginBottom: '1.5rem' }}>
                                 {editingItemId ? 'Edit Item' : 'Add New Item'}
                             </h3>
 
-                            <form onSubmit={handleItemSubmit} className="space-y-4">
+                            <form onSubmit={handleItemSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                 {/* Title */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                        Title *
-                                    </label>
+                                    <TLabel>Title *</TLabel>
                                     <input
                                         type="text"
                                         value={itemData.title}
                                         onChange={(e) => setItemData(prev => ({ ...prev, title: e.target.value }))}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        style={inputStyle()}
                                         required
                                     />
                                 </div>
 
                                 {/* Cover */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                        Cover Image {!editingItemId && '*'}
-                                    </label>
+                                    <TLabel>Cover Image {!editingItemId && '*'}</TLabel>
                                     <input
                                         type="file"
                                         accept="image/*"
                                         onChange={handleItemCoverChange}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        style={inputStyle()}
                                         required={!editingItemId}
                                     />
                                     {itemCoverPreview && (
-                                        <div className="mt-2">
-                                            <img src={itemCoverPreview} alt="Cover" className="w-24 rounded" />
+                                        <div style={{ marginTop: '0.5rem' }}>
+                                            <img src={itemCoverPreview} alt="Cover" style={{ width: '6rem', borderRadius: '0.375rem' }} />
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Summary */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                        Summary
-                                    </label>
+                                    <TLabel>Summary</TLabel>
                                     <textarea
                                         value={itemData.summary}
                                         onChange={(e) => setItemData(prev => ({ ...prev, summary: e.target.value }))}
                                         rows={4}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+                                        style={{ ...inputStyle(), resize: 'none' }}
                                     />
                                 </div>
 
                                 {/* Ebook File */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                        Ebook File (.epub) {!editingItemId && '*'}
-                                    </label>
-                                    
-                                    {/* Existing file indicator */}
+                                    <TLabel>Ebook File (.epub) {!editingItemId && '*'}</TLabel>
                                     {hasExistingFile && existingFileName && (
-                                        <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div style={{
+                                            marginBottom: '0.5rem',
+                                            padding: '0.75rem',
+                                            background: 'rgba(34,197,94,0.1)',
+                                            border: '1px solid rgba(34,197,94,0.35)',
+                                            borderRadius: '0.5rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                        }}>
+                                            <svg style={{ width: '1.25rem', height: '1.25rem', color: '#22c55e', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                             </svg>
-                                            <span className="text-sm text-green-700 font-medium">
+                                            <span style={{ fontSize: '0.875rem', color: '#16a34a', fontWeight: 500 }}>
                                                 Current file: {existingFileName}.epub
                                             </span>
                                         </div>
                                     )}
-                                    
                                     <input
                                         type="file"
                                         accept=".epub"
                                         onChange={(e) => setItemData(prev => ({ ...prev, file: e.target.files?.[0] || null }))}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        style={inputStyle()}
                                         required={!editingItemId}
                                     />
-                                    
                                     {hasExistingFile && (
-                                        <p className="mt-1 text-xs text-gray-500">
+                                        <p style={{ fontSize: '0.75rem', color: muted, marginTop: '0.25rem' }}>
                                             Leave empty to keep current file, or choose a new file to replace it
                                         </p>
                                     )}
@@ -552,81 +673,97 @@ export default function Edit({ series, items, genres }: Props) {
 
                                 {/* PDF File */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                        PDF File (.pdf) (Optional)
-                                    </label>
-                                    
-                                    {/* Existing PDF file indicator */}
+                                    <TLabel>PDF File (.pdf)  Optional</TLabel>
                                     {hasExistingPdfFile && existingFileName && (
-                                        <div className="mb-2 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-                                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div style={{
+                                            marginBottom: '0.5rem',
+                                            padding: '0.75rem',
+                                            background: 'rgba(34,197,94,0.1)',
+                                            border: '1px solid rgba(34,197,94,0.35)',
+                                            borderRadius: '0.5rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                        }}>
+                                            <svg style={{ width: '1.25rem', height: '1.25rem', color: '#22c55e', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                             </svg>
-                                            <span className="text-sm text-green-700 font-medium">
+                                            <span style={{ fontSize: '0.875rem', color: '#16a34a', fontWeight: 500 }}>
                                                 Current file: {existingFileName}.pdf
                                             </span>
                                         </div>
                                     )}
-                                    
                                     <input
                                         type="file"
                                         accept=".pdf"
                                         onChange={(e) => setItemData(prev => ({ ...prev, pdf_file: e.target.files?.[0] || null }))}
-                                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                        style={inputStyle()}
                                     />
-                                    
                                     {hasExistingPdfFile && (
-                                        <p className="mt-1 text-xs text-gray-500">
+                                        <p style={{ fontSize: '0.75rem', color: muted, marginTop: '0.25rem' }}>
                                             Leave empty to keep current PDF, or choose a new file to replace it
                                         </p>
                                     )}
                                 </div>
 
                                 {/* Price & Order */}
-                                <div className="grid grid-cols-2 gap-4">
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                            Price (Coins) *
-                                        </label>
+                                        <TLabel>Price (Coins) *</TLabel>
                                         <input
                                             type="number"
                                             value={itemData.price_coins}
                                             onChange={(e) => setItemData(prev => ({ ...prev, price_coins: e.target.value }))}
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                            style={inputStyle()}
                                             min="0"
                                             required
                                         />
                                     </div>
-
                                     <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                            Order *
-                                        </label>
+                                        <TLabel>Order *</TLabel>
                                         <input
                                             type="number"
                                             value={itemData.order}
                                             onChange={(e) => setItemData(prev => ({ ...prev, order: e.target.value }))}
-                                            className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                                            style={inputStyle()}
                                             min="1"
                                             required
                                         />
                                     </div>
                                 </div>
 
-                                {/* Submit */}
-                                <div className="flex gap-4 pt-4">
+                                {/* Modal Submit */}
+                                <div style={{ display: 'flex', gap: '1rem', paddingTop: '0.5rem' }}>
                                     <button
                                         type="submit"
                                         disabled={submitting}
-                                        className="bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-lg font-semibold transition disabled:opacity-50"
+                                        style={{
+                                            background: accent,
+                                            color: light ? '#fff' : '#000',
+                                            border: 'none',
+                                            padding: '0.75rem 1.5rem',
+                                            borderRadius: '0.5rem',
+                                            fontWeight: 600,
+                                            cursor: submitting ? 'not-allowed' : 'pointer',
+                                            opacity: submitting ? 0.5 : 1,
+                                            fontSize: '0.9375rem',
+                                        }}
                                     >
                                         {submitting ? 'Saving...' : editingItemId ? 'Update Item' : 'Add Item'}
                                     </button>
-
                                     <button
                                         type="button"
                                         onClick={closeItemForm}
-                                        className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-6 py-3 rounded-lg font-semibold transition"
+                                        style={{
+                                            background: wa(fg, 0.07),
+                                            color: fg,
+                                            border: `1px solid ${border}`,
+                                            padding: '0.75rem 1.5rem',
+                                            borderRadius: '0.5rem',
+                                            fontWeight: 600,
+                                            cursor: 'pointer',
+                                            fontSize: '0.9375rem',
+                                        }}
                                     >
                                         Cancel
                                     </button>
@@ -635,7 +772,17 @@ export default function Edit({ series, items, genres }: Props) {
                         </div>
                     </div>
                 )}
+
             </div>
+        </div>
+    );
+}
+
+export default function Edit({ series, items, genres }: Props) {
+    return (
+        <AdminLayout title={`Edit ${series.title}`}>
+            <Head title={`Edit ${series.title}`} />
+            <EditContent series={series} items={items} genres={genres} />
         </AdminLayout>
     );
 }

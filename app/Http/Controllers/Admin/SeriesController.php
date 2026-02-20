@@ -73,36 +73,63 @@ class SeriesController extends Controller
 
     public function index(Request $request)
     {
-        $search = $request->get('search', '');
-        $page = $request->get('page', 1);
-        $perPage = 40; // 8 cards x 5 rows
-        
+        $search  = $request->get('search', '');
+        $page    = (int) $request->get('page', 1);
+        $type    = $request->get('type', '');    // 'light-novel' | 'web-novel' | ''
+        $sort    = $request->get('sort', 'newest'); // 'newest' | 'oldest' | 'views' | 'chapters'
+        $perPage = 40;
+
         $query = Series::with(['nativeLanguage', 'genres'])
-            ->withCount('chapters');
-        
-        // Search functionality
+            ->withCount('chapters')
+            ->selectRaw('series.*, COALESCE((SELECT SUM(c.views) FROM chapters c WHERE c.series_id = series.id), 0) AS total_chapter_views');
+
         if ($search) {
             $query->where('title', 'LIKE', '%' . $search . '%');
         }
-        
-        $query->latest();
-        
-        // Get total count for pagination info
-        $total = $query->count();
-        $totalPages = ceil($total / $perPage);
-        
-        // Get paginated results
+
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        match ($sort) {
+            'oldest'   => $query->oldest(),
+            'views'    => $query->orderByDesc('views'),
+            'chapters' => $query->orderByDesc('chapters_count'),
+            default    => $query->latest(),
+        };
+
+        $total      = $query->count();
+        $totalPages = (int) ceil($total / $perPage);
+
         $series = $query->skip(($page - 1) * $perPage)
-                       ->take($perPage)
-                       ->get();
+                        ->take($perPage)
+                        ->get()
+                        ->map(fn($s) => [
+                            'id'               => $s->id,
+                            'title'            => $s->title,
+                            'alternative_title'=> $s->alternative_title,
+                            'cover_url'        => $s->cover_url,
+                            'status'           => $s->status,
+                            'type'             => $s->type,
+                            'slug'             => $s->slug,
+                            'author'           => $s->author,
+                            'rating'           => $s->rating,
+                            'views'            => (int) $s->views + (int) ($s->total_chapter_views ?? 0),
+                            'chapters_count'   => $s->chapters_count,
+                            'native_language'  => $s->nativeLanguage ? ['id' => $s->nativeLanguage->id, 'name' => $s->nativeLanguage->name] : null,
+                            'genres'           => $s->genres->map(fn($g) => ['id' => $g->id, 'name' => $g->name]),
+                            'created_at'       => $s->created_at,
+                        ]);
 
         return Inertia::render('Admin/Series/Index', [
-            'series' => $series,
-            'currentPage' => (int) $page,
-            'totalPages' => $totalPages,
-            'hasMore' => $page < $totalPages,
-            'search' => $search,
-            'total' => $total,
+            'series'      => $series,
+            'currentPage' => $page,
+            'totalPages'  => $totalPages,
+            'hasMore'     => $page < $totalPages,
+            'search'      => $search,
+            'type'        => $type,
+            'sort'        => $sort,
+            'total'       => $total,
         ]);
     }
 

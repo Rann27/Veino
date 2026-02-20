@@ -37,16 +37,18 @@ import 'ckeditor5/ckeditor5.css';
 class MyUploadAdapter {
   loader: any;
   xhr?: XMLHttpRequest;
+  uploadUrl: string;
 
-  constructor(loader: any) {
+  constructor(loader: any, uploadUrl: string) {
     this.loader = loader;
+    this.uploadUrl = uploadUrl;
   }
 
   upload() {
     return this.loader.file.then((file: File) => new Promise((resolve, reject) => {
       this.xhr = new XMLHttpRequest();
       
-      this.xhr.open('POST', '/admin/chapters/upload-image', true);
+      this.xhr.open('POST', this.uploadUrl, true);
       
       // Add CSRF token
       const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -85,9 +87,11 @@ class MyUploadAdapter {
   }
 }
 
-function MyCustomUploadAdapterPlugin(editor: any) {
-  editor.plugins.get('FileRepository').createUploadAdapter = (loader: any) => {
-    return new MyUploadAdapter(loader);
+function makeUploadAdapterPlugin(uploadUrl: string) {
+  return function MyCustomUploadAdapterPlugin(editor: any) {
+    editor.plugins.get('FileRepository').createUploadAdapter = (loader: any) => {
+      return new MyUploadAdapter(loader, uploadUrl);
+    };
   };
 }
 
@@ -96,13 +100,15 @@ interface RichTextEditorProps {
   onChange: (content: string) => void;
   placeholder?: string;
   height?: number;
+  uploadUrl?: string;
 }
 
 export default function RichTextEditor({ 
   value, 
   onChange, 
   placeholder = "Enter content here...",
-  height = 400 
+  height = 400,
+  uploadUrl = '/admin/chapters/upload-image',
 }: RichTextEditorProps) {
   const editorRef = useRef<ClassicEditor | null>(null);
   const [isEditorReady, setIsEditorReady] = useState(false);
@@ -139,7 +145,7 @@ export default function RichTextEditor({
       GeneralHtmlSupport,
       PasteFromOffice,
     ],
-    extraPlugins: [MyCustomUploadAdapterPlugin],
+    extraPlugins: [makeUploadAdapterPlugin(uploadUrl)],
     toolbar: {
       items: [
         'undo', 'redo',

@@ -221,6 +221,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/transaction-history', [TransactionHistoryController::class, 'index'])->name('transaction-history.index');
     
     // Blog Management
+    Route::post('/blog/upload-image', [App\Http\Controllers\Admin\BlogController::class, 'uploadImage'])->name('blog.upload-image');
     Route::get('/blog', [App\Http\Controllers\Admin\BlogController::class, 'index'])->name('blog.index');
     Route::get('/blog/create', [App\Http\Controllers\Admin\BlogController::class, 'create'])->name('blog.create');
     Route::post('/blog', [App\Http\Controllers\Admin\BlogController::class, 'store'])->name('blog.store');

@@ -1,6 +1,7 @@
-import AdminLayout from '@/Layouts/AdminLayout';
+﻿import AdminLayout from '@/Layouts/AdminLayout';
 import { Head } from '@inertiajs/react';
 import { useState } from 'react';
+import { useTheme } from '@/Contexts/ThemeContext';
 
 interface User {
   id: number;
@@ -84,11 +85,29 @@ interface TransactionHistoryProps {
   ebookPurchases: PaginatedData<EbookPurchase>;
 }
 
-export default function TransactionHistory({ 
-  coinPurchases, 
-  membershipPurchases, 
-  ebookPurchases 
-}: TransactionHistoryProps) {
+function hexToRgb(hex: string) {
+  const h = hex.replace('#', '');
+  const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function isLight(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 128;
+}
+function wa(hex: string, a: number) {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases }: TransactionHistoryProps) {
+  const { currentTheme } = useTheme();
+  const light   = isLight(currentTheme.background);
+  const fg      = currentTheme.foreground;
+  const muted   = wa(fg, 0.45);
+  const border  = wa(fg, 0.12);
+  const cardBg  = light ? wa(fg, 0.03) : wa(fg, 0.06);
+  const panelBg = light ? wa(fg, 0.06) : wa(fg, 0.09);
+
   const [activeTab, setActiveTab] = useState<'coins' | 'membership' | 'ebook'>('coins');
 
   const formatDate = (dateString: string) => {
@@ -102,331 +121,307 @@ export default function TransactionHistory({
   };
 
   const getStatusBadge = (status: string) => {
-    const statusColors = {
-      completed: 'bg-green-100 text-green-800 border-green-200',
-      pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      failed: 'bg-red-100 text-red-800 border-red-200',
-      refunded: 'bg-gray-100 text-gray-800 border-gray-200',
-      cancelled: 'bg-gray-100 text-gray-800 border-gray-200'
+    const styles: Record<string, { bg: string; color: string; bdr: string }> = {
+      completed: { bg: 'rgba(34,197,94,0.12)', color: '#22c55e', bdr: 'rgba(34,197,94,0.3)' },
+      pending:   { bg: 'rgba(234,179,8,0.12)', color: '#ca8a04', bdr: 'rgba(234,179,8,0.3)' },
+      failed:    { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', bdr: 'rgba(239,68,68,0.3)' },
+      refunded:  { bg: wa(fg, 0.08), color: muted, bdr: border },
+      cancelled: { bg: wa(fg, 0.08), color: muted, bdr: border },
     };
-
+    const s = styles[status] || styles.refunded;
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800 border-gray-200'}`}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 12px', borderRadius: '9999px', fontSize: '11px', fontWeight: 600, background: s.bg, color: s.color, border: `1px solid ${s.bdr}` }}>
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
   };
 
   const getPaymentMethodBadge = (method: string) => {
-    const methodColors: Record<string, string> = {
-      paypal: 'bg-blue-50 text-blue-700 border-blue-200',
-      cryptomus: 'bg-purple-50 text-purple-700 border-purple-200',
-      coins: 'bg-amber-50 text-amber-700 border-amber-200',
+    const styles: Record<string, { bg: string; color: string; bdr: string }> = {
+      paypal:    { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6', bdr: 'rgba(59,130,246,0.25)' },
+      cryptomus: { bg: 'rgba(168,85,247,0.1)', color: '#a855f7', bdr: 'rgba(168,85,247,0.25)' },
+      coins:     { bg: 'rgba(251,191,36,0.12)', color: '#d97706', bdr: 'rgba(251,191,36,0.3)' },
     };
-
+    const s = styles[method.toLowerCase()] || { bg: wa(fg, 0.08), color: muted, bdr: border };
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${methodColors[method.toLowerCase()] || 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 500, background: s.bg, color: s.color, border: `1px solid ${s.bdr}` }}>
         {method.charAt(0).toUpperCase() + method.slice(1)}
       </span>
     );
   };
 
   const formatAmount = (amount: string | number) => {
-    const numAmount = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
-    return numAmount.toFixed(2);
+    const n = typeof amount === 'number' ? amount : parseFloat(amount) || 0;
+    return n.toFixed(2);
   };
 
   const tabs = [
-    { id: 'coins' as const, label: 'Coin Purchases', count: coinPurchases.total, icon: '💰' },
-    { id: 'membership' as const, label: 'Membership', count: membershipPurchases.total, icon: '💎' },
-    { id: 'ebook' as const, label: 'Ebook Purchases', count: ebookPurchases.total, icon: '📚' },
+    { id: 'coins' as const, label: 'Coin Purchases', count: coinPurchases.total, icon: '' },
+    { id: 'membership' as const, label: 'Membership', count: membershipPurchases.total, icon: '' },
+    { id: 'ebook' as const, label: 'Ebook Purchases', count: ebookPurchases.total, icon: '' },
   ];
 
+  const cardStyle = {
+    border: `1px solid ${border}`,
+    borderRadius: '10px',
+    padding: '20px',
+    background: cardBg,
+    transition: 'box-shadow 0.2s',
+  };
+
+  const labelStyle = { fontSize: '11px', fontWeight: 600 as const, color: muted, textTransform: 'uppercase' as const, marginBottom: '4px', letterSpacing: '0.05em' };
+  const valueStyle = { fontSize: '13px', fontWeight: 600 as const, color: fg };
+
+  return (
+    <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: '12px', overflow: 'hidden' }}>
+      {/* Tabs */}
+      <div style={{ borderBottom: `1px solid ${border}` }}>
+        <nav style={{ display: 'flex', padding: '0 24px', marginBottom: '-1px' }}>
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '16px 24px',
+                borderBottom: activeTab === tab.id ? `2px solid ${light ? '#b45309' : '#fbbf24'}` : '2px solid transparent',
+                fontWeight: 500,
+                fontSize: '13px',
+                color: activeTab === tab.id ? (light ? '#b45309' : '#fbbf24') : muted,
+                background: 'none',
+                cursor: 'pointer',
+                transition: 'color 0.15s, border-color 0.15s',
+              }}
+            >
+              <span style={{ fontSize: '18px' }}>{tab.icon}</span>
+              <span>{tab.label}</span>
+              <span style={{
+                marginLeft: '4px',
+                padding: '1px 8px',
+                borderRadius: '9999px',
+                fontSize: '11px',
+                fontWeight: 700,
+                background: activeTab === tab.id
+                  ? (light ? 'rgba(180,83,9,0.12)' : 'rgba(251,191,36,0.15)')
+                  : wa(fg, 0.08),
+                color: activeTab === tab.id ? (light ? '#b45309' : '#fbbf24') : muted,
+              }}>
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Coin Purchases Tab */}
+      {activeTab === 'coins' && (
+        <div style={{ padding: '24px' }}>
+          {coinPurchases.data.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {coinPurchases.data.map((purchase) => (
+                <div key={purchase.id} style={cardStyle}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 600, color: fg }}>
+                          {purchase.user.display_name || purchase.user.name}
+                        </h3>
+                        {getStatusBadge(purchase.status)}
+                      </div>
+                      <p style={{ fontSize: '13px', color: muted }}>{purchase.user.email}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: '#d97706' }}>
+                        ${formatAmount(purchase.price_usd)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: muted, marginTop: '4px' }}>
+                        {formatDate(purchase.created_at)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ paddingTop: '16px', borderTop: `1px solid ${border}` }}>
+                    <div>
+                      <div style={labelStyle}>Coins Purchased</div>
+                      <div style={{ ...valueStyle, color: '#d97706' }}>{purchase.coins_amount.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Package</div>
+                      <div style={valueStyle}>{purchase.coin_package?.name || 'N/A'}</div>
+                      {purchase.coin_package?.bonus_premium_days && purchase.coin_package.bonus_premium_days > 0 && (
+                        <div style={{ fontSize: '11px', color: '#a855f7', marginTop: '2px' }}>
+                          +{purchase.coin_package.bonus_premium_days}d Premium
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Payment Method</div>
+                      <div>{getPaymentMethodBadge(purchase.payment_method)}</div>
+                      {purchase.transaction_id && (
+                        <div style={{ fontSize: '11px', color: muted, marginTop: '4px', fontFamily: 'monospace' }}>
+                          {purchase.transaction_id.substring(0, 20)}...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '64px 0' }}>
+              <span style={{ fontSize: '56px' }}></span>
+              <h3 style={{ marginTop: '16px', fontSize: '13px', fontWeight: 500, color: fg }}>No coin purchases yet</h3>
+              <p style={{ marginTop: '4px', fontSize: '13px', color: muted }}>Coin top-up transactions will appear here.</p>
+            </div>
+          )}
+
+          {coinPurchases.last_page > 1 && (
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${border}` }}>
+              <div style={{ fontSize: '13px', color: muted }}>
+                Showing page {coinPurchases.current_page} of {coinPurchases.last_page}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Membership Purchases Tab */}
+      {activeTab === 'membership' && (
+        <div style={{ padding: '24px' }}>
+          {membershipPurchases.data.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {membershipPurchases.data.map((purchase) => (
+                <div key={purchase.id} style={cardStyle}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 600, color: fg }}>
+                          {purchase.user.display_name || purchase.user.name}
+                        </h3>
+                        {getStatusBadge(purchase.status)}
+                      </div>
+                      <p style={{ fontSize: '13px', color: muted }}>{purchase.user.email}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: '#a855f7' }}>
+                        {typeof purchase.amount_usd === 'number' ? purchase.amount_usd.toLocaleString() : parseFloat(purchase.amount_usd).toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '11px', color: muted, marginTop: '4px' }}>
+                        {formatDate(purchase.created_at)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ paddingTop: '16px', borderTop: `1px solid ${border}` }}>
+                    <div>
+                      <div style={labelStyle}>Invoice Number</div>
+                      <div style={{ ...valueStyle, fontFamily: 'monospace' }}>{purchase.invoice_number}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Package</div>
+                      <div style={valueStyle}>{purchase.membership_package?.name || 'Legacy Package'}</div>
+                      <div style={{ fontSize: '11px', color: muted, marginTop: '2px' }}>{purchase.duration_days} days</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Tier</div>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 500, background: 'rgba(168,85,247,0.12)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.25)' }}>
+                        {purchase.tier.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '64px 0' }}>
+              <span style={{ fontSize: '56px' }}></span>
+              <h3 style={{ marginTop: '16px', fontSize: '13px', fontWeight: 500, color: fg }}>No membership purchases yet</h3>
+              <p style={{ marginTop: '4px', fontSize: '13px', color: muted }}>Membership transactions will appear here.</p>
+            </div>
+          )}
+
+          {membershipPurchases.last_page > 1 && (
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${border}` }}>
+              <div style={{ fontSize: '13px', color: muted }}>
+                Showing page {membershipPurchases.current_page} of {membershipPurchases.last_page}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Ebook Purchases Tab */}
+      {activeTab === 'ebook' && (
+        <div style={{ padding: '24px' }}>
+          {ebookPurchases.data.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {ebookPurchases.data.map((purchase) => (
+                <div key={purchase.id} style={cardStyle}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 600, color: fg }}>
+                          {purchase.user.display_name || purchase.user.name}
+                        </h3>
+                      </div>
+                      <p style={{ fontSize: '13px', color: muted }}>{purchase.user.email}</p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '24px', fontWeight: 700, color: '#22c55e' }}>
+                        {purchase.price_paid.toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '11px', color: muted, marginTop: '4px' }}>
+                        {formatDate(purchase.purchased_at || purchase.created_at)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ paddingTop: '16px', borderTop: `1px solid ${border}` }}>
+                    <div>
+                      <div style={labelStyle}>Ebook Series</div>
+                      <div style={valueStyle}>{purchase.ebook_item.ebook_series.title}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Item</div>
+                      <div style={valueStyle}>{purchase.ebook_item.title}</div>
+                      {purchase.ebook_item.volume_number && (
+                        <div style={{ fontSize: '11px', color: muted, marginTop: '2px' }}>
+                          Volume {purchase.ebook_item.volume_number}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '64px 0' }}>
+              <span style={{ fontSize: '56px' }}></span>
+              <h3 style={{ marginTop: '16px', fontSize: '13px', fontWeight: 500, color: fg }}>No ebook purchases yet</h3>
+              <p style={{ marginTop: '4px', fontSize: '13px', color: muted }}>Ebook transactions will appear here.</p>
+            </div>
+          )}
+
+          {ebookPurchases.last_page > 1 && (
+            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${border}` }}>
+              <div style={{ fontSize: '13px', color: muted }}>
+                Showing page {ebookPurchases.current_page} of {ebookPurchases.last_page}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function TransactionHistory(props: TransactionHistoryProps) {
   return (
     <AdminLayout title="Transaction History">
       <Head title="Transaction History - Admin" />
-
-      <div className="bg-white shadow rounded-lg">
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="flex -mb-px px-6" aria-label="Tabs">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`
-                  flex items-center gap-2 py-4 px-6 border-b-2 font-medium text-sm transition-colors
-                  ${activeTab === tab.id
-                    ? 'border-amber-500 text-amber-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }
-                `}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                <span>{tab.label}</span>
-                <span className={`
-                  ml-2 py-0.5 px-2.5 rounded-full text-xs font-semibold
-                  ${activeTab === tab.id
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-gray-100 text-gray-600'
-                  }
-                `}>
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Coin Purchases Tab */}
-        {activeTab === 'coins' && (
-          <div className="p-6">
-            {coinPurchases.data.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                {coinPurchases.data.map((purchase) => (
-                  <div 
-                    key={purchase.id} 
-                    className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {purchase.user.display_name || purchase.user.name}
-                          </h3>
-                          {getStatusBadge(purchase.status)}
-                        </div>
-                        <p className="text-sm text-gray-600">{purchase.user.email}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-amber-600">
-                          ${formatAmount(purchase.price_usd)}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {formatDate(purchase.created_at)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Coins Purchased
-                        </div>
-                        <div className="text-sm font-semibold text-amber-600">
-                          ¢{purchase.coins_amount.toLocaleString()}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Package
-                        </div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {purchase.coin_package?.name || 'N/A'}
-                        </div>
-                        {purchase.coin_package?.bonus_premium_days && purchase.coin_package.bonus_premium_days > 0 && (
-                          <div className="text-xs text-purple-600 mt-0.5">
-                            +{purchase.coin_package.bonus_premium_days}d Premium
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Payment Method
-                        </div>
-                        <div>{getPaymentMethodBadge(purchase.payment_method)}</div>
-                        {purchase.transaction_id && (
-                          <div className="text-xs text-gray-500 mt-1 font-mono">
-                            {purchase.transaction_id.substring(0, 20)}...
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <span className="text-6xl">💰</span>
-                <h3 className="mt-4 text-sm font-medium text-gray-900">No coin purchases yet</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Coin top-up transactions will appear here.
-                </p>
-              </div>
-            )}
-
-            {coinPurchases.last_page > 1 && (
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-700">
-                  Showing page {coinPurchases.current_page} of {coinPurchases.last_page}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Membership Purchases Tab */}
-        {activeTab === 'membership' && (
-          <div className="p-6">
-            {membershipPurchases.data.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                {membershipPurchases.data.map((purchase) => (
-                  <div 
-                    key={purchase.id} 
-                    className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {purchase.user.display_name || purchase.user.name}
-                          </h3>
-                          {getStatusBadge(purchase.status)}
-                        </div>
-                        <p className="text-sm text-gray-600">{purchase.user.email}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-purple-600">
-                          ¢{typeof purchase.amount_usd === 'number' ? purchase.amount_usd.toLocaleString() : parseFloat(purchase.amount_usd).toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {formatDate(purchase.created_at)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Invoice Number
-                        </div>
-                        <div className="text-sm font-mono font-semibold text-gray-900">
-                          {purchase.invoice_number}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Package
-                        </div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {purchase.membership_package?.name || 'Legacy Package'}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {purchase.duration_days} days
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Tier
-                        </div>
-                        <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                          {purchase.tier.toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <span className="text-6xl">💎</span>
-                <h3 className="mt-4 text-sm font-medium text-gray-900">No membership purchases yet</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Membership transactions will appear here.
-                </p>
-              </div>
-            )}
-
-            {membershipPurchases.last_page > 1 && (
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-700">
-                  Showing page {membershipPurchases.current_page} of {membershipPurchases.last_page}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Ebook Purchases Tab */}
-        {activeTab === 'ebook' && (
-          <div className="p-6">
-            {ebookPurchases.data.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4">
-                {ebookPurchases.data.map((purchase) => (
-                  <div 
-                    key={purchase.id} 
-                    className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow bg-white"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {purchase.user.display_name || purchase.user.name}
-                          </h3>
-                        </div>
-                        <p className="text-sm text-gray-600">{purchase.user.email}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-green-600">
-                          ¢{purchase.price_paid.toLocaleString()}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          {formatDate(purchase.purchased_at || purchase.created_at)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Ebook Series
-                        </div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {purchase.ebook_item.ebook_series.title}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 uppercase mb-1">
-                          Item
-                        </div>
-                        <div className="text-sm font-semibold text-gray-900">
-                          {purchase.ebook_item.title}
-                        </div>
-                        {purchase.ebook_item.volume_number && (
-                          <div className="text-xs text-gray-500 mt-0.5">
-                            Volume {purchase.ebook_item.volume_number}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16">
-                <span className="text-6xl">📚</span>
-                <h3 className="mt-4 text-sm font-medium text-gray-900">No ebook purchases yet</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Ebook transactions will appear here.
-                </p>
-              </div>
-            )}
-
-            {ebookPurchases.last_page > 1 && (
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <div className="text-sm text-gray-700">
-                  Showing page {ebookPurchases.current_page} of {ebookPurchases.last_page}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <TransactionContent {...props} />
     </AdminLayout>
   );
 }

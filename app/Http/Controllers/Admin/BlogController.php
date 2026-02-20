@@ -14,9 +14,30 @@ class BlogController extends Controller
     private function sanitizeHtmlContent(string $content): string
     {
         $config = HTMLPurifier_Config::createDefault();
-        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,h1,h2,h3,h4,h5,h6,ul,ol,li,a[href|title],blockquote,code,pre');
+        $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,h1,h2,h3,h4,h5,h6,ul,ol,li,a[href|title|target|rel],blockquote,code,pre,img[src|alt|width|height|class|style],figure[class|style],figcaption,span[class|style],div[class|style]');
+        $config->set('HTML.SafeIframe', true);
+        $config->set('URI.SafeIframeRegexp', '%^(https?:)?//%');
+        $config->set('Attr.AllowedFrameTargets', ['_blank']);
+        $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'data' => true]);
         $purifier = new HTMLPurifier($config);
         return $purifier->purify($content);
+    }
+
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'upload' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
+
+        if ($request->hasFile('upload')) {
+            $image = $request->file('upload');
+            $path = $image->store('blog-images', 'public');
+            $url = asset('storage/' . $path);
+
+            return response()->json(['url' => $url]);
+        }
+
+        return response()->json(['error' => ['message' => 'Image upload failed']], 422);
     }
 
     public function index()
