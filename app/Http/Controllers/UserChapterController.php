@@ -20,8 +20,8 @@ class UserChapterController extends Controller
             ->where('chapter_link', $chapterLink)
             ->firstOrFail();
 
-        // Increment views
-        $chapter->increment('views');
+        // Defer view increment to after response is sent (non-blocking)
+        defer(fn() => $chapter->increment('views'));
 
         // Check if user can access this chapter
         $canAccess = true;

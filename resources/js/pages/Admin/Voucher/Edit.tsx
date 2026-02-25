@@ -75,6 +75,16 @@ function VoucherEditContent({ voucher }: Props) {
         border: `1px solid ${hasError ? '#ef4444' : border}`, borderRadius: '6px',
         fontSize: '14px', outline: 'none', boxSizing: 'border-box',
     });
+    const selectStyle = (hasError?: boolean): React.CSSProperties => ({
+        ...inputStyle(hasError),
+        padding: '10px 2.5rem 10px 14px',
+        appearance: 'none' as any,
+        colorScheme: light ? 'light' : 'dark',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(fg)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 10px center',
+        cursor: 'pointer',
+    });
     const labelStyle: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 500, color: fg, marginBottom: '6px' };
     const hintStyle:  React.CSSProperties = { marginTop: '4px', fontSize: '11px', color: muted };
     const errStyle:   React.CSSProperties = { marginTop: '4px', fontSize: '12px', color: '#ef4444' };
@@ -99,9 +109,9 @@ function VoucherEditContent({ voucher }: Props) {
                         <label style={labelStyle}>Usage Rule *</label>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <select value={formData.usage_limit_type} onChange={(e) => setFormData(p => ({ ...p, usage_limit_type: e.target.value as 'per_user' | 'global' }))} style={inputStyle()}>
-                                    <option value="per_user">N times per user</option>
-                                    <option value="global">N times for all users (global)</option>
+                                <select value={formData.usage_limit_type} onChange={(e) => setFormData(p => ({ ...p, usage_limit_type: e.target.value as 'per_user' | 'global' }))} style={selectStyle()}>
+                                    <option value="per_user" style={{ background: inputBg, color: fg }}>N times per user</option>
+                                    <option value="global" style={{ background: inputBg, color: fg }}>N times for all users (global)</option>
                                 </select>
                             </div>
                             <div>
@@ -122,10 +132,10 @@ function VoucherEditContent({ voucher }: Props) {
                     {/* Voucher For */}
                     <div>
                         <label style={labelStyle}>Voucher For *</label>
-                        <select value={formData.type} onChange={(e) => setFormData(p => ({ ...p, type: e.target.value as 'membership' | 'ebook' | 'hybrid' }))} style={inputStyle(!!errors.type)}>
-                            <option value="membership">Membership</option>
-                            <option value="ebook">Ebook</option>
-                            <option value="hybrid">Hybrid (Both Membership & Ebook)</option>
+                        <select value={formData.type} onChange={(e) => setFormData(p => ({ ...p, type: e.target.value as 'membership' | 'ebook' | 'hybrid' }))} style={selectStyle(!!errors.type)}>
+                            <option value="membership" style={{ background: inputBg, color: fg }}>Membership</option>
+                            <option value="ebook" style={{ background: inputBg, color: fg }}>Ebook</option>
+                            <option value="hybrid" style={{ background: inputBg, color: fg }}>Hybrid (Both Membership &amp; Ebook)</option>
                         </select>
                         {errors.type && <p style={errStyle}>{errors.type}</p>}
                     </div>
@@ -135,9 +145,9 @@ function VoucherEditContent({ voucher }: Props) {
                         <label style={labelStyle}>Discount *</label>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <select value={formData.discount_type} onChange={(e) => setFormData(p => ({ ...p, discount_type: e.target.value as 'percent' | 'flat' }))} style={inputStyle()}>
-                                    <option value="percent">Percent (%)</option>
-                                    <option value="flat">Flat (\u00a2)</option>
+                                <select value={formData.discount_type} onChange={(e) => setFormData(p => ({ ...p, discount_type: e.target.value as 'percent' | 'flat' }))} style={selectStyle()}>
+                                    <option value="percent" style={{ background: inputBg, color: fg }}>Percent (%)</option>
+                                    <option value="flat" style={{ background: inputBg, color: fg }}>Flat (¢)</option>
                                 </select>
                             </div>
                             <div>

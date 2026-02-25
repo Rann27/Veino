@@ -267,6 +267,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               <div className="ml-10 flex items-baseline space-x-8">
                 <Link 
                   href="/" 
+                  prefetch
                   className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
@@ -274,6 +275,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </Link>
                 <Link 
                   href="/explore" 
+                  prefetch
                   className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
@@ -281,6 +283,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </Link>
                 <Link 
                   href="/epub-novels" 
+                  prefetch
                   className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
@@ -288,6 +291,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </Link>
                 <Link 
                   href="/shop" 
+                  prefetch
                   className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
                   style={{ color: currentTheme.foreground }}
                 >
@@ -631,6 +635,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               <nav className="space-y-4">
                 <Link 
                   href="/" 
+                  prefetch
                   className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
                   style={{ 
                     color: currentTheme.foreground,
@@ -642,6 +647,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </Link>
                 <Link 
                   href="/explore" 
+                  prefetch
                   className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
                   style={{ 
                     color: currentTheme.foreground,
@@ -653,6 +659,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </Link>
                 <Link 
                   href="/epub-novels" 
+                  prefetch
                   className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
                   style={{ 
                     color: currentTheme.foreground,
@@ -664,6 +671,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </Link>
                 <Link 
                   href="/shop" 
+                  prefetch
                   className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
                   style={{ 
                     color: currentTheme.foreground,
@@ -960,17 +968,14 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       {/* Bottom Ad Banner Grid (above footer) */}
       <HomeAdBanner position="bottom" />
 
-      {/* Clickadilla Video Ads Container (Sticky in-page push style, only for non-premium) */}
+      {/* Clickadilla Video Ads Container (Fixed floating, only for non-premium) */}
       {(!auth?.user || auth?.user?.membership_tier !== 'premium') && (
         <div 
           id="clickadilla-video-container" 
           style={{
-            position: 'sticky',
+            position: 'fixed',
             bottom: '1rem',
-            float: 'right',
-            clear: 'both',
-            marginTop: '2rem',
-            marginBottom: '2rem',
+            right: '1rem',
             width: '320px',
             maxWidth: 'calc(100vw - 2rem)',
             zIndex: 40,

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
-import CommentSection from '@/Components/CommentSection';
-import ReactionBar from '@/Components/ReactionBar';
+import CommentSectionSkeleton from '@/Components/CommentSectionSkeleton';
+const CommentSection = lazy(() => import('@/Components/CommentSection'));
+const ReactionBar = lazy(() => import('@/Components/ReactionBar'));
 import EyeIcon from '@/Components/Icons/EyeIcon';
 import BookmarkIcon from '@/Components/Icons/BookmarkIcon';
 import CommentIcon from '@/Components/Icons/CommentIcon';
@@ -794,15 +795,21 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                             <select
                                                 value={sortOrder}
                                                 onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                                className="px-3 py-2 rounded-lg focus:ring-2 transition-colors text-sm"
+                                                className="rounded-lg transition-colors text-sm"
                                                 style={{
                                                     backgroundColor: `${currentTheme.foreground}06`,
                                                     border: `1px solid ${currentTheme.foreground}12`,
                                                     color: currentTheme.foreground,
+                                                    padding: '8px 2.5rem 8px 12px',
+                                                    appearance: 'none' as any,
+                                                    colorScheme: (() => { try { const h=currentTheme.background.replace(/^#/,''); return (parseInt(h.slice(0,2),16)*.299+parseInt(h.slice(2,4),16)*.587+parseInt(h.slice(4,6),16)*.114)>128?'light':'dark'; } catch{return 'dark';} })() as any,
+                                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(currentTheme.foreground)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
+                                                    backgroundRepeat: 'no-repeat',
+                                                    backgroundPosition: 'right 10px center',
                                                 }}
                                             >
-                                                <option value="asc">Oldest First</option>
-                                                <option value="desc">Newest First</option>
+                                                <option value="asc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Oldest First</option>
+                                                <option value="desc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Newest First</option>
                                             </select>
                                         </div>
                                     </div>
@@ -1084,23 +1091,27 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                         >
                             How do you feel about this series?
                         </h3>
-                        <ReactionBar
-                            reactableType="series"
-                            reactableId={series.id}
-                            isAuthenticated={!!auth?.user}
-                            size="large"
-                        />
+                        <Suspense fallback={null}>
+                            <ReactionBar
+                                reactableType="series"
+                                reactableId={series.id}
+                                isAuthenticated={!!auth?.user}
+                                size="large"
+                            />
+                        </Suspense>
                     </div>
                 </section>
 
                 {/* ─── Comment Section ─── */}
                 <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-10">
-                    <CommentSection
-                        commentableType="series"
-                        commentableId={series.id}
-                        isAuthenticated={!!auth?.user}
-                        currentUserId={auth?.user?.id}
-                    />
+                    <Suspense fallback={<CommentSectionSkeleton />}>
+                        <CommentSection
+                            commentableType="series"
+                            commentableId={series.id}
+                            isAuthenticated={!!auth?.user}
+                            currentUserId={auth?.user?.id}
+                        />
+                    </Suspense>
                 </section>
             </div>
             )}

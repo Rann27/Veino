@@ -143,9 +143,43 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         };
     };
     
-    const [currentTheme, setCurrentTheme] = useState<ThemePreset>(defaultThemes[0]);
-    const [isSystemTheme, setIsSystemTheme] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [currentTheme, setCurrentTheme] = useState<ThemePreset>(() => {
+        // Synchronous read from localStorage — runs before first render, eliminates FOUC
+        if (typeof window === 'undefined') return defaultThemes[0];
+        try {
+            const cachedData = localStorage.getItem('veinovel-theme-cache');
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
+                if (data?.theme?.background && data?.theme?.foreground) {
+                    const preset = defaultThemes.find(t => t.name === data.theme.name);
+                    return preset ?? data.theme;
+                }
+            }
+            const isSystem = localStorage.getItem('veinovel-system-theme') === 'true';
+            if (isSystem) {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                return prefersDark ? defaultThemes[1] : defaultThemes[0];
+            }
+            const savedName = localStorage.getItem('veinovel-theme');
+            if (savedName) {
+                const preset = defaultThemes.find(t => t.name === savedName);
+                if (preset) return preset;
+            }
+        } catch (e) { /* use default */ }
+        return defaultThemes[0];
+    });
+    const [isSystemTheme, setIsSystemTheme] = useState<boolean>(() => {
+        if (typeof window === 'undefined') return false;
+        try {
+            const cachedData = localStorage.getItem('veinovel-theme-cache');
+            if (cachedData) {
+                const data = JSON.parse(cachedData);
+                return !!data?.auto_theme;
+            }
+            return localStorage.getItem('veinovel-system-theme') === 'true';
+        } catch (e) { return false; }
+    });
+    const [isLoading, setIsLoading] = useState(false);
     const [readerSettings, setReaderSettings] = useState<ReaderSettings>(getInitialReaderSettings());
 
     // Load theme preferences from backend or localStorage
@@ -196,46 +230,35 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         };
 
         const loadThemePreferences = async () => {
-            setIsLoading(true);
-            
+            // State already initialized synchronously from localStorage.
+            // Only need to sync with backend for logged-in users.
+            if (!auth?.user) return;
+
             try {
-                // Always load from localStorage first for immediate display
-                loadFromLocalStorage();
+                const response = await fetch('/api/theme-preferences', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin'
+                });
                 
-                // Then, if user is logged in, fetch from backend and update
-                if (auth?.user) {
-                    try {
-                        const response = await fetch('/api/theme-preferences', {
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                            },
-                            credentials: 'same-origin'
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            console.log('Loaded from backend:', data);
-                            setCurrentTheme(data.theme);
-                            setIsSystemTheme(data.auto_theme);
-                            setReaderSettings(data.reader_settings);
-                            
-                            // Update CSS custom properties
-                            document.documentElement.style.setProperty('--theme-background', data.theme.background);
-                            document.documentElement.style.setProperty('--theme-foreground', data.theme.foreground);
-                            
-                            // Update localStorage cache
-                            localStorage.setItem('veinovel-theme-cache', JSON.stringify(data));
-                        }
-                    } catch (error) {
-                        console.error('Failed to load backend theme preferences:', error);
-                        // Keep the localStorage theme
-                    }
+                if (response.ok) {
+                    const data = await response.json();
+                    setCurrentTheme(data.theme);
+                    setIsSystemTheme(data.auto_theme);
+                    setReaderSettings(data.reader_settings);
+                    
+                    // Update CSS custom properties
+                    document.documentElement.style.setProperty('--theme-background', data.theme.background);
+                    document.documentElement.style.setProperty('--theme-foreground', data.theme.foreground);
+                    
+                    // Update localStorage cache
+                    localStorage.setItem('veinovel-theme-cache', JSON.stringify(data));
                 }
             } catch (error) {
-                console.error('Failed to load theme preferences:', error);
-            } finally {
-                setIsLoading(false);
+                console.error('Failed to load backend theme preferences:', error);
+                // Keep the localStorage theme already applied
             }
         };
 

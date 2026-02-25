@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 
 interface Genre {
@@ -116,8 +116,8 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
           </div>
         ))}
 
-        {/* Content */}
-        <div className="relative h-full flex items-center z-10">
+        {/* Content — entire area is clickable */}
+        <div className="relative h-full flex items-center z-10 cursor-pointer" onClick={() => router.visit(`/series/${series.slug}`)}>
           <div className="w-full px-6 sm:px-8 lg:px-12 xl:px-20">
             <div className="flex items-center max-w-[1600px] mx-auto">
               {/* Left: Info — takes most space on desktop */}
@@ -177,25 +177,12 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                   )}
                 </div>
 
-                {/* CTA Button */}
-                <Link
-                  href={`/series/${series.slug}`}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-90 hover:shadow-lg"
-                  style={{
-                    backgroundColor: currentTheme.foreground,
-                    color: currentTheme.background,
-                  }}
-                >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
-                  </svg>
-                  Read Now
-                </Link>
+
               </div>
 
               {/* Right: Cover Image (desktop only) — prominent display */}
               <div className="hidden lg:flex flex-shrink-0 items-center justify-center">
-                <Link href={`/series/${series.slug}`} className="block group/cover">
+                <Link href={`/series/${series.slug}`} className="block group/cover" onClick={(e) => e.stopPropagation()}>
                   <div
                     className="relative rounded-2xl overflow-hidden shadow-2xl transition-transform duration-500 group-hover/cover:scale-[1.03]"
                     style={{
@@ -236,7 +223,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
         {heroSeries.length > 1 && (
           <>
             <button
-              onClick={prev}
+              onClick={(e) => { e.stopPropagation(); prev(); }}
               className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all opacity-60 hover:opacity-100"
               style={{
                 backgroundColor: `${currentTheme.background}80`,
@@ -249,7 +236,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
               </svg>
             </button>
             <button
-              onClick={next}
+              onClick={(e) => { e.stopPropagation(); next(); }}
               className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all opacity-60 hover:opacity-100"
               style={{
                 backgroundColor: `${currentTheme.background}80`,
@@ -270,7 +257,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
             {heroSeries.map((_, i) => (
               <button
                 key={i}
-                onClick={() => slideTo(i)}
+                onClick={(e) => { e.stopPropagation(); slideTo(i); }}
                 className="transition-all duration-300 rounded-full"
                 style={{
                   width: i === current ? '24px' : '8px',

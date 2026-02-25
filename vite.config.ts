@@ -28,7 +28,7 @@ export default defineConfig({
             output: {
                 manualChunks: {
                     'ckeditor': ['ckeditor5', '@ckeditor/ckeditor5-react'],
-                    'vendor': ['react', 'react-dom'],
+                    'vendor': ['react', 'react-dom', '@inertiajs/react'],
                 }
             }
         }

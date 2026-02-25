@@ -10,6 +10,7 @@ interface Chapter {
   chapter_link: string;
   volume?: number;
   is_premium: boolean;
+  created_at?: string;
 }
 
 interface NativeLanguage {
@@ -59,6 +60,15 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
     return `Ch ${chapter.chapter_number}`;
   };
 
+  const timeAgo = (dateStr?: string): string => {
+    if (!dateStr) return '';
+    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
   /**
    * Get chapters to display in 2 groups:
    * - premiumGroup: 2 latest premium chapters (or filled with free if none)
@@ -84,13 +94,13 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
     let freeGroup: Chapter[];
 
     if (premiumChs.length === 0) {
-      // No premium → all 4 are free
-      premiumGroup = freeChs.slice(0, 2);
-      freeGroup = freeChs.slice(2, 4);
+      // No premium → all 4 slots go to free, no split
+      premiumGroup = [];
+      freeGroup = freeChs.slice(0, 4);
     } else if (freeChs.length === 0) {
-      // No free → all 4 are premium
-      premiumGroup = premiumChs.slice(0, 2);
-      freeGroup = premiumChs.slice(2, 4);
+      // No free → all 4 slots go to premium, no split
+      premiumGroup = premiumChs.slice(0, 4);
+      freeGroup = [];
     } else {
       // Both exist: 2 premium + 2 free
       premiumGroup = premiumChs.slice(0, 2);
@@ -101,6 +111,46 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
   };
 
   const { premiumGroup, freeGroup, hasBothTypes } = getChapterGroups();
+
+  // Dummy rows to pad chapter list to always 4 slots
+  const premiumDummies = hasBothTypes ? Math.max(0, 2 - premiumGroup.length) : 0;
+  const freeDummies = hasBothTypes
+    ? Math.max(0, 2 - freeGroup.length)
+    : Math.max(0, 4 - (premiumGroup.length + freeGroup.length));
+
+  const DummyRow = () => (
+    <div className="px-2.5 py-1.5 rounded-lg">
+      <span className="invisible text-xs">placeholder</span>
+    </div>
+  );
+
+  const ChapterRow = ({ chapter }: { chapter: Chapter }) => (
+    <Link
+      href={`/series/${series.slug}/chapter/${chapter.chapter_link}`}
+      className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-all hover:opacity-70"
+      style={{ backgroundColor: `${currentTheme.foreground}04` }}
+    >
+      <div className="flex items-center gap-1 min-w-0">
+        <span
+          className="text-xs sm:text-[13px] font-medium truncate"
+          style={{ color: `${currentTheme.foreground}80` }}
+        >
+          {formatChapterDisplay(chapter)}
+        </span>
+        {chapter.is_premium && (
+          <span className="flex-shrink-0">
+            <PremiumDiamond size={12} />
+          </span>
+        )}
+      </div>
+      <span
+        className="text-[10px] sm:text-xs flex-shrink-0 tabular-nums"
+        style={{ color: `${currentTheme.foreground}40` }}
+      >
+        {timeAgo(chapter.created_at)}
+      </span>
+    </Link>
+  );
 
   return (
     <div className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 8)}`}>
@@ -141,43 +191,23 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
         <div className="flex-1 p-3 sm:p-4 flex flex-col min-w-0">
           <Link href={`/series/${series.slug}`}>
             <h3
-              className="font-semibold text-sm sm:text-[15px] line-clamp-2 mb-3 leading-snug group-hover:opacity-80 transition-opacity"
+              className="font-semibold text-sm sm:text-[15px] line-clamp-2 mb-3 leading-snug group-hover:opacity-80 transition-opacity min-h-[2.5rem]"
               style={{ color: currentTheme.foreground }}
             >
               {series.title}
             </h3>
           </Link>
 
-          {/* Chapter List — 2 premium, separator, 2 free */}
+          {/* Chapter List — 2 premium + separator + 2 free, padded with dummies */}
           <div className="flex-1 flex flex-col">
             {/* Top group (premium or fallback) */}
             <div className="space-y-1">
-              {premiumGroup.map((chapter) => (
-                <Link
-                  key={chapter.id}
-                  href={`/series/${series.slug}/chapter/${chapter.chapter_link}`}
-                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-all hover:opacity-70"
-                  style={{
-                    backgroundColor: `${currentTheme.foreground}04`,
-                  }}
-                >
-                  <span
-                    className="text-xs sm:text-[13px] font-medium truncate"
-                    style={{ color: `${currentTheme.foreground}80` }}
-                  >
-                    {formatChapterDisplay(chapter)}
-                  </span>
-                  {chapter.is_premium && (
-                    <span className="flex-shrink-0">
-                      <PremiumDiamond size={12} />
-                    </span>
-                  )}
-                </Link>
-              ))}
+              {premiumGroup.map((chapter) => <ChapterRow key={chapter.id} chapter={chapter} />)}
+              {Array.from({ length: premiumDummies }).map((_, i) => <DummyRow key={`pd-${i}`} />)}
             </div>
 
             {/* Dashed separator — only when both types exist */}
-            {hasBothTypes && (premiumGroup.length > 0 && freeGroup.length > 0) && (
+            {hasBothTypes && (
               <div
                 className="my-1.5 mx-2.5 border-t border-dashed"
                 style={{ borderColor: `${currentTheme.foreground}18` }}
@@ -186,28 +216,8 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
 
             {/* Bottom group (free or fallback) */}
             <div className="space-y-1">
-              {freeGroup.map((chapter) => (
-                <Link
-                  key={chapter.id}
-                  href={`/series/${series.slug}/chapter/${chapter.chapter_link}`}
-                  className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-all hover:opacity-70"
-                  style={{
-                    backgroundColor: `${currentTheme.foreground}04`,
-                  }}
-                >
-                  <span
-                    className="text-xs sm:text-[13px] font-medium truncate"
-                    style={{ color: `${currentTheme.foreground}80` }}
-                  >
-                    {formatChapterDisplay(chapter)}
-                  </span>
-                  {chapter.is_premium && (
-                    <span className="flex-shrink-0">
-                      <PremiumDiamond size={12} />
-                    </span>
-                  )}
-                </Link>
-              ))}
+              {freeGroup.map((chapter) => <ChapterRow key={chapter.id} chapter={chapter} />)}
+              {Array.from({ length: freeDummies }).map((_, i) => <DummyRow key={`fd-${i}`} />)}
             </div>
 
             {premiumGroup.length === 0 && freeGroup.length === 0 && (

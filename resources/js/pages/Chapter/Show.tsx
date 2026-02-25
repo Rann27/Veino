@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
-import ReaderSettingsModal from '@/Components/ReaderSettingsModal';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
-import CommentSection from '@/Components/CommentSection';
-import ReactionBar from '@/Components/ReactionBar';
+import CommentSectionSkeleton from '@/Components/CommentSectionSkeleton';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import InTextAd from '@/Components/Ads/InTextAd';
 import InterstitialAd from '@/Components/Ads/InterstitialAd';
 import axios from 'axios';
+const ReaderSettingsModal = lazy(() => import('@/Components/ReaderSettingsModal'));
+const CommentSection = lazy(() => import('@/Components/CommentSection'));
+const ReactionBar = lazy(() => import('@/Components/ReactionBar'));
 
 // Sanitize HTML to remove conflicting color styles
 const sanitizeColorStyles = (html: string): string => {
@@ -749,34 +750,40 @@ function ChapterShowContent({
                                 >
                                     How was this chapter?
                                 </h3>
-                                <ReactionBar
-                                    reactableType="chapter"
-                                    reactableId={chapter.id}
-                                    isAuthenticated={!!auth?.user}
-                                    size="large"
-                                />
+                                <Suspense fallback={null}>
+                                    <ReactionBar
+                                        reactableType="chapter"
+                                        reactableId={chapter.id}
+                                        isAuthenticated={!!auth?.user}
+                                        size="large"
+                                    />
+                                </Suspense>
                             </div>
                         </div>
 
                         {/* Comment Section */}
                         <div className="mt-8">
-                            <CommentSection
-                                commentableType="chapter"
-                                commentableId={chapter.id}
-                                isAuthenticated={!!auth?.user}
-                                currentUserId={auth?.user?.id}
-                            />
+                            <Suspense fallback={<CommentSectionSkeleton />}>
+                                <CommentSection
+                                    commentableType="chapter"
+                                    commentableId={chapter.id}
+                                    isAuthenticated={!!auth?.user}
+                                    currentUserId={auth?.user?.id}
+                                />
+                            </Suspense>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Reader Settings Modal */}
-            <ReaderSettingsModal
-                isOpen={showReaderSettings}
-                onClose={() => setShowReaderSettings(false)}
-                triggerElement={readerSettingsButtonRef.current}
-            />
+            <Suspense fallback={null}>
+                <ReaderSettingsModal
+                    isOpen={showReaderSettings}
+                    onClose={() => setShowReaderSettings(false)}
+                    triggerElement={readerSettingsButtonRef.current}
+                />
+            </Suspense>
 
             {/* Self-hosted Interstitial Ad (Premium Membership Promotion) - Every 3 chapters */}
             <InterstitialAd chapterId={chapter.id} />

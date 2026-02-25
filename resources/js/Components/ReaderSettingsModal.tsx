@@ -186,15 +186,21 @@ export default function ReaderSettingsModal({
                         <select
                             value={settings.fontFamily}
                             onChange={(e) => handleSettingChange('fontFamily', e.target.value)}
-                            className="w-full px-3 py-2 rounded-lg focus:ring-2 transition-colors text-sm"
+                            className="w-full rounded-lg transition-colors text-sm"
                             style={{
                                 backgroundColor: `${currentTheme.foreground}06`,
                                 border: `1px solid ${currentTheme.foreground}12`,
-                                color: currentTheme.foreground
+                                color: currentTheme.foreground,
+                                padding: '8px 2.5rem 8px 12px',
+                                appearance: 'none' as any,
+                                colorScheme: (() => { try { const h=currentTheme.background.replace(/^#/,''); return (parseInt(h.slice(0,2),16)*.299+parseInt(h.slice(2,4),16)*.587+parseInt(h.slice(4,6),16)*.114)>128?'light':'dark'; } catch{return 'dark';} })() as any,
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(currentTheme.foreground)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 10px center',
                             }}
                         >
                             {googleFonts.map((font) => (
-                                <option key={font.name} value={font.family} style={{ fontFamily: font.family }}>
+                                <option key={font.name} value={font.family} style={{ fontFamily: font.family, background: currentTheme.background, color: currentTheme.foreground }}>
                                     {font.name}
                                 </option>
                             ))}

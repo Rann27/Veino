@@ -124,13 +124,6 @@ class HomeController extends Controller
     private function getLatestUpdates(string $type, int $limit)
     {
         $query = Series::with(['nativeLanguage', 'genres'])
-            ->with(['chapters' => function ($query) {
-                $query->reorder()
-                    ->orderByDesc('volume')
-                    ->orderByDesc('chapter_number')
-                    ->take(8) // Load extra so frontend can pick 2 premium + 2 free
-                    ->select(['id', 'series_id', 'title', 'chapter_number', 'chapter_link', 'volume', 'is_premium']);
-            }])
             ->withCount('chapters')
             ->whereHas('chapters')
             ->select('series.*', \DB::raw('(SELECT MAX(created_at) FROM chapters WHERE chapters.series_id = series.id) as latest_chapter_date'))
@@ -142,6 +135,37 @@ class HomeController extends Controller
             $query->where('type', 'web-novel');
         }
 
-        return $query->take($limit)->get();
+        $series = $query->take($limit)->get();
+
+        // Load top 2 premium + top 2 free chapters per series in 2 batch queries (avoids N+1)
+        $seriesIds = $series->pluck('id');
+        $chapterSelect = ['id', 'series_id', 'title', 'chapter_number', 'chapter_link', 'volume', 'is_premium', 'created_at'];
+
+        $premiumChapters = Chapter::whereIn('series_id', $seriesIds)
+            ->where('is_premium', true)
+            ->select($chapterSelect)
+            ->orderByDesc('volume')
+            ->orderByDesc('chapter_number')
+            ->get()
+            ->groupBy('series_id')
+            ->map(fn($g) => $g->take(2));
+
+        $freeChapters = Chapter::whereIn('series_id', $seriesIds)
+            ->where('is_premium', false)
+            ->select($chapterSelect)
+            ->orderByDesc('volume')
+            ->orderByDesc('chapter_number')
+            ->get()
+            ->groupBy('series_id')
+            ->map(fn($g) => $g->take(4)); // up to 4 free when no premium chapters exist
+
+        $series->each(function ($s) use ($premiumChapters, $freeChapters) {
+            $premium = $premiumChapters->get($s->id, collect());
+            $free    = $freeChapters->get($s->id, collect());
+            // Premium first, then free — frontend splits by is_premium flag
+            $s->setRelation('chapters', $premium->concat($free)->values());
+        });
+
+        return $series;
     }
 }

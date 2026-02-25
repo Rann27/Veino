@@ -1,8 +1,8 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, lazy, Suspense } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
-import RichTextEditor from '@/Components/RichTextEditor';
+const RichTextEditor = lazy(() => import('@/Components/RichTextEditor'));
 
 function hexToRgb(hex: string) {
     const h = hex.replace('#', '');
@@ -95,13 +95,15 @@ function EditContent({ blog }: Props) {
                         {/* Content */}
                         <div>
                             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: fg, marginBottom: '0.5rem' }}>Content *</label>
-                            <RichTextEditor
-                                value={formData.content}
-                                onChange={(content) => setFormData(prev => ({ ...prev, content }))}
-                                placeholder="Write your blog content here..."
-                                height={450}
-                                uploadUrl={route('admin.blog.upload-image')}
-                            />
+                            <Suspense fallback={<div style={{ height: 450, display: 'flex', alignItems: 'center', justifyContent: 'center', background: inputBg, border: `1px solid ${border}`, borderRadius: '0.5rem', color: muted, fontSize: '0.875rem' }}>Loading editor…</div>}>
+                                <RichTextEditor
+                                    value={formData.content}
+                                    onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                                    placeholder="Write your blog content here..."
+                                    height={450}
+                                    uploadUrl={route('admin.blog.upload-image')}
+                                />
+                            </Suspense>
                             {errors.content && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{errors.content}</p>}
                         </div>
 

@@ -1,7 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useRef } from 'react';
-import RichTextEditor from '@/Components/RichTextEditor';
+import { useState, useRef, lazy, Suspense } from 'react';
+const RichTextEditor = lazy(() => import('@/Components/RichTextEditor'));
 import { useTheme } from '@/Contexts/ThemeContext';
 
 // ── colour helpers ────────────────────────────────────────────────────────────
@@ -39,13 +39,21 @@ function TTextarea({ value, onChange, placeholder, rows=5, fg, border, cardBg, a
       onBlur={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.boxShadow = 'none'; }} />
   );
 }
-function TSelect({ value, onChange, children, required=false, fg, border, cardBg, accent }:
-  { value: string; onChange: (v:string)=>void; children: React.ReactNode; required?: boolean; fg: string; border: string; cardBg: string; accent: string }) {
+function TSelect({ value, onChange, children, required=false, fg, border, cardBg, accent, light }:
+  { value: string; onChange: (v:string)=>void; children: React.ReactNode; required?: boolean; fg: string; border: string; cardBg: string; accent: string; light?: boolean }) {
   return (
     <select value={value} required={required}
       onChange={e => onChange(e.target.value)}
-      className="block w-full px-3 py-2.5 rounded-xl text-sm outline-none transition"
-      style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+      className="block w-full rounded-xl text-sm outline-none transition"
+      style={{
+        backgroundColor: cardBg, color: fg, border: `1px solid ${border}`,
+        padding: '10px 2.5rem 10px 12px',
+        appearance: 'none' as any,
+        colorScheme: light ? 'light' : 'dark',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(fg)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 10px center',
+      }}
       onFocus={e => { e.currentTarget.style.borderColor = accent; }}
       onBlur={e => { e.currentTarget.style.borderColor = border; }}>
       {children}
@@ -127,7 +135,7 @@ function SeriesShowContent({ series }: SeriesShowProps) {
   const accentBg = light ? 'rgba(217,119,6,0.1)' : 'rgba(251,191,36,0.15)';
   const dangerColor = '#ef4444';
   const successColor = '#22c55e';
-  const themeProps = { fg, border, cardBg, accent };
+  const themeProps = { fg, border, cardBg, accent, light };
   const [showEditModal, setShowEditModal] = useState(false);
   const [showChapterModal, setShowChapterModal] = useState(false);
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
@@ -766,7 +774,9 @@ function SeriesShowContent({ series }: SeriesShowProps) {
 
                   <div>
                     <TLabel muted={muted}>Synopsis</TLabel>
-                    <RichTextEditor value={editFormData.synopsis} onChange={content=>setEditFormData(p=>({...p,synopsis:content}))} placeholder="Enter series synopsis..." height={200} />
+                    <Suspense fallback={<div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cardBg, border: `1px solid ${border}`, borderRadius: '0.5rem', color: muted, fontSize: '0.875rem' }}>Loading editor…</div>}>
+                      <RichTextEditor value={editFormData.synopsis} onChange={content=>setEditFormData(p=>({...p,synopsis:content}))} placeholder="Enter series synopsis..." height={200} />
+                    </Suspense>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -781,21 +791,21 @@ function SeriesShowContent({ series }: SeriesShowProps) {
                   <div className="grid grid-cols-3 gap-4">
                     <div><TLabel muted={muted}>Status *</TLabel>
                       <TSelect value={editFormData.status} onChange={v=>setEditFormData(p=>({...p,status:v}))} required {...themeProps}>
-                        <option value="ongoing">Ongoing</option>
-                        <option value="complete">Complete</option>
-                        <option value="hiatus">Hiatus</option>
+                        <option value="ongoing" style={{ background: cardBg, color: fg }}>Ongoing</option>
+                        <option value="complete" style={{ background: cardBg, color: fg }}>Complete</option>
+                        <option value="hiatus" style={{ background: cardBg, color: fg }}>Hiatus</option>
                       </TSelect>
                     </div>
                     <div><TLabel muted={muted}>Type *</TLabel>
                       <TSelect value={editFormData.type} onChange={v=>setEditFormData(p=>({...p,type:v}))} required {...themeProps}>
-                        <option value="web-novel">Web Novel</option>
-                        <option value="light-novel">Light Novel</option>
+                        <option value="web-novel" style={{ background: cardBg, color: fg }}>Web Novel</option>
+                        <option value="light-novel" style={{ background: cardBg, color: fg }}>Light Novel</option>
                       </TSelect>
                     </div>
                     <div><TLabel muted={muted}>Language *</TLabel>
                       <TSelect value={editFormData.native_language_id} onChange={v=>setEditFormData(p=>({...p,native_language_id:v}))} required {...themeProps}>
-                        <option value="">Select...</option>
-                        {nativeLanguages.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
+                        <option value="" style={{ background: cardBg, color: fg }}>Select...</option>
+                        {nativeLanguages.map(l=><option key={l.id} value={l.id} style={{ background: cardBg, color: fg }}>{l.name}</option>)}
                       </TSelect>
                     </div>
                   </div>
@@ -937,12 +947,14 @@ function SeriesShowContent({ series }: SeriesShowProps) {
 
                   <div>
                     <TLabel muted={muted}>Content *</TLabel>
-                    <RichTextEditor
-                      value={chapterFormData.content}
-                      onChange={content=>setChapterFormData(p=>({...p,content}))}
-                      placeholder="Enter chapter content here… Paste image URLs and they'll be converted automatically."
-                      height={520}
-                    />
+                    <Suspense fallback={<div style={{ height: 520, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cardBg, border: `1px solid ${border}`, borderRadius: '0.5rem', color: muted, fontSize: '0.875rem' }}>Loading editor…</div>}>
+                      <RichTextEditor
+                        value={chapterFormData.content}
+                        onChange={content=>setChapterFormData(p=>({...p,content}))}
+                        placeholder="Enter chapter content here… Paste image URLs and they'll be converted automatically."
+                        height={520}
+                      />
+                    </Suspense>
                   </div>
                 </div>
               </div>

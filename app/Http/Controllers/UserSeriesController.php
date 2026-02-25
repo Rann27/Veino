@@ -19,8 +19,8 @@ class UserSeriesController extends Controller
             ->withCount('chapters')
             ->firstOrFail();
 
-        // Increment views
-        $series->increment('views');
+        // Defer view increment to after response is sent (non-blocking)
+        defer(fn() => $series->increment('views'));
 
         $chapters = Chapter::where('series_id', $series->id)
             ->orderBy('volume')
@@ -53,15 +53,19 @@ class UserSeriesController extends Controller
             });
         }
 
-        // Get related series (same genres)
-        $relatedSeries = Series::whereHas('genres', function ($query) use ($series) {
-                $genreIds = $series->genres->pluck('id');
-                $query->whereIn('genres.id', $genreIds);
-            })
-            ->where('id', '!=', $series->id)
-            ->withCount('chapters')
-            ->limit(6)
-            ->get();
+        // Get related series (same genres) - cached per series to avoid repeated whereHas queries
+        $relatedSeries = \Illuminate\Support\Facades\Cache::remember(
+            "related_series_{$series->id}",
+            3600,
+            fn() => Series::whereHas('genres', function ($query) use ($series) {
+                    $genreIds = $series->genres->pluck('id');
+                    $query->whereIn('genres.id', $genreIds);
+                })
+                ->where('id', '!=', $series->id)
+                ->withCount('chapters')
+                ->limit(6)
+                ->get()
+        );
 
         return Inertia::render('Series/Show', [
             'series' => $series,

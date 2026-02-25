@@ -161,7 +161,17 @@ function AdvertisementContent({ advertisements, filters }: AdvertisementIndexPro
     borderRadius: '6px', fontSize: '14px', outline: 'none',
   };
 
-  const selectStyle: React.CSSProperties = { ...inputStyle, cursor: 'pointer' };
+  const chevronSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(fg)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`;
+  const selectStyle: React.CSSProperties = {
+    ...inputStyle,
+    padding: '8px 2.5rem 8px 12px',
+    appearance: 'none' as any,
+    colorScheme: light ? 'light' : 'dark',
+    backgroundImage: chevronSvg,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 10px center',
+    cursor: 'pointer',
+  };
 
   const labelStyle: React.CSSProperties = { display: 'block', fontSize: '13px', fontWeight: 500, color: fg, marginBottom: '6px' };
   const hintStyle:  React.CSSProperties = { marginTop: '4px', fontSize: '11px', color: muted };
@@ -191,18 +201,18 @@ function AdvertisementContent({ advertisements, filters }: AdvertisementIndexPro
           <div>
             <label style={labelStyle}>Filter by Status</label>
             <select value={statusFilter} onChange={(e) => handleFilterChange('status', e.target.value)} style={selectStyle}>
-              <option value="all">All Status</option>
-              <option value="active">Active Only</option>
-              <option value="expired">Expired Only</option>
+              <option value="all" style={{ background: inputBg, color: fg }}>All Status</option>
+              <option value="active" style={{ background: inputBg, color: fg }}>Active Only</option>
+              <option value="expired" style={{ background: inputBg, color: fg }}>Expired Only</option>
             </select>
           </div>
           <div>
             <label style={labelStyle}>Filter by Unit Type</label>
             <select value={typeFilter} onChange={(e) => handleFilterChange('unit_type', e.target.value)} style={selectStyle}>
-              <option value="all">All Types</option>
-              <option value="banner">Banner</option>
-              <option value="interstitial">Interstitial</option>
-              <option value="in_text_link">In-Text Link</option>
+              <option value="all" style={{ background: inputBg, color: fg }}>All Types</option>
+              <option value="banner" style={{ background: inputBg, color: fg }}>Banner</option>
+              <option value="interstitial" style={{ background: inputBg, color: fg }}>Interstitial</option>
+              <option value="in_text_link" style={{ background: inputBg, color: fg }}>In-Text Link</option>
             </select>
           </div>
         </div>
@@ -339,9 +349,9 @@ function AdvertisementContent({ advertisements, filters }: AdvertisementIndexPro
               <div>
                 <label style={labelStyle}>Unit Type *</label>
                 <select value={formData.unit_type} onChange={(e) => setFormData(p => ({ ...p, unit_type: e.target.value }))} style={selectStyle} required>
-                  <option value="banner">Banner</option>
-                  <option value="interstitial">Interstitial</option>
-                  <option value="in_text_link">In-Text Link</option>
+                  <option value="banner" style={{ background: inputBg, color: fg }}>Banner</option>
+                  <option value="interstitial" style={{ background: inputBg, color: fg }}>Interstitial</option>
+                  <option value="in_text_link" style={{ background: inputBg, color: fg }}>In-Text Link</option>
                 </select>
               </div>
 

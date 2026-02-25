@@ -57,14 +57,22 @@ function TTextarea({ value, onChange, placeholder, rows=5, fg, border, cardBg, a
     />
   );
 }
-function TSelect({ value, onChange, children, required=false, fg, border, cardBg, accent }:
-  { value: string; onChange: (v:string)=>void; children: React.ReactNode; required?: boolean; fg: string; border: string; cardBg: string; accent: string }) {
+function TSelect({ value, onChange, children, required=false, fg, border, cardBg, accent, light }:
+  { value: string; onChange: (v:string)=>void; children: React.ReactNode; required?: boolean; fg: string; border: string; cardBg: string; accent: string; light?: boolean }) {
   return (
     <select
       value={value} required={required}
       onChange={e => onChange(e.target.value)}
-      className="block w-full px-3 py-2.5 rounded-xl text-sm outline-none transition"
-      style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+      className="block w-full rounded-xl text-sm outline-none transition"
+      style={{
+        backgroundColor: cardBg, color: fg, border: `1px solid ${border}`,
+        padding: '10px 2.5rem 10px 12px',
+        appearance: 'none' as any,
+        colorScheme: light ? 'light' : 'dark',
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(fg)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'right 10px center',
+      }}
       onFocus={e => { e.currentTarget.style.borderColor = accent; }}
       onBlur={e => { e.currentTarget.style.borderColor = border; }}
     >
@@ -132,7 +140,7 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, fg, bg, border, card
     router.post('/admin/series', fd, { onSuccess: onClose, forceFormData: true });
   };
 
-  const inputProps = { fg, border, cardBg, accent };
+  const inputProps = { fg, border, cardBg, accent, light };
   const panelBg = light ? wa(fg, 0.03) : wa(fg, 0.06);
 
   return (
@@ -259,23 +267,23 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, fg, bg, border, card
                 <div>
                   <TLabel fg={muted}>Status *</TLabel>
                   <TSelect value={formData.status} onChange={v=>set('status',v)} required {...inputProps}>
-                    <option value="ongoing">Ongoing</option>
-                    <option value="complete">Complete</option>
-                    <option value="hiatus">Hiatus</option>
+                    <option value="ongoing" style={{ background: cardBg, color: fg }}>Ongoing</option>
+                    <option value="complete" style={{ background: cardBg, color: fg }}>Complete</option>
+                    <option value="hiatus" style={{ background: cardBg, color: fg }}>Hiatus</option>
                   </TSelect>
                 </div>
                 <div>
                   <TLabel fg={muted}>Type *</TLabel>
                   <TSelect value={formData.type} onChange={v=>set('type',v)} required {...inputProps}>
-                    <option value="web-novel">Web Novel</option>
-                    <option value="light-novel">Light Novel</option>
+                    <option value="web-novel" style={{ background: cardBg, color: fg }}>Web Novel</option>
+                    <option value="light-novel" style={{ background: cardBg, color: fg }}>Light Novel</option>
                   </TSelect>
                 </div>
                 <div>
                   <TLabel fg={muted}>Language *</TLabel>
                   <TSelect value={formData.native_language_id} onChange={v=>set('native_language_id',v)} required {...inputProps}>
-                    <option value="">Select...</option>
-                    {nativeLanguages.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    <option value="" style={{ background: cardBg, color: fg }}>Select...</option>
+                    {nativeLanguages.map(l => <option key={l.id} value={l.id} style={{ background: cardBg, color: fg }}>{l.name}</option>)}
                   </TSelect>
                 </div>
               </div>
