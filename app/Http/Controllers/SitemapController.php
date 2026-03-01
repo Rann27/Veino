@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Series;
+use App\Models\Chapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Carbon\Carbon;
@@ -64,8 +65,27 @@ class SitemapController extends Controller
             ];
         }
 
+        // URLs dinamis untuk chapter gratis (premium chapter tidak diindeks)
+        $chapterUrls = [];
+        $chapters = Chapter::select('chapter_link', 'series_id', 'updated_at')
+            ->where('is_premium', false)
+            ->where('is_published', true)
+            ->with('series:id,slug')
+            ->get();
+
+        foreach ($chapters as $chapter) {
+            if ($chapter->series) {
+                $chapterUrls[] = [
+                    'url' => route('chapters.show', [$chapter->series->slug, $chapter->chapter_link]),
+                    'lastmod' => $chapter->updated_at->toISOString(),
+                    'changefreq' => 'monthly',
+                    'priority' => '0.6'
+                ];
+            }
+        }
+
         // Gabungkan semua URLs
-        $urls = array_merge($staticUrls, $seriesUrls);
+        $urls = array_merge($staticUrls, $seriesUrls, $chapterUrls);
 
         // Generate XML
         $xml = $this->generateSitemapXml($urls);

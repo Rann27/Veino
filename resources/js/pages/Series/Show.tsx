@@ -350,9 +350,32 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
         });
     };
 
+    // Build meta description from synopsis (strip HTML, truncate to 160 chars)
+    const metaDescription = (() => {
+        const stripped = series.synopsis
+            ? series.synopsis.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+            : '';
+        return stripped.length > 160 ? stripped.substring(0, 157) + '...' : stripped;
+    })();
+
+    const ogTitle = `${series.title} - VeiNovel`;
+    const ogImage = series.cover_url || 'https://veinovel.com/images/og-default.jpg';
+
     return (
         <>
-            <Head title={series.title} />
+            <Head title={series.title}>
+                <meta name="description" content={metaDescription} />
+                <meta property="og:title" content={ogTitle} />
+                <meta property="og:description" content={metaDescription} />
+                <meta property="og:image" content={ogImage} />
+                <meta property="og:type" content="book" />
+                <meta property="og:url" content={route('series.show', series.slug)} />
+                <meta property="og:site_name" content="VeiNovel" />
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:title" content={ogTitle} />
+                <meta name="twitter:description" content={metaDescription} />
+                <meta name="twitter:image" content={ogImage} />
+            </Head>
 
             {/* Age Verification Modal */}
             {showAgeModal && (

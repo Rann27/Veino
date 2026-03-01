@@ -61,7 +61,13 @@ class UserChapterController extends Controller
 
         return Inertia::render('Chapter/Show', [
             'series' => $series,
-            'chapter' => $chapter,
+            'chapter' => array_merge(
+                $chapter->only([
+                    'id', 'title', 'chapter_number', 'chapter_link',
+                    'is_premium', 'coin_price', 'volume',
+                ]),
+                ['content' => $canAccess ? $chapter->content : null]
+            ),
             'canAccess' => $canAccess,
             'isPremiumMember' => $isPremiumMember,
             'prevChapter' => $prevChapter ? [

@@ -41,7 +41,7 @@ interface Chapter {
     title: string;
     chapter_number: number;
     chapter_link: string;
-    content: string;
+    content: string | null;
     is_premium: boolean;
     coin_price: number;
 }
@@ -357,9 +357,18 @@ function ChapterShowContent({
         );
     }
 
+    const chapterMetaDesc = `Read ${chapter.title} from ${series.title} on VeiNovel — free light novel reading platform.`;
+    const ogTitle = `${chapter.title} - ${series.title} | VeiNovel`;
+
     return (
         <>
-            <Head title={`${chapter.title} - ${series.title}`} />
+            <Head title={`${chapter.title} - ${series.title}`}>
+                <meta name="description" content={chapterMetaDesc} />
+                <meta property="og:title" content={ogTitle} />
+                <meta property="og:description" content={chapterMetaDesc} />
+                <meta property="og:type" content="article" />
+                <meta property="og:site_name" content="VeiNovel" />
+            </Head>
             
             {/* Sticky Navigation Bar */}
             <div 
@@ -602,7 +611,7 @@ function ChapterShowContent({
                             }}
                             dangerouslySetInnerHTML={{ 
                                 __html: (() => {
-                                    const content = chapter.content;
+                                    const content = chapter.content ?? '';
                                     
                                     // Check if content already has HTML tags (from CKEditor)
                                     const hasHtmlTags = /<(p|div|h[1-6]|ul|ol|blockquote|figure)\b/i.test(content);

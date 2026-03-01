@@ -80,6 +80,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => session('success'),
                 'error' => session('error'),
                 'premium_granted' => $premiumGrantedData,
+                'otp_sent' => session('otp_sent'),
+                'otp_email' => session('otp_email'),
             ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),

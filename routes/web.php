@@ -59,14 +59,22 @@ Route::post('/register', [RegisterController::class, 'register'])
 Route::get('/password/forgot', [ForgotPasswordController::class, 'showForgotForm'])
     ->name('password.forgot')->middleware('guest');
 
+// OTP-based reset (new system)
+Route::post('/password/send-otp', [ForgotPasswordController::class, 'sendOtp'])
+    ->name('password.send-otp')->middleware('guest');
+
+Route::post('/password/verify-otp', [ForgotPasswordController::class, 'verifyOtp'])
+    ->name('password.verify-otp')->middleware('guest');
+
+// Legacy route (redirects to new flow)
 Route::post('/password/verify', [ForgotPasswordController::class, 'verifyUser'])
     ->name('password.verify')->middleware('guest');
 
 Route::get('/password/reset', [ForgotPasswordController::class, 'showResetForm'])
-    ->name('password.reset.form')->middleware('guest');
+    ->name('password.reset.form');
 
 Route::post('/password/reset', [ForgotPasswordController::class, 'resetPassword'])
-    ->name('password.reset')->middleware('guest');
+    ->name('password.reset');
 
 Route::post('/logout', function (Illuminate\Http\Request $request) {
     Auth::logout();
