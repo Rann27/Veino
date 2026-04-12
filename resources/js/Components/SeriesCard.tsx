@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
+import CoverImage from '@/Components/CoverImage';
+import { getCardBg } from '@/constants/colors';
 
 interface Genre {
   id: number;
@@ -47,48 +49,27 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
       href={`/series/${series.slug}`}
       className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 6)}`}
     >
-      <div 
-        className="card-hover rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
+      <div
+        className="series-card rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
         style={{
-          backgroundColor: currentTheme.name === 'Light' 
-            ? 'rgba(248, 250, 252, 0.8)' 
-            : currentTheme.name === 'Dark'
-            ? 'rgba(30, 41, 59, 0.6)'
-            : currentTheme.name === 'Sepia'
-            ? 'rgba(244, 236, 216, 0.6)'
-            : currentTheme.name === 'Cool Dark'
-            ? 'rgba(49, 50, 68, 0.6)'
-            : currentTheme.name === 'Frost'
-            ? 'rgba(205, 220, 237, 0.6)'
-            : currentTheme.name === 'Solarized'
-            ? 'rgba(253, 246, 227, 0.6)'
-            : 'rgba(30, 41, 59, 0.6)',
+          backgroundColor: getCardBg(currentTheme.name),
           border: `1px solid ${currentTheme.foreground}10`,
-          boxShadow: `0 1px 3px ${currentTheme.foreground}10`
+          boxShadow: `0 1px 3px ${currentTheme.foreground}10`,
         }}
       >
-        {/* Cover Image */}
-        <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
-          {series.cover_url ? (
-            <img
-              src={series.cover_url}
-              alt={series.title}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-              loading="lazy"
-            />
-          ) : (
-            <div 
-              className="w-full h-full flex items-center justify-center text-xs"
-              style={{ color: `${currentTheme.foreground}60` }}
-            >
-              No Cover
-            </div>
-          )}
+        {/* Cover Image with zoom on card hover */}
+        <div className="mb-3 overflow-hidden rounded-lg">
+          <CoverImage
+            src={series.cover_url}
+            alt={series.title}
+            containerClassName="cover-zoom"
+            hoverScale={false}
+          />
         </div>
-        
+
         {/* Title */}
-        <h3 
-          className="font-semibold text-sm md:text-base line-clamp-2 mb-3 leading-tight"
+        <h3
+          className="series-card-title font-semibold text-sm md:text-base line-clamp-2 mb-3 leading-tight transition-colors duration-200"
           style={{ color: currentTheme.foreground }}
         >
           {series.title}

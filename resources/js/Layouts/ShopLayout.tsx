@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
 
 interface ChartItem {
     chart_item_id: number;
@@ -27,6 +28,7 @@ interface ShopLayoutProps {
 
 export default function ShopLayout({ children, chartItems = [], totalPrice = 0, voucherData = null, voucherCode = '' }: ShopLayoutProps) {
     const { currentTheme } = useTheme();
+    const { toast } = useToast();
     const { auth } = usePage<any>().props;
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -40,7 +42,7 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0, 
 
     const handleButtonClick = () => {
         if (chartItems.length === 0) {
-            alert('Your chart is empty!');
+            toast.warning('Your chart is empty!');
             return;
         }
         
@@ -72,7 +74,7 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0, 
                 // Check if there's an error flash message
                 const errorMsg = page.props?.flash?.error || page.props?.errors?.message;
                 if (errorMsg) {
-                    alert('❌ ' + errorMsg);
+                    toast.error(errorMsg, 'Checkout Failed');
                     return;
                 }
                 
@@ -85,7 +87,7 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0, 
                 setShowConfirmModal(false);
                 
                 const errorMessage = errors?.message || errors?.error || 'Checkout failed. Please try again.';
-                alert('❌ ' + errorMessage);
+                toast.error(errorMessage, 'Checkout Failed');
             },
             onFinish: () => {
                 console.log('Checkout finished');

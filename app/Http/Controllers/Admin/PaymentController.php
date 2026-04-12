@@ -15,13 +15,12 @@ class PaymentController extends Controller
         $membershipPackages = MembershipPackage::orderBy('sort_order')->get();
         $coinPackages = CoinPackage::orderBy('price_usd')->get();
         
-        // Get PayPal and Cryptomus settings from .env (more secure)
+        // Get payment gateway settings from .env (more secure)
         $paymentSettings = [
             'paypal_client_id' => config('services.paypal.client_id'),
             'paypal_secret' => config('services.paypal.client_secret'),
             'paypal_mode' => config('services.paypal.mode', 'sandbox'),
-            'cryptomus_api_key' => config('services.cryptomus.api_key'),
-            'cryptomus_merchant_id' => config('services.cryptomus.merchant_id'),
+            'oxapay_merchant_key' => config('services.oxapay.merchant_key'),
         ];
 
         return Inertia::render('Admin/Payment/Index', [

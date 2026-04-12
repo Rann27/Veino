@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
 
 interface Genre {
     id: number;
@@ -123,13 +124,11 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                             <div className="flex flex-col md:flex-row gap-4 md:gap-6">
                                 {/* Cover & Trial Button */}
                                 <div className="w-40 sm:w-48 md:w-58 flex-shrink-0 mx-auto md:mx-0">
-                                    <img
+                                    <CoverImage
                                         src={series.cover_url}
                                         alt={series.title}
-                                        className="w-full rounded-lg shadow-lg mb-3"
-                                        onError={(e) => {
-                                            e.currentTarget.src = '/images/default-cover.jpg';
-                                        }}
+                                        containerClassName="mb-3 rounded-lg shadow-lg"
+                                        hoverScale={false}
                                     />
                                     
                                     {/* Trial Reading Button */}
@@ -323,13 +322,11 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                     >
                                         {/* Item Cover */}
                                         <div className="w-20 sm:w-24 flex-shrink-0 mx-auto sm:mx-0">
-                                            <img
+                                            <CoverImage
                                                 src={item.cover_url}
                                                 alt={item.title}
-                                                className="w-full rounded-lg"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = '/images/default-cover.jpg';
-                                                }}
+                                                containerClassName="rounded-lg"
+                                                hoverScale={false}
                                             />
                                         </div>
 

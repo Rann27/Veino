@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
+import { getStatusColor, getCardBg, SHINY_PURPLE } from '@/constants/colors';
 
 interface Genre {
     id: number;
@@ -48,21 +50,6 @@ interface Props {
 function SearchResultsContent({ series, query }: Props) {
     const { currentTheme } = useTheme();
 
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'ongoing':
-                return 'bg-green-100 text-green-800';
-            case 'completed':
-                return 'bg-blue-100 text-blue-800';
-            case 'hiatus':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'dropped':
-                return 'bg-red-100 text-red-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
-
     return (
         <>
             <Head title={`Search Results for "${query}" - Veinovel`} />
@@ -102,41 +89,19 @@ function SearchResultsContent({ series, query }: Props) {
                                         href={route('series.show', item.slug)}
                                         className="group"
                                     >
-                                        <div 
+                                        <div
                                             className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
                                             style={{
-                                                backgroundColor: currentTheme.name === 'Light' 
-                                                    ? 'rgba(248, 250, 252, 0.8)' 
-                                                    : currentTheme.name === 'Dark'
-                                                    ? 'rgba(30, 41, 59, 0.6)'
-                                                    : currentTheme.name === 'Sepia'
-                                                    ? 'rgba(244, 236, 216, 0.6)'
-                                                    : currentTheme.name === 'Cool Dark'
-                                                    ? 'rgba(49, 50, 68, 0.6)'
-                                                    : currentTheme.name === 'Frost'
-                                                    ? 'rgba(205, 220, 237, 0.6)'
-                                                    : currentTheme.name === 'Solarized'
-                                                    ? 'rgba(253, 246, 227, 0.6)'
-                                                    : 'rgba(30, 41, 59, 0.6)',
+                                                backgroundColor: getCardBg(currentTheme.name),
                                                 border: `1px solid ${currentTheme.foreground}10`
                                             }}
                                         >
-                                            <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
-                                                {item.cover_url ? (
-                                                    <img
-                                                        src={item.cover_url}
-                                                        alt={item.title}
-                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                                                    />
-                                                ) : (
-                                                    <div 
-                                                        className="w-full h-full flex items-center justify-center text-xs"
-                                                        style={{ color: `${currentTheme.foreground}60` }}
-                                                    >
-                                                        No Cover
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <CoverImage
+                                                src={item.cover_url}
+                                                alt={item.title}
+                                                containerClassName="mb-3"
+                                                hoverScale={true}
+                                            />
                                             
                                             <h3 
                                                 className="font-semibold text-sm md:text-base line-clamp-2 mb-3 leading-tight"
@@ -172,7 +137,13 @@ function SearchResultsContent({ series, query }: Props) {
                                             </div>
                                             
                                             <div className="flex items-center gap-1 mb-2">
-                                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item.status)}`}>
+                                                <span
+                                                    className="px-2 py-1 text-xs font-medium rounded-full"
+                                                    style={{
+                                                        backgroundColor: getStatusColor(item.status).dim,
+                                                        color: getStatusColor(item.status).bg,
+                                                    }}
+                                                >
                                                     {item.status}
                                                 </span>
                                             </div>
@@ -222,14 +193,11 @@ function SearchResultsContent({ series, query }: Props) {
                                                     }
                                                 }}
                                                 disabled={!link.url}
-                                                className={`px-3 py-2 text-sm rounded-md transition-colors ${
-                                                    link.active
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'border border-gray-300 hover:bg-gray-50'
-                                                }`}
+                                                className="px-3 py-2 text-sm rounded-md transition-colors"
                                                 style={{
-                                                    backgroundColor: link.active ? '#3B82F6' : currentTheme.background,
-                                                    borderColor: link.active ? '#3B82F6' : `${currentTheme.foreground}30`,
+                                                    backgroundColor: link.active ? SHINY_PURPLE : currentTheme.background,
+                                                    borderColor: link.active ? SHINY_PURPLE : `${currentTheme.foreground}30`,
+                                                    border: `1px solid ${link.active ? SHINY_PURPLE : `${currentTheme.foreground}30`}`,
                                                     color: link.active ? 'white' : currentTheme.foreground
                                                 }}
                                                 dangerouslySetInnerHTML={{ __html: link.label }}
@@ -271,7 +239,8 @@ function SearchResultsContent({ series, query }: Props) {
                                 </p>
                                 <Link
                                     href={route('explore')}
-                                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                    className="inline-flex items-center px-6 py-3 rounded-lg transition-colors"
+                                    style={{ backgroundColor: SHINY_PURPLE, color: '#ffffff' }}
                                 >
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

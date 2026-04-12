@@ -1,5 +1,5 @@
 ﻿import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
 
@@ -25,6 +25,7 @@ interface Series {
 interface SeriesIndexProps {
   series: Series[]; currentPage: number; totalPages: number;
   hasMore: boolean; search: string; type: string; sort: string; total: number;
+  premiumChapterPrice: number;
 }
 
 // â”€â”€ view formatter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -427,7 +428,7 @@ function SeriesCard({ item, fg, border, cardBg, muted, accent, accentBg, light }
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Main Page
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, search: initialSearch, type: initialType, sort: initialSort, total }: SeriesIndexProps) {
+function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, search: initialSearch, type: initialType, sort: initialSort, total, premiumChapterPrice: initialPrice }: SeriesIndexProps) {
   const { currentTheme } = useTheme();
   const light = isLight(currentTheme.background);
   const fg      = currentTheme.foreground;
@@ -447,8 +448,10 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
   const [page, setPage]           = useState(currentPage);
   const [hasMoreState, setHasMore]= useState(hasMore);
   const [showModal, setShowModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [genres, setGenres]       = useState<Genre[]>([]);
   const [nativeLangs, setNativeLangs] = useState<NativeLanguage[]>([]);
+  const settingsForm = useForm({ price: String(initialPrice) });
   const isFirstRender = useRef(true);
 
   // Shared fetch function
@@ -501,18 +504,40 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
             {loading ? 'Loadingâ€¦' : `${total} series total`}
           </p>
         </div>
-        <button
-          onClick={openModal}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
-          style={{ backgroundColor: accent, color: bg }}
-          onMouseEnter={e=>(e.currentTarget.style.opacity='0.88')}
-          onMouseLeave={e=>(e.currentTarget.style.opacity='1')}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          Add New Series
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Settings button */}
+          <button
+            onClick={() => {
+              settingsForm.setData('price', String(initialPrice));
+              setShowSettingsModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border"
+            style={{ backgroundColor: cardBg, color: fg, borderColor: border }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = accent)}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = border)}
+            title="Chapter Price Settings"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            Settings
+          </button>
+
+          {/* Add New Series button */}
+          <button
+            onClick={openModal}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
+            style={{ backgroundColor: accent, color: bg }}
+            onMouseEnter={e=>(e.currentTarget.style.opacity='0.88')}
+            onMouseLeave={e=>(e.currentTarget.style.opacity='1')}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Add New Series
+          </button>
+        </div>
       </div>
 
       {/* â”€â”€ Filters row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
@@ -605,6 +630,72 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
           genres={genres} nativeLanguages={nativeLangs}
           bg={bg} {...themeProps}
         />
+      )}
+
+      {/* Settings Modal */}
+      {showSettingsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <div className="w-full max-w-sm rounded-2xl shadow-2xl p-6" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold" style={{ color: fg }}>Chapter Price Settings</h2>
+              <button onClick={() => setShowSettingsModal(false)} style={{ color: muted }} className="hover:opacity-70 transition-opacity">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={e => {
+              e.preventDefault();
+              settingsForm.post(route('admin.settings.chapter-price'), {
+                onSuccess: () => setShowSettingsModal(false),
+              });
+            }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5" style={{ color: fg }}>
+                  🪙 Premium Chapter Unlock Price (coins)
+                </label>
+                <p className="text-xs mb-3 opacity-60" style={{ color: fg }}>
+                  This price applies globally to all premium chapters.
+                </p>
+                <input
+                  type="number"
+                  min={1}
+                  max={9999}
+                  required
+                  value={settingsForm.data.price}
+                  onChange={e => settingsForm.setData('price', e.target.value)}
+                  className="block w-full px-3 py-2.5 rounded-xl text-sm outline-none transition text-center text-2xl font-bold"
+                  style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                  onFocus={e => { e.currentTarget.style.borderColor = accent; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = border; }}
+                />
+                {settingsForm.errors.price && (
+                  <p className="mt-1 text-xs text-red-500">{settingsForm.errors.price}</p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(false)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                  style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={settingsForm.processing}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
+                  style={{ backgroundColor: accent, color: bg }}
+                >
+                  {settingsForm.processing ? 'Saving…' : 'Save Price'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

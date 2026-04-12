@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 
 interface CoinPackage {
@@ -18,17 +19,18 @@ interface Props {
 
 function BuyCoinsContent({ packages }: Props) {
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'cryptomus'>('paypal');
+    const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'oxapay'>('paypal');
     const [isProcessing, setIsProcessing] = useState(false);
     const { currentTheme } = useTheme();
+    const { toast } = useToast();
 
-    const page = usePage<{ 
-        auth: { user: { coins: number } | null }; 
+    const page = usePage<{
+        auth: { user: { coins: number } | null };
     }>();
 
     const handlePurchase = () => {
         if (!selectedPackage) {
-            alert('Please select a coin package');
+            toast.warning('Please select a coin package first.');
             return;
         }
 
@@ -46,7 +48,7 @@ function BuyCoinsContent({ packages }: Props) {
                 },
                 onError: (errors) => {
                     console.error('Purchase error:', errors);
-                    alert('Failed to process purchase. Please try again.');
+                    toast.error('Failed to process purchase. Please try again.');
                     setIsProcessing(false);
                 },
                 onFinish: () => {
@@ -242,44 +244,33 @@ function BuyCoinsContent({ packages }: Props) {
                                     )}
                                 </button>
 
-                                {/* Cryptomus */}
-                                <button
-                                    type="button"
-                                    onClick={() => setPaymentMethod('cryptomus')}
-                                    className={`
-                                        relative p-6 rounded-xl transition-all duration-300 backdrop-blur-sm
-                                        ${paymentMethod === 'cryptomus'
-                                            ? 'bg-white/20 border-2 border-white shadow-lg shadow-white/30'
-                                            : 'border-2 hover:border-white/50'
-                                        }
-                                    `}
-                                    style={paymentMethod !== 'cryptomus' ? {
-                                        backgroundColor: `${currentTheme.foreground}10`,
-                                        borderColor: `${currentTheme.foreground}30`
-                                    } : undefined}
-                                >
-                                    <div className="flex flex-col items-center gap-3">
-                                        <img 
-                                            src="/images/paymentlogo/cryptomus.svg" 
-                                            alt="Cryptomus" 
-                                            className="h-8"
-                                        />
-                                        <span className="text-xl font-bold text-white">Cryptomus</span>
-                                        <p 
-                                            className="text-sm opacity-60"
-                                            style={{ color: currentTheme.foreground }}
-                                        >
-                                            Cryptocurrency
-                                        </p>
-                                    </div>
-                                    {paymentMethod === 'cryptomus' && (
-                                        <div className="absolute top-2 right-2">
-                                            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                            </svg>
+                                {/* OxaPay - disabled until configured */}
+                                <div className="relative group">
+                                    <button
+                                        type="button"
+                                        disabled
+                                        className="relative p-6 rounded-xl transition-all duration-300 backdrop-blur-sm border-2 opacity-40 cursor-not-allowed w-full"
+                                        style={{
+                                            backgroundColor: `${currentTheme.foreground}10`,
+                                            borderColor: `${currentTheme.foreground}30`
+                                        }}
+                                    >
+                                        <div className="flex flex-col items-center gap-3">
+                                            <img
+                                                src="/images/paymentlogo/oxapay.svg"
+                                                alt="OxaPay"
+                                                className="h-8 grayscale"
+                                            />
+                                            <span className="text-xl font-bold text-gray-400">OxaPay</span>
+                                            <p className="text-sm opacity-60" style={{ color: currentTheme.foreground }}>
+                                                Cryptocurrency
+                                            </p>
                                         </div>
-                                    )}
-                                </button>
+                                    </button>
+                                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                                        Coming soon
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { getStatusColor, getCardBg, SHINY_PURPLE, SHINY_PURPLE_DIM } from '@/constants/colors';
+import CoverImage from '@/Components/CoverImage';
+import EmptyState from '@/Components/EmptyState';
 
 interface Genre {
     id: number;
@@ -253,15 +256,6 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
         });
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'ongoing': return { bg: '#22c55e', text: '#ffffff' };
-            case 'completed': return { bg: '#3b82f6', text: '#ffffff' };
-            case 'hiatus': return { bg: '#eab308', text: '#000000' };
-            case 'dropped': return { bg: '#ef4444', text: '#ffffff' };
-            default: return { bg: `${currentTheme.foreground}20`, text: currentTheme.foreground };
-        }
-    };
 
     const activeFilterCount = [
         selectedGenres.length > 0,
@@ -506,29 +500,21 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                     href={route('series.show', item.slug)}
                                     className="group"
                                 >
-                                    <div 
-                                        className="rounded-2xl overflow-hidden transition-all duration-300 h-full flex flex-col group-hover:shadow-lg group-hover:-translate-y-1"
+                                    <div
+                                        className="series-card rounded-2xl overflow-hidden h-full flex flex-col"
                                         style={{
                                             backgroundColor: `${currentTheme.foreground}04`,
                                             border: `1px solid ${currentTheme.foreground}08`,
                                         }}
                                     >
                                         {/* Cover */}
-                                        <div className="relative aspect-[2/3] overflow-hidden">
-                                            {item.cover_url ? (
-                                                <img
-                                                    src={item.cover_url}
-                                                    alt={item.title}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                />
-                                            ) : (
-                                                <div 
-                                                    className="w-full h-full flex items-center justify-center text-xs"
-                                                    style={{ backgroundColor: `${currentTheme.foreground}08`, color: `${currentTheme.foreground}40` }}
-                                                >
-                                                    No Cover
-                                                </div>
-                                            )}
+                                        <div className="relative overflow-hidden">
+                                            <CoverImage
+                                                src={item.cover_url}
+                                                alt={item.title}
+                                                containerClassName="cover-zoom"
+                                                hoverScale={false}
+                                            />
                                             {/* Gradient overlay at bottom */}
                                             <div 
                                                 className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
@@ -563,8 +549,8 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
 
                                         {/* Info */}
                                         <div className="p-3 flex-1 flex flex-col">
-                                            <h3 
-                                                className="font-semibold text-sm leading-snug line-clamp-2 mb-1.5 group-hover:opacity-80 transition-opacity"
+                                            <h3
+                                                className="series-card-title font-semibold text-sm leading-snug line-clamp-2 mb-1.5 transition-colors duration-200"
                                                 style={{ color: currentTheme.foreground }}
                                             >
                                                 {item.title}
@@ -612,28 +598,16 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                             ))}
                         </div>
                     ) : (
-                        /* Empty State */
-                        <div className="text-center py-20">
-                            <svg className="mx-auto w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: `${currentTheme.foreground}25` }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
-                            <h3 className="text-lg font-semibold mb-2" style={{ color: currentTheme.foreground }}>
-                                No series found
-                            </h3>
-                            <p className="text-sm mb-4" style={{ color: `${currentTheme.foreground}50` }}>
-                                Try adjusting your search or filters
-                            </p>
-                            <button
-                                onClick={clearFilters}
-                                className="px-5 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-80"
-                                style={{
-                                    backgroundColor: currentTheme.foreground,
-                                    color: currentTheme.background,
-                                }}
-                            >
-                                Clear All Filters
-                            </button>
-                        </div>
+                        <EmptyState
+                            icon={
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            }
+                            title="No series found"
+                            description="Try adjusting your search or filters."
+                            action={{ label: 'Clear All Filters', onClick: clearFilters, variant: 'ghost' }}
+                        />
                     )}
 
                     {/* ─── Pagination ─── */}

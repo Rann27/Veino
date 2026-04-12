@@ -7,7 +7,7 @@ use App\Models\MembershipPurchase;
 use App\Models\MembershipHistory;
 use App\Services\MembershipService;
 use App\Services\PayPalService;
-use App\Services\CryptomusService;
+use App\Services\OxapayService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
@@ -18,16 +18,16 @@ class MembershipController extends Controller
 {
     protected $membershipService;
     protected $paypalService;
-    protected $cryptomusService;
+    protected $oxapayService;
 
     public function __construct(
         MembershipService $membershipService,
         PayPalService $paypalService,
-        CryptomusService $cryptomusService
+        OxapayService $oxapayService
     ) {
         $this->membershipService = $membershipService;
         $this->paypalService = $paypalService;
-        $this->cryptomusService = $cryptomusService;
+        $this->oxapayService = $oxapayService;
     }
 
     /**
@@ -272,25 +272,26 @@ class MembershipController extends Controller
                 }
 
                 return $result;
-            } else if ($method === 'cryptomus') {
-                // Check if Cryptomus is configured
-                $isConfigured = $this->cryptomusService->isConfigured();
-                Log::info('Cryptomus configuration check', ['is_configured' => $isConfigured]);
-                
+            } else if ($method === 'oxapay') {
+                // Check if OxaPay is configured
+                $isConfigured = $this->oxapayService->isConfigured();
+                Log::info('OxaPay configuration check', ['is_configured' => $isConfigured]);
+
                 if (!$isConfigured) {
-                    Log::warning('Cryptomus not configured, using dummy mode');
+                    Log::warning('OxaPay not configured, using dummy mode');
                     return [
-                        'success' => true,
-                        'order_id' => 'DUMMY_CRYPTO_' . uniqid(),
-                        'payment_url' => $returnUrl, // Redirect to status page directly
+                        'success'     => true,
+                        'order_id'    => 'DUMMY_OXAPAY_' . uniqid(),
+                        'payment_url' => $returnUrl,
                     ];
                 }
 
-                return $this->cryptomusService->createInvoice(
+                return $this->oxapayService->createInvoice(
                     $package->price_usd,
                     $history->invoice_number,
-                    'USDT',
-                    $returnUrl
+                    $returnUrl,
+                    route('membership.webhook', ['provider' => 'oxapay']),
+                    "Premium Membership - {$package->name}"
                 );
             }
 
@@ -325,11 +326,11 @@ class MembershipController extends Controller
             if (app()->environment('local')) {
                 if (
                     ($history->paypal_order_id && str_starts_with($history->paypal_order_id, 'DUMMY_PAYPAL_')) ||
-                    ($history->cryptomus_order_id && str_starts_with($history->cryptomus_order_id, 'DUMMY_CRYPTO_'))
+                    ($history->oxapay_order_id && str_starts_with($history->oxapay_order_id, 'DUMMY_OXAPAY_'))
                 ) {
                     Log::info('Auto-completing dummy payment in local environment', [
                         'history_id' => $history->id,
-                        'order_id' => $history->paypal_order_id ?? $history->cryptomus_order_id
+                        'order_id' => $history->paypal_order_id ?? $history->oxapay_order_id
                     ]);
                     $this->completePayment($history, 'DUMMY_' . time());
                     $history->refresh();
@@ -364,10 +365,10 @@ class MembershipController extends Controller
                 if ($result['success'] && isset($result['status']) && $result['status'] === 'COMPLETED') {
                     $this->completePayment($history, $result['data']['id'] ?? null);
                 }
-            } else if ($history->payment_method === 'cryptomus' && $history->cryptomus_order_id) {
-                $result = $this->cryptomusService->getPaymentStatus($history->cryptomus_order_id);
-                if ($result['success'] && isset($result['status']) && in_array($result['status'], ['paid', 'paid_over'])) {
-                    $this->completePayment($history, $result['data']['txid'] ?? null);
+            } else if ($history->payment_method === 'oxapay' && $history->oxapay_order_id) {
+                $result = $this->oxapayService->getPaymentStatus($history->oxapay_order_id);
+                if ($result['success'] && isset($result['status']) && strtolower($result['status']) === 'paid') {
+                    $this->completePayment($history, $result['data']['trackId'] ?? null);
                 }
             }
         } catch (\Exception $e) {
@@ -437,8 +438,8 @@ class MembershipController extends Controller
         try {
             if ($provider === 'paypal') {
                 return $this->handlePayPalWebhook($request);
-            } else if ($provider === 'cryptomus') {
-                return $this->handleCryptomusWebhook($request);
+            } else if ($provider === 'oxapay') {
+                return $this->handleOxapayWebhook($request);
             }
 
             return response()->json(['error' => 'Invalid provider'], 400);
@@ -473,27 +474,27 @@ class MembershipController extends Controller
     }
 
     /**
-     * Handle Cryptomus webhook
+     * Handle OxaPay webhook
      */
-    private function handleCryptomusWebhook($request)
+    private function handleOxapayWebhook($request)
     {
-        $signature = $request->header('sign');
         $data = $request->all();
+        $receivedHmac = $data['hmac'] ?? '';
 
-        // Verify signature
-        if (!$this->cryptomusService->verifyWebhook($data, $signature)) {
-            Log::warning('Invalid Cryptomus webhook signature');
+        // Verify HMAC-SHA512 signature
+        if (!$this->oxapayService->verifyWebhook($data, $receivedHmac)) {
+            Log::warning('Invalid OxaPay webhook signature');
             return response()->json(['error' => 'Invalid signature'], 403);
         }
 
-        $status = $data['status'] ?? '';
-        $orderId = $data['uuid'] ?? '';
+        $status  = $data['status'] ?? '';
+        $trackId = $data['trackId'] ?? '';
 
-        if (in_array($status, ['paid', 'paid_over'])) {
-            $history = MembershipHistory::where('cryptomus_order_id', $orderId)->first();
-            
+        if (strtolower($status) === 'paid') {
+            $history = MembershipHistory::where('oxapay_order_id', $trackId)->first();
+
             if ($history && $history->status === 'pending') {
-                $this->completePayment($history, $data['txid'] ?? null);
+                $this->completePayment($history, $trackId);
             }
         }
 

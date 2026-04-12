@@ -139,6 +139,7 @@ function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases
   const getPaymentMethodBadge = (method: string) => {
     const styles: Record<string, { bg: string; color: string; bdr: string }> = {
       paypal:    { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6', bdr: 'rgba(59,130,246,0.25)' },
+      oxapay:    { bg: 'rgba(168,85,247,0.1)', color: '#a855f7', bdr: 'rgba(168,85,247,0.25)' },
       cryptomus: { bg: 'rgba(168,85,247,0.1)', color: '#a855f7', bdr: 'rgba(168,85,247,0.25)' },
       coins:     { bg: 'rgba(251,191,36,0.12)', color: '#d97706', bdr: 'rgba(251,191,36,0.3)' },
     };

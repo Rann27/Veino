@@ -6,24 +6,25 @@ use App\Models\CoinPackage;
 use App\Models\CoinPurchase;
 use App\Models\User;
 use App\Services\PayPalService;
-use App\Services\CryptomusService;
+use App\Services\OxapayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class PaymentController extends Controller
 {
     protected $paypalService;
-    protected $cryptomusService;
+    protected $oxapayService;
 
     public function __construct(
         PayPalService $paypalService,
-        CryptomusService $cryptomusService
+        OxapayService $oxapayService
     ) {
         $this->paypalService = $paypalService;
-        $this->cryptomusService = $cryptomusService;
+        $this->oxapayService = $oxapayService;
     }
 
     /**
@@ -33,7 +34,7 @@ class PaymentController extends Controller
     {
         $request->validate([
             'package_id' => 'required|exists:coin_packages,id',
-            'payment_method' => 'required|in:paypal,cryptomus',
+            'payment_method' => 'required|in:paypal,oxapay',
         ]);
 
         $user = Auth::user();
@@ -42,8 +43,14 @@ class PaymentController extends Controller
 
         DB::beginTransaction();
         try {
+            // Cancel any stale pending purchases for this user+package to keep transaction history clean
+            CoinPurchase::where('user_id', $user->id)
+                ->where('coin_package_id', $package->id)
+                ->where('status', 'pending')
+                ->update(['status' => 'cancelled']);
+
             // Generate invoice number
-            $invoiceNumber = 'COIN-' . strtoupper(uniqid());
+            $invoiceNumber = 'COIN-' . strtoupper(Str::uuid()->toString());
 
             // Create purchase record
             $purchase = CoinPurchase::create([
@@ -157,12 +164,13 @@ class PaymentController extends Controller
                 $returnUrl,
                 $cancelUrl
             );
-        } elseif ($paymentMethod === 'cryptomus') {
-            return $this->cryptomusService->createInvoice(
+        } elseif ($paymentMethod === 'oxapay') {
+            return $this->oxapayService->createInvoice(
                 $package->price_usd,
                 $purchase->id,
-                'USD',
-                $returnUrl
+                $returnUrl,
+                route('payment.callback', ['provider' => 'oxapay', 'purchase' => $purchase->id]),
+                $description
             );
         }
 
@@ -226,8 +234,8 @@ class PaymentController extends Controller
         try {
             if ($provider === 'paypal') {
                 return $this->handlePayPalCallback($request, $purchase);
-            } elseif ($provider === 'cryptomus') {
-                return $this->handleCryptomusCallback($request, $purchase);
+            } elseif ($provider === 'oxapay') {
+                return $this->handleOxapayCallback($request, $purchase);
             }
 
             return redirect()->route('payment.status', ['purchase' => $purchase->id])
@@ -324,12 +332,67 @@ class PaymentController extends Controller
     }
 
     /**
-     * Handle Cryptomus callback
+     * Handle OxaPay callback (redirect after payment)
+     *
+     * OxaPay redirects the user back here after completing (or cancelling) payment.
+     * The actual confirmation comes via webhook; here we just show the status page
+     * and poll/refresh from there.
      */
-    protected function handleCryptomusCallback(Request $request, CoinPurchase $purchase)
+    protected function handleOxapayCallback(Request $request, CoinPurchase $purchase)
     {
-        // Cryptomus webhook handling will be similar
-        // For now, redirect to status page
+        // status param from OxaPay: "Paid", "Expired", "Error", etc.
+        $status = $request->get('status', '');
+
+        Log::info('OxaPay payment redirect', [
+            'purchase_id' => $purchase->id,
+            'status'      => $status,
+        ]);
+
+        if (strtolower($status) === 'paid') {
+            // Verify & credit via service (idempotent)
+            $result = $this->oxapayService->getPaymentStatus($purchase->transaction_id);
+
+            if ($result['success'] && strtolower($result['status'] ?? '') === 'paid') {
+                if ($purchase->status !== 'completed') {
+                    DB::beginTransaction();
+                    try {
+                        $purchase->update(['status' => 'completed']);
+                        $user = $purchase->user;
+                        $user->addCoins($purchase->coins_amount);
+
+                        $package = $purchase->coinPackage;
+                        \App\Models\Transaction::create([
+                            'user_id'        => $user->id,
+                            'type'           => 'coin_purchase',
+                            'amount'         => $purchase->price_usd,
+                            'coins_received' => $purchase->coins_amount,
+                            'payment_method' => 'oxapay',
+                            'status'         => 'completed',
+                            'coin_package_id'=> $purchase->coin_package_id,
+                            'description'    => ($package ? $package->name : 'Coin Purchase') . ' - ' . number_format($purchase->coins_amount) . ' coins (OxaPay)',
+                        ]);
+
+                        if ($package && $package->bonus_premium_days > 0) {
+                            $user->grantMembership('premium', $package->bonus_premium_days);
+                            session()->flash('premium_granted', [
+                                'days'         => $package->bonus_premium_days,
+                                'package_name' => $package->name,
+                                'source'       => 'coin_purchase',
+                            ]);
+                        }
+
+                        DB::commit();
+                    } catch (\Exception $e) {
+                        DB::rollBack();
+                        Log::error('OxaPay callback DB error', ['error' => $e->getMessage()]);
+                    }
+                }
+
+                return redirect()->route('payment.status', ['purchase' => $purchase->id])
+                    ->with('success', 'Payment completed successfully!');
+            }
+        }
+
         return redirect()->route('payment.status', ['purchase' => $purchase->id]);
     }
 

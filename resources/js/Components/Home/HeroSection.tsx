@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
 
 interface Genre {
   id: number;
@@ -189,25 +190,15 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                       boxShadow: `0 30px 70px ${currentTheme.foreground}20, 0 0 0 1px ${currentTheme.foreground}08`,
                     }}
                   >
-                    {series.cover_url ? (
-                      <img
-                        src={series.cover_url}
-                        alt={series.title}
-                        className="w-52 xl:w-60 2xl:w-64 aspect-[2/3] object-cover"
-                      />
-                    ) : (
-                      <div
-                        className="w-52 xl:w-60 2xl:w-64 aspect-[2/3] flex items-center justify-center"
-                        style={{ backgroundColor: `${currentTheme.foreground}10` }}
-                      >
-                        <svg className="w-16 h-16" style={{ color: `${currentTheme.foreground}30` }} fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                        </svg>
-                      </div>
-                    )}
+                    <CoverImage
+                      src={series.cover_url}
+                      alt={series.title}
+                      className="w-52 xl:w-60 2xl:w-64"
+                      hoverScale={false}
+                    />
                     {/* Reflection/shine effect */}
                     <div
-                      className="absolute inset-0 opacity-20"
+                      className="absolute inset-0 opacity-20 pointer-events-none"
                       style={{
                         background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%)',
                       }}

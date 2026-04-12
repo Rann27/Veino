@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
+import { ToastProvider } from '@/Contexts/ToastContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
-import HomeAdBanner from '@/Components/Home/HomeAdBanner';
+
 
 interface User {
   id: number;
@@ -57,6 +58,24 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Page transition progress bar
+  const [pageLoading, setPageLoading] = useState(false);
+
+  useEffect(() => {
+    const startLoading = () => setPageLoading(true);
+    const stopLoading  = () => setPageLoading(false);
+
+    const removeStart  = router.on('start',  startLoading);
+    const removeFinish = router.on('finish', stopLoading);
+    const removeError  = router.on('error',  stopLoading);
+
+    return () => {
+      removeStart();
+      removeFinish();
+      removeError();
+    };
+  }, []);
+
   // Lock body scroll when mobile sidebar is open
   useEffect(() => {
     if (showMobileSidebar) {
@@ -216,6 +235,11 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
     setShowMobileSidebar(!showMobileSidebar);
   };
 
+  // Active nav link helper
+  const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isNavActive = (path: string) =>
+    path === '/' ? currentPath === '/' : currentPath === path || currentPath.startsWith(path + '/');
+
   // Helper function to get user initials
   const getUserInitials = (name: string) => {
     return name
@@ -235,7 +259,10 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       }}
     >
       {title && <Head title={title} />}
-      
+
+      {/* Page transition progress bar */}
+      {pageLoading && <div className="page-progress-bar" />}
+
       {/* Navbar */}
       <nav 
         className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-[50px] border-b transition-all duration-500 ease-in-out ${
@@ -265,34 +292,34 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
             {/* Navigation Links */}
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-8">
-                <Link 
-                  href="/" 
+                <Link
+                  href="/"
                   prefetch
-                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
+                  className={`px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg${isNavActive('/') ? ' nav-active-dot' : ''}`}
                   style={{ color: currentTheme.foreground }}
                 >
                   Home
                 </Link>
-                <Link 
-                  href="/explore" 
+                <Link
+                  href="/explore"
                   prefetch
-                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
+                  className={`px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg${isNavActive('/explore') ? ' nav-active-dot' : ''}`}
                   style={{ color: currentTheme.foreground }}
                 >
                   Explore
                 </Link>
-                <Link 
-                  href="/epub-novels" 
+                <Link
+                  href="/epub-novels"
                   prefetch
-                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
+                  className={`px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg${isNavActive('/epub-novels') ? ' nav-active-dot' : ''}`}
                   style={{ color: currentTheme.foreground }}
                 >
                   Epub Novels
                 </Link>
-                <Link 
-                  href="/shop" 
+                <Link
+                  href="/shop"
                   prefetch
-                  className="px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg"
+                  className={`px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg${isNavActive('/shop') ? ' nav-active-dot' : ''}`}
                   style={{ color: currentTheme.foreground }}
                 >
                   Shop
@@ -341,14 +368,10 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   <div className="relative">
                     <button
                       onClick={toggleAccountMenu}
-                      className="flex items-center space-x-2 p-2 rounded-full transition-colors"
-                      style={{ 
+                      className={`flex items-center space-x-2 p-2 rounded-full transition-colors${auth.user.membership_tier === 'premium' ? ' premium-avatar-ring' : ''}`}
+                      style={{
                         color: currentTheme.foreground,
                         backgroundColor: showAccountMenu ? `${currentTheme.foreground}10` : 'transparent',
-                        ...(auth.user.membership_tier === 'premium' && {
-                          border: '2px solid #a78bfa',
-                          boxShadow: '0 0 15px rgba(167, 139, 250, 0.5)',
-                        })
                       }}
                     >
                     {auth.user.avatar_url ? (
@@ -356,11 +379,6 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         src={auth.user.avatar_url}
                         alt={auth.user.display_name}
                         className="w-8 h-8 rounded-full object-cover"
-                        style={{
-                          ...(auth.user.membership_tier === 'premium' && {
-                            border: '2px solid #a78bfa'
-                          })
-                        }}
                         onError={(e) => {
                           // Fallback to initials if image fails to load
                           const target = e.target as HTMLImageElement;
@@ -380,14 +398,11 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         }}
                       />
                     ) : (
-                      <div 
+                      <div
                         className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
                         style={{
                           backgroundColor: currentTheme.foreground,
                           color: currentTheme.background,
-                          ...(auth.user.membership_tier === 'premium' && {
-                            border: '2px solid #a78bfa'
-                          })
                         }}
                       >
                         {getUserInitials(auth.user.display_name)}
@@ -953,40 +968,17 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       {/* Spacer for fixed navbar */}
       <div className="h-16" />
 
-      {/* Top Ad Banner Grid (below navbar) */}
-      <HomeAdBanner position="top" />
-
       {/* Main Content */}
-      <main className={`transition-all duration-300 ${
-        showSearch 
-          ? (showNavbar ? 'pt-16' : 'pt-4') 
+      <main className={`transition-all duration-300 has-bottom-nav ${
+        showSearch
+          ? (showNavbar ? 'pt-16' : 'pt-4')
           : 'pt-0'
       }`}>
         {children}
       </main>
 
-      {/* Bottom Ad Banner Grid (above footer) */}
-      <HomeAdBanner position="bottom" />
-
-      {/* Clickadilla Video Ads Container (Fixed floating, only for non-premium) */}
-      {(!auth?.user || auth?.user?.membership_tier !== 'premium') && (
-        <div 
-          id="clickadilla-video-container" 
-          style={{
-            position: 'fixed',
-            bottom: '1rem',
-            right: '1rem',
-            width: '320px',
-            maxWidth: 'calc(100vw - 2rem)',
-            zIndex: 40,
-          }}
-        >
-          {/* Clickadilla will inject video here */}
-        </div>
-      )}
-
       {/* Footer */}
-      <footer 
+      <footer
         className="backdrop-blur-[50px] border-t py-6"
         style={{
           backgroundColor: `${currentTheme.background}80`,
@@ -1120,14 +1112,102 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
           </div>
         </div>
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav currentPath={currentPath} user={auth?.user} />
     </div>
+  );
+}
+
+// ─── Mobile Bottom Nav ────────────────────────────────────────────────────────
+
+function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { display_name: string; membership_tier?: string } | null }) {
+  const { currentTheme } = useTheme();
+
+  const isActive = (path: string) =>
+    path === '/' ? currentPath === '/' : currentPath === path || currentPath.startsWith(path + '/');
+
+  const navItems = [
+    {
+      path: '/',
+      label: 'Home',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      ),
+    },
+    {
+      path: '/explore',
+      label: 'Explore',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      ),
+    },
+    {
+      path: '/account/bookmarks',
+      label: 'Library',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      ),
+    },
+    {
+      path: '/account',
+      label: 'Account',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
+    {
+      path: '/shop',
+      label: 'Shop',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <nav
+      className="mobile-bottom-nav"
+      style={{
+        backgroundColor: `${currentTheme.background}e8`,
+        borderColor: `${currentTheme.foreground}18`,
+      }}
+    >
+      {navItems.map(item => {
+        const active = isActive(item.path);
+        return (
+          <Link
+            key={item.path}
+            href={item.path}
+            className={`mobile-nav-item${active ? ' active' : ''}`}
+            style={{ color: active ? '#a78bfa' : `${currentTheme.foreground}70` }}
+          >
+            <span className="mobile-nav-icon">{item.icon}</span>
+            <span className="mobile-nav-label">{item.label}</span>
+            {active && <span className="mobile-nav-dot" />}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
 export default function UserLayout({ children, title }: UserLayoutProps) {
   return (
     <ThemeProvider>
-      <UserLayoutContent children={children} title={title} />
+      <ToastProvider>
+        <UserLayoutContent children={children} title={title} />
+      </ToastProvider>
     </ThemeProvider>
   );
 }

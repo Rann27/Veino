@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
+import { getCardBg } from '@/constants/colors';
 
 interface NativeLanguage {
   id: number;
@@ -27,59 +29,34 @@ interface SimpleSeriesCardProps {
 export default function SimpleSeriesCard({ series, index = 0 }: SimpleSeriesCardProps) {
   const { currentTheme } = useTheme();
 
-  const getCardBg = () => {
-    switch (currentTheme.name) {
-      case 'Light': return 'rgba(248, 250, 252, 0.9)';
-      case 'Dark': return 'rgba(30, 41, 59, 0.6)';
-      case 'Sepia': return 'rgba(244, 236, 216, 0.7)';
-      case 'Cool Dark': return 'rgba(49, 50, 68, 0.6)';
-      case 'Frost': return 'rgba(205, 220, 237, 0.7)';
-      case 'Solarized': return 'rgba(253, 246, 227, 0.7)';
-      default: return 'rgba(30, 41, 59, 0.6)';
-    }
-  };
-
   return (
     <Link
       href={`/series/${series.slug}`}
       className={`group block animate-in fade-in-up stagger-${Math.min(index + 1, 8)}`}
     >
       <div
-        className="rounded-xl overflow-hidden h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+        className="series-card rounded-xl overflow-hidden h-full flex flex-col"
         style={{
-          backgroundColor: getCardBg(),
+          backgroundColor: getCardBg(currentTheme.name),
           border: `1px solid ${currentTheme.foreground}08`,
         }}
       >
-        {/* Cover Image */}
-        <div className="aspect-[2/3] overflow-hidden relative">
-          {series.cover_url ? (
-            <img
-              src={series.cover_url}
-              alt={series.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              loading="lazy"
-            />
-          ) : (
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{
-                backgroundColor: `${currentTheme.foreground}08`,
-                color: `${currentTheme.foreground}30`,
-              }}
-            >
-              <svg className="w-12 h-12" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-              </svg>
-            </div>
-          )}
+        {/* Cover Image with zoom */}
+        <div className="overflow-hidden">
+          <CoverImage
+            src={series.cover_url}
+            alt={series.title}
+            aspectClass="aspect-[2/3]"
+            containerClassName="cover-zoom"
+            hoverScale={false}
+          />
         </div>
 
         {/* Info */}
         <div className="p-3 flex flex-col flex-1">
           {/* Title */}
           <h3
-            className="font-semibold text-[13px] sm:text-sm line-clamp-2 mb-2 leading-snug"
+            className="series-card-title font-semibold text-[13px] sm:text-sm line-clamp-2 mb-2 leading-snug transition-colors duration-200"
             style={{ color: currentTheme.foreground }}
           >
             {series.title}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
 
 interface PurchasedItem {
     id: number;
@@ -95,13 +96,12 @@ function BookshelfContent({ seriesGroups }: Props) {
                                             borderColor: `${currentTheme.foreground}20`
                                         }}
                                     >
-                                        <img
+                                        <CoverImage
                                             src={group.series_cover}
                                             alt={group.series_title}
-                                            className="w-16 h-16 rounded-lg object-cover"
-                                            onError={(e) => {
-                                                e.currentTarget.src = '/images/default-cover.jpg';
-                                            }}
+                                            aspectClass=""
+                                            containerClassName="w-16 h-16 rounded-lg flex-shrink-0"
+                                            hoverScale={false}
                                         />
                                         <div className="flex-1">
                                             <h2 
@@ -136,13 +136,11 @@ function BookshelfContent({ seriesGroups }: Props) {
                                                 >
                                                     {/* Cover */}
                                                     <div className="w-16 flex-shrink-0">
-                                                        <img
+                                                        <CoverImage
                                                             src={item.cover_url}
                                                             alt={item.title}
-                                                            className="w-full rounded"
-                                                            onError={(e) => {
-                                                                e.currentTarget.src = '/images/default-cover.jpg';
-                                                            }}
+                                                            containerClassName="rounded"
+                                                            hoverScale={false}
                                                         />
                                                     </div>
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Series;
 use App\Models\Chapter;
 use App\Models\Blog;
+use App\Models\ReadingHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -86,6 +87,33 @@ class HomeController extends Controller
             }
         }
 
+        // Continue Reading — last 5 distinct series the user has read
+        $continueReading = [];
+        if (auth()->check()) {
+            $continueReading = ReadingHistory::where('user_id', auth()->id())
+                ->with(['series', 'chapter'])
+                ->orderByDesc('last_read_at')
+                ->get()
+                ->unique('series_id')
+                ->take(5)
+                ->map(function ($history) {
+                    if (!$history->series || !$history->chapter) return null;
+                    return [
+                        'series_id'      => $history->series->id,
+                        'series_title'   => $history->series->title,
+                        'series_slug'    => $history->series->slug,
+                        'cover_url'      => $history->series->cover_url ?? null,
+                        'chapter_link'   => $history->chapter->chapter_link,
+                        'chapter_number' => $history->chapter->chapter_number,
+                        'chapter_title'  => $history->chapter->title,
+                        'last_read_at'   => $history->last_read_at->toISOString(),
+                    ];
+                })
+                ->filter()
+                ->values()
+                ->toArray();
+        }
+
         // Get latest blogs for announcements
         $blogs = Blog::where('show_in_homepage', true)->latest()->take(3)->get();
 
@@ -105,6 +133,7 @@ class HomeController extends Controller
             'showPremiumCongrats' => $showPremiumCongrats,
             'blogs' => $blogs,
             'banners' => $banners,
+            'continueReading' => $continueReading,
         ]);
     }
 

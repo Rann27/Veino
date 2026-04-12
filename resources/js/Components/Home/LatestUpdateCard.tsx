@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
+import CoverImage from '@/Components/CoverImage';
+import { getCardBg } from '@/constants/colors';
 
 interface Chapter {
   id: number;
@@ -40,18 +42,6 @@ interface LatestUpdateCardProps {
  */
 export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCardProps) {
   const { currentTheme } = useTheme();
-
-  const getCardBg = () => {
-    switch (currentTheme.name) {
-      case 'Light': return 'rgba(248, 250, 252, 0.9)';
-      case 'Dark': return 'rgba(30, 41, 59, 0.6)';
-      case 'Sepia': return 'rgba(244, 236, 216, 0.7)';
-      case 'Cool Dark': return 'rgba(49, 50, 68, 0.6)';
-      case 'Frost': return 'rgba(205, 220, 237, 0.7)';
-      case 'Solarized': return 'rgba(253, 246, 227, 0.7)';
-      default: return 'rgba(30, 41, 59, 0.6)';
-    }
-  };
 
   const formatChapterDisplay = (chapter: Chapter): string => {
     if (chapter.volume) {
@@ -157,34 +147,19 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
       <div
         className="rounded-xl overflow-hidden flex h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
         style={{
-          backgroundColor: getCardBg(),
+          backgroundColor: getCardBg(currentTheme.name),
           border: `1px solid ${currentTheme.foreground}08`,
         }}
       >
         {/* Cover - Left */}
-        <Link href={`/series/${series.slug}`} className="flex-shrink-0 w-[110px] sm:w-[120px]">
-          <div className="h-full overflow-hidden">
-            {series.cover_url ? (
-              <img
-                src={series.cover_url}
-                alt={series.title}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                loading="lazy"
-              />
-            ) : (
-              <div
-                className="w-full h-full flex items-center justify-center min-h-[180px]"
-                style={{
-                  backgroundColor: `${currentTheme.foreground}08`,
-                  color: `${currentTheme.foreground}30`,
-                }}
-              >
-                <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" />
-                </svg>
-              </div>
-            )}
-          </div>
+        <Link href={`/series/${series.slug}`} className="flex-shrink-0 w-[110px] sm:w-[120px] self-stretch">
+          <CoverImage
+            src={series.cover_url}
+            alt={series.title}
+            aspectClass=""
+            containerClassName="h-full min-h-[180px] rounded-none"
+            hoverScale={true}
+          />
         </Link>
 
         {/* Info - Right */}

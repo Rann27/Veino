@@ -24,7 +24,7 @@ class MembershipHistory extends Model
         'payment_method',
         'status',
         'paypal_order_id',
-        'cryptomus_order_id',
+        'oxapay_order_id',
         'gateway_response',
         'starts_at',
         'expires_at',

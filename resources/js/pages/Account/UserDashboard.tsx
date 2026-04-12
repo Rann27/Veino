@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import { PremiumDiamond } from '@/Components/PremiumDiamond';
+import { SUCCESS_COLOR, WARNING_COLOR, ERROR_COLOR } from '@/constants/colors';
 
 interface User {
     id: number;
@@ -144,8 +145,8 @@ function DashboardContent({ user, membershipStatus, coinBalance, transactions = 
                 style={{ backgroundColor: currentTheme.background }}
             >
                 <div className="max-w-7xl mx-auto">
-                    <h1 
-                        className="text-3xl font-bold mb-6"
+                    <h1
+                        className="text-3xl font-bold mb-6 page-title"
                         style={{ color: currentTheme.foreground }}
                     >
                         Dashboard
@@ -219,20 +220,55 @@ function DashboardContent({ user, membershipStatus, coinBalance, transactions = 
                                 
                                 {/* Membership Badge */}
                                 {membershipStatus.is_premium ? (
-                                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg"
-                                        style={{
-                                            background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #e879f9 100%)`,
-                                            color: '#fff'
-                                        }}
-                                    >
-                                        <span className="font-bold">
-                                            ⭐ Premium {membershipStatus.tier}
-                                        </span>
-                                        {membershipStatus.expires_at && (
-                                            <span className="text-sm opacity-90">
-                                                • Expires: {new Date(membershipStatus.expires_at).toLocaleDateString()}
+                                    <div className="w-full">
+                                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg mb-3"
+                                            style={{
+                                                background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #e879f9 100%)`,
+                                                color: '#fff'
+                                            }}
+                                        >
+                                            <span className="font-bold">
+                                                ⭐ Premium {membershipStatus.tier}
                                             </span>
-                                        )}
+                                            {membershipStatus.expires_at && (
+                                                <span className="text-sm opacity-90">
+                                                    • Expires: {new Date(membershipStatus.expires_at).toLocaleDateString()}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Expiry Progress Bar */}
+                                        {membershipStatus.expires_at && (() => {
+                                            const daysLeft = Math.max(0, Math.ceil(
+                                                (new Date(membershipStatus.expires_at).getTime() - Date.now()) / 86400000
+                                            ));
+                                            const barPct = Math.min(100, Math.round((daysLeft / 30) * 100));
+                                            const barColor = daysLeft > 14
+                                                ? SUCCESS_COLOR
+                                                : daysLeft > 7
+                                                ? WARNING_COLOR
+                                                : ERROR_COLOR;
+                                            return (
+                                                <div className="w-full max-w-xs">
+                                                    <div className="flex justify-between text-xs mb-1"
+                                                        style={{ color: `${currentTheme.foreground}60` }}
+                                                    >
+                                                        <span>Membership expiry</span>
+                                                        <span style={{ color: barColor, fontWeight: 600 }}>
+                                                            {daysLeft}d left
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 rounded-full"
+                                                        style={{ backgroundColor: `${currentTheme.foreground}12` }}
+                                                    >
+                                                        <div
+                                                            className="h-1.5 rounded-full transition-all duration-700"
+                                                            style={{ width: `${barPct}%`, backgroundColor: barColor }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 ) : (
                                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg"

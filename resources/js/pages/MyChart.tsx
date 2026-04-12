@@ -3,6 +3,9 @@ import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
+import CoverImage from '@/Components/CoverImage';
+import EmptyState from '@/Components/EmptyState';
 
 interface ChartItem {
     chart_item_id: number;
@@ -22,7 +25,8 @@ interface Props {
 
 function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
     const { currentTheme } = useTheme();
-    
+    const { toast, confirm } = useToast();
+
     // Voucher state
     const [voucherCode, setVoucherCode] = useState('');
     const [voucherData, setVoucherData] = useState<any>(null);
@@ -30,22 +34,22 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
     const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
 
     const removeFromChart = (chartItemId: number) => {
-        if (confirm('Remove this item from chart?')) {
+        confirm('Remove this item from your chart?', () => {
             router.delete(route('chart.remove'), {
                 data: { chart_item_id: chartItemId },
                 preserveScroll: true
             });
-        }
+        });
     };
 
     const handleApplyVoucher = async () => {
         if (!voucherCode.trim()) {
-            alert('⚠️ Please enter a voucher code');
+            toast.warning('Please enter a voucher code.');
             return;
         }
 
         if (chartItems.length === 0) {
-            alert('⚠️ Your chart is empty. Please add items before applying a voucher.');
+            toast.warning('Your chart is empty. Please add items before applying a voucher.');
             return;
         }
 
@@ -74,19 +78,17 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
                 setVoucherData(data.data);
                 setVoucherError('');
                 onVoucherChange?.(data.data, voucherCode.toUpperCase());
-                alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.data.discount_amount.toLocaleString()}`);
+                toast.success(`Saved ¢${data.data.discount_amount.toLocaleString()}!`, `Voucher "${voucherCode.toUpperCase()}" Applied`);
             } else {
-                // Backend returned error (400, 404, etc.)
                 setVoucherError(data.message || 'Invalid voucher');
                 setVoucherData(null);
-                alert(`❌ ${data.message || 'Invalid or expired voucher code'}`);
+                toast.error(data.message || 'Invalid or expired voucher code.', 'Invalid Voucher');
             }
         } catch (error) {
-            // Network error or JSON parse error
             console.error('Voucher validation error:', error);
             setVoucherError('Failed to validate voucher');
             setVoucherData(null);
-            alert('❌ Failed to validate voucher. Please check your connection and try again.');
+            toast.error('Failed to validate voucher. Please check your connection and try again.');
         } finally {
             setIsApplyingVoucher(false);
         }
@@ -107,7 +109,7 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                         {/* Header */}
                         <h1 
-                            className="text-3xl md:text-4xl font-bold mb-8"
+                            className="text-3xl md:text-4xl font-bold mb-8 page-title"
                             style={{ 
                                 fontFamily: 'Poppins, sans-serif',
                                 color: currentTheme.foreground
@@ -126,13 +128,11 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
                                     >
                                         {/* Cover */}
                                         <div className="w-20 sm:w-24 flex-shrink-0">
-                                            <img
+                                            <CoverImage
                                                 src={item.cover_url}
                                                 alt={item.title}
-                                                className="w-full rounded-lg"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = '/images/default-cover.jpg';
-                                                }}
+                                                containerClassName="rounded-lg"
+                                                hoverScale={false}
                                             />
                                         </div>
 
@@ -277,49 +277,16 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center py-16">
-                                <svg 
-                                    className="w-24 h-24 mx-auto mb-4 opacity-30"
-                                    style={{ color: currentTheme.foreground }}
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                </svg>
-
-                                <h2 
-                                    className="text-2xl font-bold mb-2"
-                                    style={{ 
-                                        fontFamily: 'Poppins, sans-serif',
-                                        color: currentTheme.foreground
-                                    }}
-                                >
-                                    Your chart is empty
-                                </h2>
-
-                                <p 
-                                    className="text-base opacity-70 mb-6"
-                                    style={{ 
-                                        fontFamily: 'Poppins, sans-serif',
-                                        color: currentTheme.foreground
-                                    }}
-                                >
-                                    Browse our collection and add some items!
-                                </p>
-
-                                <Link
-                                    href={route('epub-novels.index')}
-                                    className="inline-block px-6 py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
-                                    style={{
-                                        backgroundColor: '#f59e0b',
-                                        color: 'white',
-                                        fontFamily: 'Poppins, sans-serif'
-                                    }}
-                                >
-                                    Browse Epub Novels
-                                </Link>
-                            </div>
+                            <EmptyState
+                                icon={
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                    </svg>
+                                }
+                                title="Your chart is empty"
+                                description="Browse our collection and add some items!"
+                                action={{ label: 'Browse Epub Novels', href: route('epub-novels.index'), variant: 'accent' }}
+                            />
                         )}
                     </div>
                 </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
 import CommentSectionSkeleton from '@/Components/CommentSectionSkeleton';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import InTextAd from '@/Components/Ads/InTextAd';
@@ -64,6 +65,7 @@ interface Props {
     chapter: Chapter;
     canAccess: boolean;
     isPremiumMember: boolean;
+    hasCoinPurchase: boolean;
     prevChapter: NavigationChapter | null;
     nextChapter: NavigationChapter | null;
     allChapters: ChapterOption[];
@@ -71,6 +73,7 @@ interface Props {
         user?: {
             id: number;
             display_name: string;
+            coins: number;
         };
     };
 }
@@ -80,18 +83,21 @@ function ChapterShowContent({
     chapter, 
     canAccess,
     isPremiumMember,
+    hasCoinPurchase,
     prevChapter, 
     nextChapter, 
     allChapters,
     auth
 }: Props) {
     const { currentTheme, readerSettings } = useTheme();
+    const { confirm } = useToast();
     const [showNavbar, setShowNavbar] = useState(true);
     const [showChapterList, setShowChapterList] = useState(false);
     const [showReaderSettings, setShowReaderSettings] = useState(false);
     const readerSettingsButtonRef = useRef<HTMLButtonElement>(null);
     const hideDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [inTextAds, setInTextAds] = useState<Array<{id: number; caption: string; link_url: string}>>([]);
+    const [readingProgress, setReadingProgress] = useState(0);
 
     useEffect(() => {
         let lastY = 0;
@@ -136,9 +142,22 @@ function ChapterShowContent({
         };
     }, []);
 
-    // Fetch in-text ads for non-premium users (including guests)
+    // Reading progress bar
     useEffect(() => {
-        if (!isPremiumMember) {
+        const updateProgress = () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            setReadingProgress(docHeight > 0 ? Math.round((scrollTop / docHeight) * 100) : 0);
+        };
+        window.addEventListener('scroll', updateProgress, { passive: true });
+        return () => window.removeEventListener('scroll', updateProgress);
+    }, []);
+
+    // Fetch in-text ads — skip for premium members and coin-purchased premium chapters
+    const isAdFree = isPremiumMember || (hasCoinPurchase && chapter.is_premium);
+
+    useEffect(() => {
+        if (!isAdFree) {
             axios.get('/api/ads/in-text/random', { params: { count: 5 } })
                 .then(response => {
                     if (response.data && response.data.ads) {
@@ -154,7 +173,7 @@ function ChapterShowContent({
                     // No ads available
                 });
         }
-    }, [isPremiumMember]);
+    }, [isAdFree]);
 
     // Handle in-text ad clicks
     useEffect(() => {
@@ -181,7 +200,7 @@ function ChapterShowContent({
 
     // Helper function to inject in-text ads every 40 lines
     const injectInTextAds = (content: string): string => {
-        if (isPremiumMember || inTextAds.length === 0) {
+        if (isAdFree || inTextAds.length === 0) {
             return content;
         }
 
@@ -221,138 +240,136 @@ function ChapterShowContent({
     };
 
     if (!canAccess && chapter.is_premium) {
+        const coinPrice = chapter.coin_price ?? 0;
+        const userCoins = auth?.user?.coins ?? 0;
+        const hasEnoughCoins = userCoins >= coinPrice;
+
         return (
             <div 
-                className="min-h-screen pt-20 relative overflow-hidden"
+                className="h-[calc(100vh-4rem)] overflow-hidden relative flex items-center justify-center"
                 style={{ backgroundColor: currentTheme.background }}
             >
-                    {/* Premium Background Effect */}
-                    <div className="absolute inset-0 opacity-10">
-                        <div 
-                            className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl"
-                            style={{ backgroundColor: SHINY_PURPLE }}
-                        />
-                        <div 
-                            className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl"
-                            style={{ backgroundColor: '#e879f9' }}
-                        />
+                {/* Premium Background Effect */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none">
+                    <div 
+                        className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl"
+                        style={{ backgroundColor: SHINY_PURPLE }}
+                    />
+                    <div 
+                        className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl"
+                        style={{ backgroundColor: '#e879f9' }}
+                    />
+                </div>
+
+                <div className="relative z-10 max-w-sm w-full mx-auto px-6 py-12 text-center">
+                    {/* Diamond Icon */}
+                    <div className="mb-6 flex justify-center">
+                        <svg className="w-20 h-20 animate-pulse" viewBox="0 0 24 24" fill="none">
+                            <defs>
+                                <linearGradient id="paywallDiamond" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style={{ stopColor: '#c084fc' }} />
+                                    <stop offset="50%" style={{ stopColor: '#e879f9' }} />
+                                    <stop offset="100%" style={{ stopColor: '#a78bfa' }} />
+                                </linearGradient>
+                                <radialGradient id="diamondGlow" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.8 }} />
+                                    <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 0 }} />
+                                </radialGradient>
+                            </defs>
+                            <circle cx="12" cy="12" r="10" fill="url(#diamondGlow)" opacity="0.3" />
+                            <path 
+                                d="M12 2L3 9L12 22L21 9L12 2Z" 
+                                fill="url(#paywallDiamond)"
+                                stroke="#fff"
+                                strokeWidth="0.5"
+                            />
+                            <path 
+                                d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" 
+                                stroke="#fff" 
+                                strokeWidth="0.3" 
+                                opacity="0.6"
+                            />
+                        </svg>
                     </div>
-                    
-                    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
-                        <div 
-                            className="rounded-2xl shadow-2xl border-2 p-10 text-center backdrop-blur-sm"
+
+                    {/* Title */}
+                    <h1 
+                        className="text-3xl font-bold mb-3"
+                        style={{ 
+                            color: SHINY_PURPLE,
+                            textShadow: `0 0 20px ${SHINY_PURPLE}50`
+                        }}
+                    >
+                        Premium Chapter
+                    </h1>
+
+                    {/* Subtitle */}
+                    <p 
+                        className="text-base mb-8 leading-relaxed"
+                        style={{ color: `${currentTheme.foreground}80` }}
+                    >
+                        This chapter is only available for Premium Members, or you can buy it with coins
+                    </p>
+
+                    {/* Buttons */}
+                    <div className="flex flex-col gap-3">
+                        {/* Membership button */}
+                        <Link
+                            href="/shop?tab=membership"
+                            className="w-full py-3 px-6 rounded-xl font-semibold text-base text-white transition-all hover:scale-105 hover:opacity-90"
                             style={{
-                                backgroundColor: `${currentTheme.background}F5`,
-                                borderColor: SHINY_PURPLE,
-                                boxShadow: `0 0 40px ${SHINY_PURPLE}30`
+                                background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #e879f9 100%)`,
+                                boxShadow: `0 4px 20px ${SHINY_PURPLE}40`,
                             }}
                         >
-                            {/* Premium Diamond Icon */}
-                            <div className="mb-6 flex justify-center">
-                                <svg className="w-24 h-24 animate-pulse" viewBox="0 0 24 24" fill="none">
-                                    <defs>
-                                        <linearGradient id="paywallDiamond" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" style={{ stopColor: '#c084fc' }} />
-                                            <stop offset="50%" style={{ stopColor: '#e879f9' }} />
-                                            <stop offset="100%" style={{ stopColor: '#a78bfa' }} />
-                                        </linearGradient>
-                                        <radialGradient id="diamondGlow" cx="50%" cy="50%" r="50%">
-                                            <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.8 }} />
-                                            <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 0 }} />
-                                        </radialGradient>
-                                    </defs>
-                                    <circle cx="12" cy="12" r="10" fill="url(#diamondGlow)" opacity="0.3" />
-                                    <path 
-                                        d="M12 2L3 9L12 22L21 9L12 2Z" 
-                                        fill="url(#paywallDiamond)"
-                                        stroke="#fff"
-                                        strokeWidth="0.5"
-                                    />
-                                    <path 
-                                        d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" 
-                                        stroke="#fff" 
-                                        strokeWidth="0.3" 
-                                        opacity="0.6"
-                                    />
-                                </svg>
-                            </div>
-                            
-                            <h1 
-                                className="text-3xl font-bold mb-3"
-                                style={{ 
-                                    color: SHINY_PURPLE,
-                                    textShadow: `0 0 20px ${SHINY_PURPLE}50`
+                            Get Membership
+                        </Link>
+
+                        {/* Coin button */}
+                        {!auth?.user ? (
+                            <Link
+                                href="/login"
+                                className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90"
+                                style={{ backgroundColor: '#eab308', color: '#000' }}
+                            >
+                                Login to Buy with ¢{coinPrice}
+                            </Link>
+                        ) : hasEnoughCoins ? (
+                            <button
+                                onClick={() => {
+                                    confirm(
+                                        `Unlock this chapter for ¢${coinPrice}?`,
+                                        () => router.post(route('chapters.purchase', [series.slug, chapter.chapter_link])),
+                                        'Buy Chapter'
+                                    );
                                 }}
+                                className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90"
+                                style={{ backgroundColor: '#eab308', color: '#000' }}
                             >
-                                Premium Chapter
-                            </h1>
-                            
-                            <p 
-                                className="text-lg mb-6"
-                                style={{ color: `${currentTheme.foreground}90` }}
+                                Buy with ¢{coinPrice}
+                            </button>
+                        ) : (
+                            <Link
+                                href="/shop?tab=coins"
+                                className="w-full py-3 px-6 rounded-xl font-semibold text-base text-center transition-all hover:scale-105 hover:opacity-90"
+                                style={{ backgroundColor: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.4)' }}
                             >
-                                This chapter is available exclusively for Premium Members
-                            </p>
-                            
-                            <div 
-                                className="mb-8 p-6 rounded-xl border"
-                                style={{
-                                    backgroundColor: `${SHINY_PURPLE}10`,
-                                    borderColor: `${SHINY_PURPLE}30`
-                                }}
-                            >
-                                <h3 
-                                    className="font-semibold text-lg mb-3"
-                                    style={{ color: currentTheme.foreground }}
-                                >
-                                    Unlock with Premium Membership
-                                </h3>
-                                <ul className="text-sm space-y-2 text-left max-w-sm mx-auto">
-                                    {[
-                                        'Unlimited access to all premium chapters',
-                                        'Ad-free reading experience',
-                                        'Early access to new chapters',
-                                        'Exclusive member perks'
-                                    ].map((benefit, index) => (
-                                        <li 
-                                            key={index}
-                                            className="flex items-start gap-2"
-                                            style={{ color: `${currentTheme.foreground}80` }}
-                                        >
-                                            <svg className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill={SHINY_PURPLE}>
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                            {benefit}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <Link
-                                    href="/shop?tab=membership"
-                                    className="inline-block px-8 py-4 font-bold text-lg rounded-xl transition-all hover:scale-105 hover:shadow-xl"
-                                    style={{
-                                        background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #e879f9 100%)`,
-                                        color: '#ffffff',
-                                        boxShadow: `0 4px 20px ${SHINY_PURPLE}50`
-                                    }}
-                                >
-                                    Get Premium Membership
-                                </Link>
-                                
-                                <div className="text-sm">
-                                    <Link 
-                                        href={`/series/${series.slug}`}
-                                        className="transition-colors hover:opacity-70"
-                                        style={{ color: currentTheme.foreground }}
-                                    >
-                                        ← Back to Series
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
+                                ¢{coinPrice} — Top Up Coins
+                            </Link>
+                        )}
                     </div>
+
+                    {/* Back link */}
+                    <div className="mt-8 text-sm">
+                        <Link 
+                            href={`/series/${series.slug}`}
+                            className="transition-colors hover:opacity-60"
+                            style={{ color: `${currentTheme.foreground}60` }}
+                        >
+                            ← Back to Series
+                        </Link>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -370,8 +387,14 @@ function ChapterShowContent({
                 <meta property="og:site_name" content="VeiNovel" />
             </Head>
             
+            {/* Reading Progress Bar */}
+            <div
+                className="reading-progress-bar"
+                style={{ width: `${readingProgress}%` }}
+            />
+
             {/* Sticky Navigation Bar */}
-            <div 
+            <div
                 className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500 ease-in-out ${
                     showNavbar ? 'translate-y-0' : '-translate-y-full'
                 }`}
@@ -794,8 +817,8 @@ function ChapterShowContent({
                 />
             </Suspense>
 
-            {/* Self-hosted Interstitial Ad (Premium Membership Promotion) - Every 3 chapters */}
-            <InterstitialAd chapterId={chapter.id} />
+            {/* Self-hosted Interstitial Ad — hidden for ad-free users */}
+            {!isAdFree && <InterstitialAd chapterId={chapter.id} />}
 
             {/* Clickadilla ads are handled by smart script in app.blade.php */}
         </>
@@ -803,6 +826,7 @@ function ChapterShowContent({
 }
 
 export default function ChapterShow(props: Props) {
+    const isPaywall = !props.canAccess && props.chapter.is_premium;
     return (
         <UserLayout>
             <ChapterShowContent {...props} />

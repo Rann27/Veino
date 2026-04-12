@@ -26,8 +26,7 @@ interface PaymentSettings {
   paypal_client_id: string | null;
   paypal_secret: string | null;
   paypal_mode: string;
-  cryptomus_api_key: string | null;
-  cryptomus_merchant_id: string | null;
+  oxapay_merchant_key: string | null;
 }
 
 interface PaymentIndexProps {
@@ -462,81 +461,68 @@ function PaymentContent({ membershipPackages, coinPackages, paymentSettings }: P
         </div>
       </div>
 
-      {/* Cryptomus Settings Section */}
+      {/* OxaPay Settings Section */}
       <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: '12px', padding: '24px' }}>
-        <h2 style={{ color: fg, fontSize: '20px', fontWeight: 600, marginBottom: '24px' }}>Cryptomus Configuration</h2>
-        
+        <h2 style={{ color: fg, fontSize: '20px', fontWeight: 600, marginBottom: '24px' }}>OxaPay Configuration (Crypto)</h2>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', padding: '4px 12px',
               borderRadius: '9999px', fontSize: '13px', fontWeight: 500,
-              background: paymentSettings.cryptomus_api_key ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
-              color: paymentSettings.cryptomus_api_key ? '#22c55e' : '#ef4444',
-              border: `1px solid ${paymentSettings.cryptomus_api_key ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+              background: paymentSettings.oxapay_merchant_key ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
+              color: paymentSettings.oxapay_merchant_key ? '#22c55e' : '#ef4444',
+              border: `1px solid ${paymentSettings.oxapay_merchant_key ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
             }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', marginRight: '8px', background: paymentSettings.cryptomus_api_key ? '#22c55e' : '#ef4444' }}></span>
-              {paymentSettings.cryptomus_api_key ? 'Cryptomus Configured' : 'Cryptomus Not Configured'}
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', marginRight: '8px', background: paymentSettings.oxapay_merchant_key ? '#22c55e' : '#ef4444' }}></span>
+              {paymentSettings.oxapay_merchant_key ? 'OxaPay Configured' : 'OxaPay Not Configured'}
+            </span>
+            <span style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '6px', background: 'rgba(251,191,36,0.12)', color: '#d97706', border: '1px solid rgba(251,191,36,0.3)' }}>
+              Coming Soon (Disabled)
             </span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* Cryptomus API Key */}
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: fg, marginBottom: '8px' }}>Cryptomus API Key</label>
-              <div style={{ position: 'relative' }}>
-                <input type="text" value={paymentSettings.cryptomus_api_key || 'Not configured'} readOnly style={{ ...inputStyle, paddingRight: '40px', fontFamily: 'monospace' }} />
-                <div style={{ position: 'absolute', inset: '0 12px 0 auto', display: 'flex', alignItems: 'center' }}>
-                  <svg style={{ width: '16px', height: '16px', color: muted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: fg, marginBottom: '8px' }}>OxaPay Merchant Key</label>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                value={paymentSettings.oxapay_merchant_key ? `${'•'.repeat(12)}${paymentSettings.oxapay_merchant_key.slice(-4)}` : 'Not configured'}
+                readOnly
+                style={{ ...inputStyle, paddingRight: '40px', fontFamily: 'monospace' }}
+              />
+              <div style={{ position: 'absolute', inset: '0 12px 0 auto', display: 'flex', alignItems: 'center' }}>
+                <svg style={{ width: '16px', height: '16px', color: muted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
               </div>
-              {paymentSettings.cryptomus_api_key && (
-                <p style={{ marginTop: '4px', fontSize: '11px', color: muted }}>
-                  Length: {paymentSettings.cryptomus_api_key.length} characters  Configured via .env file
-                </p>
-              )}
             </div>
-
-            {/* Cryptomus Merchant ID */}
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: fg, marginBottom: '8px' }}>Cryptomus Merchant ID</label>
-              <div style={{ position: 'relative' }}>
-                <input type="text" value={paymentSettings.cryptomus_merchant_id || 'Not configured'} readOnly style={{ ...inputStyle, paddingRight: '40px', fontFamily: 'monospace' }} />
-                <div style={{ position: 'absolute', inset: '0 12px 0 auto', display: 'flex', alignItems: 'center' }}>
-                  <svg style={{ width: '16px', height: '16px', color: muted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                  </svg>
-                </div>
-              </div>
-              {paymentSettings.cryptomus_merchant_id && (
-                <p style={{ marginTop: '4px', fontSize: '11px', color: muted }}>
-                  Merchant ID  Configured via .env file (secure)
-                </p>
-              )}
-            </div>
+            {paymentSettings.oxapay_merchant_key && (
+              <p style={{ marginTop: '4px', fontSize: '11px', color: muted }}>
+                Configured via .env file (secure)
+              </p>
+            )}
           </div>
 
-          {/* Cryptomus Configuration Instructions */}
+          {/* OxaPay Configuration Instructions */}
           <div style={{ background: light ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.04)', border: '1px solid rgba(59,130,246,0.25)', borderRadius: '10px', padding: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
               <svg style={{ width: '20px', height: '20px', color: '#3b82f6', marginTop: '2px', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
               <div>
-                <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#3b82f6', marginBottom: '6px' }}>Secure Cryptomus Configuration (.env)</h3>
+                <h3 style={{ fontSize: '13px', fontWeight: 600, color: '#3b82f6', marginBottom: '6px' }}>Secure OxaPay Configuration (.env)</h3>
                 <div style={{ fontSize: '13px', color: fg }}>
-                  <p style={{ marginBottom: '8px', color: muted }}>Cryptomus credentials are securely configured via .env file for maximum security.</p>
-                  <p style={{ marginBottom: '4px', fontWeight: 600 }}>To update Cryptomus settings:</p>
+                  <p style={{ marginBottom: '8px', color: muted }}>Register at oxapay.com, then add your Merchant API Key to .env to activate crypto payments.</p>
+                  <p style={{ marginBottom: '4px', fontWeight: 600 }}>To configure OxaPay:</p>
                   <ol style={{ listStyleType: 'decimal', paddingLeft: '18px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: muted }}>
+                    <li>Sign up at <strong>oxapay.com</strong> and get your Merchant API Key</li>
                     <li>Edit the <code style={{ background: 'rgba(59,130,246,0.15)', padding: '0 4px', borderRadius: '4px', fontFamily: 'monospace' }}>.env</code> file on your server</li>
-                    <li>Update: <code style={{ background: 'rgba(59,130,246,0.15)', padding: '0 4px', borderRadius: '4px', fontFamily: 'monospace' }}>CRYPTOMUS_API_KEY=your_api_key</code></li>
-                    <li>Update: <code style={{ background: 'rgba(59,130,246,0.15)', padding: '0 4px', borderRadius: '4px', fontFamily: 'monospace' }}>CRYPTOMUS_MERCHANT_ID=your_merchant_id</code></li>
-                    <li>Restart your application server to apply changes</li>
+                    <li>Add: <code style={{ background: 'rgba(59,130,246,0.15)', padding: '0 4px', borderRadius: '4px', fontFamily: 'monospace' }}>OXAPAY_MERCHANT_KEY=your_key_here</code></li>
+                    <li>Restart the application to apply changes</li>
                   </ol>
                   <p style={{ marginTop: '8px', fontSize: '12px', color: '#3b82f6', background: 'rgba(59,130,246,0.1)', padding: '8px', borderRadius: '6px' }}>
-                     <strong>Security Benefits:</strong> Credentials are not stored in database backups, version control, or accessible via web interface.
+                    <strong>Note:</strong> The OxaPay option is shown as "Coming Soon" to users until fully enabled.
                   </p>
                 </div>
               </div>

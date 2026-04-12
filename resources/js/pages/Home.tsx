@@ -7,6 +7,8 @@ import BannerSlider from '@/Components/Home/BannerSlider';
 import HeroSection from '@/Components/Home/HeroSection';
 import SimpleSeriesCard from '@/Components/Home/SimpleSeriesCard';
 import LatestUpdatesSection from '@/Components/Home/LatestUpdatesSection';
+import CoverImage from '@/Components/CoverImage';
+import { getCardBg } from '@/constants/colors';
 
 interface Genre {
   id: number;
@@ -60,6 +62,17 @@ interface Blog {
   created_at: string;
 }
 
+interface ContinueReadingEntry {
+  series_id: number;
+  series_title: string;
+  series_slug: string;
+  cover_url?: string | null;
+  chapter_link: string;
+  chapter_number: number;
+  chapter_title: string;
+  last_read_at: string;
+}
+
 interface HomeProps {
   heroSeries: Series[];
   featuredSeries: Series[];
@@ -68,6 +81,7 @@ interface HomeProps {
   blogs: Blog[];
   banners: Banner[];
   showPremiumCongrats?: boolean;
+  continueReading?: ContinueReadingEntry[];
 }
 
 function HomeContent({
@@ -78,9 +92,18 @@ function HomeContent({
   blogs,
   banners,
   showPremiumCongrats,
+  continueReading = [],
 }: HomeProps) {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const { currentTheme } = useTheme();
+
+  const timeAgo = (iso: string) => {
+    const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+    if (diff < 60) return `${diff}s ago`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -259,6 +282,65 @@ function HomeContent({
         </section>
       )}
 
+      {/* ─── Continue Reading Widget (logged-in users only) ─── */}
+      {continueReading.length > 0 && (
+        <section className="py-6 sm:py-8" style={{ backgroundColor: currentTheme.background }}>
+          <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-1 h-6 rounded-full" style={{ backgroundColor: SHINY_PURPLE }} />
+              <h2 className="text-xl sm:text-2xl font-bold section-title" style={{ color: currentTheme.foreground }}>
+                Continue Reading
+              </h2>
+            </div>
+
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+              {continueReading.map((entry, i) => (
+                <Link
+                  key={entry.series_id}
+                  href={`/series/${entry.series_slug}/chapter/${entry.chapter_link}`}
+                  className={`group flex-shrink-0 w-[140px] sm:w-[160px] animate-in fade-in-up stagger-${Math.min(i + 1, 6)}`}
+                >
+                  <div
+                    className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                    style={{
+                      backgroundColor: getCardBg(currentTheme.name),
+                      border: `1px solid ${currentTheme.foreground}10`,
+                    }}
+                  >
+                    <CoverImage
+                      src={entry.cover_url}
+                      alt={entry.series_title}
+                      aspectClass="aspect-[2/3]"
+                      hoverScale={true}
+                    />
+                    <div className="p-2.5">
+                      <p
+                        className="text-xs font-semibold line-clamp-2 mb-1 leading-snug"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        {entry.series_title}
+                      </p>
+                      <p
+                        className="text-[10px] font-medium"
+                        style={{ color: SHINY_PURPLE }}
+                      >
+                        Ch. {entry.chapter_number}
+                      </p>
+                      <p
+                        className="text-[10px] mt-0.5"
+                        style={{ color: `${currentTheme.foreground}40` }}
+                      >
+                        {timeAgo(entry.last_read_at)}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ─── 3. Featured Series Section ─── */}
       <section className="py-8 sm:py-12" style={{ backgroundColor: currentTheme.background }}>
         <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
@@ -269,7 +351,7 @@ function HomeContent({
                 style={{ backgroundColor: currentTheme.foreground }}
               />
               <h2
-                className="text-xl sm:text-2xl font-bold"
+                className="text-xl sm:text-2xl font-bold section-title"
                 style={{ color: currentTheme.foreground }}
               >
                 Featured Series
@@ -312,7 +394,7 @@ function HomeContent({
                 }}
               />
               <h2
-                className="text-xl sm:text-2xl font-bold"
+                className="text-xl sm:text-2xl font-bold section-title"
                 style={{ color: currentTheme.foreground }}
               >
                 New Series

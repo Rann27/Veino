@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
 
 interface Genre {
     id: number;
@@ -308,16 +309,14 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                         href={route('epub-novels.show', s.slug)}
                                         className="group"
                                     >
-                                        <div className="relative aspect-[2/3] rounded-lg overflow-hidden mb-2 sm:mb-3 transition-transform duration-300 group-hover:scale-105">
-                                            <img
+                                        <div className="relative mb-2 sm:mb-3">
+                                            <CoverImage
                                                 src={s.cover_url}
                                                 alt={s.title}
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => {
-                                                    e.currentTarget.src = '/images/default-cover.jpg';
-                                                }}
+                                                containerClassName="rounded-lg"
+                                                hoverScale={true}
                                             />
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg pointer-events-none" />
                                         </div>
 
                                         <h3 

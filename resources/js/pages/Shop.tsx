@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
+import { SHINY_PURPLE_DIM } from '@/constants/colors';
 
 /* ─── Interfaces ─── */
 interface CoinPackage {
@@ -91,7 +93,7 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
                             Shop
                         </h1>
                         <p className="text-sm sm:text-base" style={{ color: `${currentTheme.foreground}60` }}>
-                            Power-up your reading experience
+                            Unlock more chapter!
                         </p>
 
                         {/* Balance badge */}
@@ -168,13 +170,14 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
 
 function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
     const { currentTheme } = useTheme();
+    const { toast } = useToast();
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'cryptomus'>('paypal');
+    const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'oxapay'>('paypal');
     const [isProcessing, setIsProcessing] = useState(false);
 
     const handlePurchase = () => {
         if (!selectedPackage) {
-            alert('Please select a coin package');
+            toast.warning('Please select a coin package first.');
             return;
         }
 
@@ -190,7 +193,7 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
                 onSuccess: () => {},
                 onError: (errors) => {
                     console.error('Purchase error:', errors);
-                    alert('Failed to process purchase. Please try again.');
+                    toast.error('Failed to process purchase. Please try again.');
                     setIsProcessing(false);
                 },
                 onFinish: () => {}
@@ -212,16 +215,14 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
                             key={pkg.id}
                             type="button"
                             onClick={() => setSelectedPackage(pkg.id)}
-                            className={`
-                                relative rounded-2xl p-4 text-center transition-all duration-300 group
-                                ${isSelected
-                                    ? 'ring-2 ring-amber-400 shadow-lg shadow-amber-400/20 -translate-y-1'
-                                    : 'hover:shadow-md hover:-translate-y-0.5'
-                                }
-                            `}
+                            className={`relative rounded-2xl p-4 text-center transition-all duration-300 group${isSelected ? ' coin-pkg-selected -translate-y-1' : ' hover:shadow-md hover:-translate-y-0.5'}`}
                             style={{
-                                backgroundColor: isSelected ? `${currentTheme.foreground}08` : `${currentTheme.foreground}04`,
-                                border: `1px solid ${isSelected ? '#fbbf24' : `${currentTheme.foreground}08`}`,
+                                backgroundColor: isSelected
+                                    ? `${currentTheme.foreground}08`
+                                    : pkg.bonus_premium_days > 0
+                                    ? SHINY_PURPLE_DIM
+                                    : `${currentTheme.foreground}04`,
+                                border: `1px solid ${isSelected ? '#fbbf24' : pkg.bonus_premium_days > 0 ? `${SHINY_PURPLE}30` : `${currentTheme.foreground}08`}`,
                             }}
                         >
                             {/* Package Name Badge */}
@@ -338,26 +339,26 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
                                 )}
                             </button>
 
-                            {/* Cryptomus */}
+                            {/* OxaPay */}
                             <div className="relative group">
                                 <button
                                     type="button"
                                     disabled
-                                    className="relative p-5 rounded-xl transition-all duration-300 opacity-50 cursor-not-allowed w-full"
+                                    className="relative p-5 rounded-xl transition-all duration-300 opacity-40 cursor-not-allowed w-full"
                                     style={{
                                         backgroundColor: `${currentTheme.foreground}04`,
                                         border: `1px solid ${currentTheme.foreground}08`,
                                     }}
                                 >
                                     <div className="flex flex-col items-center gap-2">
-                                        <img src="/images/paymentlogo/cryptomus.svg" alt="Cryptomus" className="h-7 grayscale" />
-                                        <span className="text-base font-bold text-gray-400">Cryptomus</span>
+                                        <img src="/images/paymentlogo/oxapay.svg" alt="OxaPay" className="h-7 grayscale" />
+                                        <span className="text-base font-bold text-gray-400">OxaPay</span>
                                         <span className="text-xs" style={{ color: `${currentTheme.foreground}30` }}>Cryptocurrency</span>
                                     </div>
                                 </button>
                                 {/* Tooltip on hover */}
                                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-                                    Temporarily unavailable
+                                    Coming soon
                                     <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
                                         <div className="border-4 border-transparent border-t-gray-800"></div>
                                     </div>
@@ -486,6 +487,7 @@ function MembershipTab({ packages, flash, errors }: {
     errors?: Props['errors'];
 }) {
     const { currentTheme } = useTheme();
+    const { toast } = useToast();
     const page = usePage<{
         auth: { user: { coins: number } };
         flash?: { success?: string; error?: string; premium_granted?: { days: number; package_name: string; source: string } };
@@ -557,12 +559,12 @@ function MembershipTab({ packages, flash, errors }: {
     const handleApplyVoucher = async () => {
         if (!voucherCode.trim()) {
             setVoucherError('Please enter a voucher code.');
-            alert('⚠️ Please enter a voucher code');
+            toast.warning('Please enter a voucher code.');
             return;
         }
         if (!selectedPackage) {
             setVoucherError('Please select a package first.');
-            alert('⚠️ Please select a membership package first');
+            toast.warning('Please select a membership package first.');
             return;
         }
         const selectedPkg = packages.find(p => p.id === selectedPackage);
@@ -590,17 +592,17 @@ function MembershipTab({ packages, flash, errors }: {
             if (data.success) {
                 setVoucherData(data.data);
                 setVoucherError(null);
-                alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.data.discount_amount.toLocaleString()}`);
+                toast.success(`Saved ¢${data.data.discount_amount.toLocaleString()}!`, `Voucher "${voucherCode.toUpperCase()}" Applied`);
             } else {
                 setVoucherError(data.message);
                 setVoucherData(null);
-                alert(`❌ ${data.message || 'Invalid or expired voucher code'}`);
+                toast.error(data.message || 'Invalid or expired voucher code.', 'Invalid Voucher');
             }
         } catch (error) {
             console.error('Voucher validation error:', error);
             setVoucherError('Failed to validate voucher. Please try again.');
             setVoucherData(null);
-            alert('❌ Failed to validate voucher. Please check your connection and try again.');
+            toast.error('Failed to validate voucher. Please check your connection and try again.');
         } finally {
             setIsApplyingVoucher(false);
         }

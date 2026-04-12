@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
+import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
+import EmptyState from '@/Components/EmptyState';
+import { getStatusColor, getCardBg, SHINY_PURPLE, SHINY_PURPLE_DIM } from '@/constants/colors';
 
 interface Genre {
     id: number;
@@ -34,18 +38,9 @@ interface Props {
 }
 
 export default function Library({ followedSeries }: Props) {
+    const { currentTheme } = useTheme();
     const [sortBy, setSortBy] = useState<'title' | 'followed_at' | 'last_read' | 'progress'>('followed_at');
     const [filterStatus, setFilterStatus] = useState<string>('');
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'ongoing': return 'text-green-600 bg-green-50';
-            case 'completed': return 'text-blue-600 bg-blue-50';
-            case 'hiatus': return 'text-yellow-600 bg-yellow-50';
-            case 'dropped': return 'text-red-600 bg-red-50';
-            default: return 'text-gray-600 bg-gray-50';
-        }
-    };
 
     const getProgressPercentage = (series: Series) => {
         if (!series.total_chapters_read || !series.chapters_count) return 0;
@@ -81,29 +76,59 @@ export default function Library({ followedSeries }: Props) {
             }
         });
 
+    const selectStyle: React.CSSProperties = {
+        backgroundColor: currentTheme.background,
+        color: currentTheme.foreground,
+        border: `1px solid ${currentTheme.foreground}25`,
+        borderRadius: '0.5rem',
+        padding: '0.5rem 0.75rem',
+        outline: 'none',
+    };
+
     return (
         <UserLayout>
             <Head title="My Library - Veinovel" />
-            
-            <div className="min-h-screen bg-gray-50 pt-20">
+
+            <div
+                className="min-h-screen pt-20"
+                style={{ backgroundColor: currentTheme.background }}
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Header */}
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Library</h1>
-                        <p className="text-gray-600">Keep track of your favorite series and reading progress</p>
+                        <h1
+                            className="text-3xl font-bold mb-2 page-title"
+                            style={{ color: currentTheme.foreground }}
+                        >
+                            My Library
+                        </h1>
+                        <p style={{ color: `${currentTheme.foreground}60` }}>
+                            Keep track of your favorite series and reading progress
+                        </p>
                     </div>
 
                     {/* Controls */}
-                    <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
-                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                    <div
+                        className="rounded-xl p-5 mb-8"
+                        style={{
+                            backgroundColor: getCardBg(currentTheme.name),
+                            border: `1px solid ${currentTheme.foreground}10`,
+                        }}
+                    >
+                        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-end justify-between">
                             <div className="flex flex-col sm:flex-row gap-4">
-                                {/* Sort Dropdown */}
+                                {/* Sort */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Sort by</label>
+                                    <label
+                                        className="block text-xs font-medium mb-1"
+                                        style={{ color: `${currentTheme.foreground}70` }}
+                                    >
+                                        Sort by
+                                    </label>
                                     <select
                                         value={sortBy}
                                         onChange={(e) => setSortBy(e.target.value as any)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        style={selectStyle}
                                     >
                                         <option value="followed_at">Recently Added</option>
                                         <option value="title">Title A-Z</option>
@@ -112,13 +137,18 @@ export default function Library({ followedSeries }: Props) {
                                     </select>
                                 </div>
 
-                                {/* Status Filter */}
+                                {/* Filter */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                                    <label
+                                        className="block text-xs font-medium mb-1"
+                                        style={{ color: `${currentTheme.foreground}70` }}
+                                    >
+                                        Filter by Status
+                                    </label>
                                     <select
                                         value={filterStatus}
                                         onChange={(e) => setFilterStatus(e.target.value)}
-                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        style={selectStyle}
                                     >
                                         <option value="">All Status</option>
                                         <option value="ongoing">Ongoing</option>
@@ -129,7 +159,10 @@ export default function Library({ followedSeries }: Props) {
                                 </div>
                             </div>
 
-                            <div className="text-sm text-gray-600">
+                            <div
+                                className="text-sm"
+                                style={{ color: `${currentTheme.foreground}55` }}
+                            >
                                 {filteredAndSortedSeries.length} of {followedSeries.length} series
                             </div>
                         </div>
@@ -137,126 +170,176 @@ export default function Library({ followedSeries }: Props) {
 
                     {/* Series Grid */}
                     {filteredAndSortedSeries.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredAndSortedSeries.map((series) => (
-                                <div key={series.id} className="bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow">
-                                    <div className="p-4">
-                                        <div className="flex gap-4">
-                                            {/* Cover Image */}
-                                            <div className="w-20 h-28 flex-shrink-0">
-                                                {series.cover_image ? (
-                                                    <img
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {filteredAndSortedSeries.map((series) => {
+                                const statusColor = getStatusColor(series.status);
+                                const progress = getProgressPercentage(series);
+                                return (
+                                    <div
+                                        key={series.id}
+                                        className="rounded-xl transition-shadow hover:shadow-lg"
+                                        style={{
+                                            backgroundColor: getCardBg(currentTheme.name),
+                                            border: `1px solid ${currentTheme.foreground}10`,
+                                        }}
+                                    >
+                                        <div className="p-4">
+                                            <div className="flex gap-4">
+                                                {/* Cover */}
+                                                <div className="w-20 flex-shrink-0">
+                                                    <CoverImage
                                                         src={series.cover_image}
                                                         alt={series.title}
-                                                        className="w-full h-full object-cover rounded"
+                                                        aspectClass=""
+                                                        containerClassName="w-20 h-28"
+                                                        hoverScale={false}
                                                     />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-                                                        <span className="text-xs text-gray-400">No Cover</span>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Series Info */}
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between mb-2">
-                                                    <h3 className="font-semibold text-gray-900 line-clamp-2 text-sm">
-                                                        {series.title}
-                                                    </h3>
-                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ml-2 ${getStatusColor(series.status)}`}>
-                                                        {series.status}
-                                                    </span>
-                                                </div>
-                                                
-                                                <p className="text-xs text-gray-600 mb-2">by {series.author}</p>
-                                                
-                                                <div className="flex items-center gap-2 mb-2 text-xs text-gray-500">
-                                                    <span className="text-yellow-400">★</span>
-                                                    <span>{series.rating || 'N/A'}</span>
-                                                    <span>•</span>
-                                                    <span>{series.chapters_count} chapters</span>
                                                 </div>
 
-                                                {/* Reading Progress */}
-                                                <div className="mb-3">
-                                                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                                        <span>Progress</span>
-                                                        <span>{getProgressPercentage(series)}%</span>
-                                                    </div>
-                                                    <div className="w-full bg-gray-200 rounded-full h-2">
-                                                        <div 
-                                                            className="bg-blue-600 h-2 rounded-full" 
-                                                            style={{ width: `${getProgressPercentage(series)}%` }}
-                                                        ></div>
-                                                    </div>
-                                                    {series.last_read_chapter && (
-                                                        <p className="text-xs text-gray-500 mt-1">
-                                                            Last read: Chapter {series.last_read_chapter}
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                {/* Genres */}
-                                                <div className="flex flex-wrap gap-1 mb-3">
-                                                    {series.genres.slice(0, 2).map((genre) => (
-                                                        <span
-                                                            key={genre.id}
-                                                            className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded"
+                                                {/* Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between mb-2 gap-2">
+                                                        <h3
+                                                            className="font-semibold text-sm line-clamp-2"
+                                                            style={{ color: currentTheme.foreground }}
                                                         >
-                                                            {genre.name}
+                                                            {series.title}
+                                                        </h3>
+                                                        <span
+                                                            className="px-2 py-0.5 text-xs font-medium rounded-full flex-shrink-0"
+                                                            style={{
+                                                                backgroundColor: statusColor.dim,
+                                                                color: statusColor.bg,
+                                                            }}
+                                                        >
+                                                            {series.status}
                                                         </span>
-                                                    ))}
-                                                    {series.genres.length > 2 && (
-                                                        <span className="px-2 py-1 text-xs bg-gray-50 text-gray-600 rounded">
-                                                            +{series.genres.length - 2}
-                                                        </span>
-                                                    )}
-                                                </div>
+                                                    </div>
 
-                                                {/* Action Buttons */}
-                                                <div className="flex gap-2">
-                                                    <Link
-                                                        href={route('series.show', series.slug)}
-                                                        className="flex-1 px-3 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors text-center"
+                                                    <p
+                                                        className="text-xs mb-2"
+                                                        style={{ color: `${currentTheme.foreground}60` }}
                                                     >
-                                                        Continue Reading
-                                                    </Link>
-                                                    <button className="px-3 py-2 border border-gray-300 text-gray-700 text-xs rounded hover:bg-gray-50 transition-colors">
-                                                        Unfollow
-                                                    </button>
+                                                        by {series.author}
+                                                    </p>
+
+                                                    <div
+                                                        className="flex items-center gap-2 mb-2 text-xs"
+                                                        style={{ color: `${currentTheme.foreground}55` }}
+                                                    >
+                                                        <span className="text-yellow-400">★</span>
+                                                        <span>{series.rating || 'N/A'}</span>
+                                                        <span>•</span>
+                                                        <span>{series.chapters_count} chapters</span>
+                                                    </div>
+
+                                                    {/* Reading Progress */}
+                                                    <div className="mb-3">
+                                                        <div
+                                                            className="flex justify-between text-xs mb-1"
+                                                            style={{ color: `${currentTheme.foreground}55` }}
+                                                        >
+                                                            <span>Progress</span>
+                                                            <span>{progress}%</span>
+                                                        </div>
+                                                        <div
+                                                            className="w-full rounded-full h-1.5"
+                                                            style={{ backgroundColor: `${currentTheme.foreground}12` }}
+                                                        >
+                                                            <div
+                                                                className="h-1.5 rounded-full transition-all"
+                                                                style={{
+                                                                    width: `${progress}%`,
+                                                                    backgroundColor: SHINY_PURPLE,
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        {series.last_read_chapter && (
+                                                            <p
+                                                                className="text-xs mt-1"
+                                                                style={{ color: `${currentTheme.foreground}45` }}
+                                                            >
+                                                                Last read: Chapter {series.last_read_chapter}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Genres */}
+                                                    <div className="flex flex-wrap gap-1 mb-3">
+                                                        {series.genres.slice(0, 2).map((genre) => (
+                                                            <span
+                                                                key={genre.id}
+                                                                className="px-2 py-0.5 text-xs rounded-full"
+                                                                style={{
+                                                                    backgroundColor: SHINY_PURPLE_DIM,
+                                                                    color: SHINY_PURPLE,
+                                                                }}
+                                                            >
+                                                                {genre.name}
+                                                            </span>
+                                                        ))}
+                                                        {series.genres.length > 2 && (
+                                                            <span
+                                                                className="px-2 py-0.5 text-xs rounded-full"
+                                                                style={{
+                                                                    backgroundColor: `${currentTheme.foreground}08`,
+                                                                    color: `${currentTheme.foreground}55`,
+                                                                }}
+                                                            >
+                                                                +{series.genres.length - 2}
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Actions */}
+                                                    <div className="flex gap-2">
+                                                        <Link
+                                                            href={route('series.show', series.slug)}
+                                                            className="flex-1 px-3 py-1.5 text-xs rounded-lg text-center font-medium transition-opacity hover:opacity-85"
+                                                            style={{ backgroundColor: SHINY_PURPLE, color: '#ffffff' }}
+                                                        >
+                                                            Continue Reading
+                                                        </Link>
+                                                        <button
+                                                            className="px-3 py-1.5 text-xs rounded-lg transition-colors"
+                                                            style={{
+                                                                border: `1px solid ${currentTheme.foreground}20`,
+                                                                color: `${currentTheme.foreground}70`,
+                                                                backgroundColor: 'transparent',
+                                                            }}
+                                                        >
+                                                            Unfollow
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Footer */}
-                                        <div className="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
-                                            Added {formatDate(series.followed_at)}
+                                            {/* Footer */}
+                                            <div
+                                                className="mt-4 pt-3 border-t text-xs"
+                                                style={{
+                                                    borderColor: `${currentTheme.foreground}08`,
+                                                    color: `${currentTheme.foreground}40`,
+                                                }}
+                                            >
+                                                Added {formatDate(series.followed_at)}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ) : (
-                        <div className="text-center py-12">
-                            <div className="bg-white rounded-lg shadow-sm border p-12">
-                                <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        <EmptyState
+                            icon={
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                 </svg>
-                                <h3 className="text-xl font-medium text-gray-900 mb-2">Your library is empty</h3>
-                                <p className="text-gray-600 mb-6">
-                                    Start following series to keep track of your reading progress!
-                                </p>
-                                <Link
-                                    href={route('explore')}
-                                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                >
-                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                    Explore Series
-                                </Link>
-                            </div>
-                        </div>
+                            }
+                            title={filterStatus || '' ? 'No series match this filter' : 'Your library is empty'}
+                            description={filterStatus || '' ? 'Try clearing the status filter.' : 'Follow series to keep track of your reading progress!'}
+                            action={!filterStatus ? { label: 'Explore Series', href: route('explore'), variant: 'primary' } : undefined}
+                        />
                     )}
                 </div>
             </div>

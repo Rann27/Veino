@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
 
 interface MembershipPackage {
     id: number;
@@ -35,7 +36,7 @@ interface Props {
 
 const PAYMENT_METHODS = [
     { id: 'paypal', name: 'PayPal', logo: '/images/paymentlogo/paypal.svg' },
-    { id: 'cryptomus', name: 'Crypto (USDT)', logo: '/images/paymentlogo/cryptomus.svg' },
+    { id: 'oxapay', name: 'Crypto (OxaPay)', logo: '/images/paymentlogo/oxapay.svg' },
 ];
 
 const getOriginalPrice = (price: number, discount: number): string => {
@@ -49,6 +50,7 @@ const getOriginalCoinPrice = (coinPrice: number, discount: number): number => {
 };
 
 function MembershipContent({ packages, flash, errors }: Props) {
+    const { toast } = useToast();
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -135,13 +137,13 @@ function MembershipContent({ packages, flash, errors }: Props) {
     const handleApplyVoucher = async () => {
         if (!voucherCode.trim()) {
             setVoucherError('Please enter a voucher code.');
-            alert('⚠️ Please enter a voucher code');
+            toast.warning('Please enter a voucher code.');
             return;
         }
 
         if (!selectedPackage) {
             setVoucherError('Please select a package first.');
-            alert('⚠️ Please select a membership package first');
+            toast.warning('Please select a membership package first.');
             return;
         }
 
@@ -172,19 +174,17 @@ function MembershipContent({ packages, flash, errors }: Props) {
             if (data.success) {
                 setVoucherData(data.data);
                 setVoucherError(null);
-                alert(`✅ Voucher "${voucherCode.toUpperCase()}" applied successfully!\n💰 You saved ¢${data.data.discount_amount.toLocaleString()}`);
+                toast.success(`Saved ¢${data.data.discount_amount.toLocaleString()}!`, `Voucher "${voucherCode.toUpperCase()}" Applied`);
             } else {
-                // Backend returned error (400, 404, etc.)
                 setVoucherError(data.message);
                 setVoucherData(null);
-                alert(`❌ ${data.message || 'Invalid or expired voucher code'}`);
+                toast.error(data.message || 'Invalid or expired voucher code.', 'Invalid Voucher');
             }
         } catch (error) {
-            // Network error or JSON parse error
             console.error('Voucher validation error:', error);
             setVoucherError('Failed to validate voucher. Please try again.');
             setVoucherData(null);
-            alert('❌ Failed to validate voucher. Please check your connection and try again.');
+            toast.error('Failed to validate voucher. Please check your connection and try again.');
         } finally {
             setIsApplyingVoucher(false);
         }

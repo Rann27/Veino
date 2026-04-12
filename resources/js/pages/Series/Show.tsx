@@ -2,6 +2,7 @@ import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
 import CommentSectionSkeleton from '@/Components/CommentSectionSkeleton';
 const CommentSection = lazy(() => import('@/Components/CommentSection'));
 const ReactionBar = lazy(() => import('@/Components/ReactionBar'));
@@ -523,23 +524,14 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                             <div className="flex-shrink-0 flex flex-col items-center md:items-start w-full md:w-auto">
                                 <div className="w-48 sm:w-52 md:w-56 relative">
                                     <div
-                                        className="aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl"
+                                        className="relative rounded-2xl overflow-hidden shadow-2xl"
                                         style={{ boxShadow: `0 25px 60px ${currentTheme.foreground}20` }}
                                     >
-                                        {series.cover_url ? (
-                                            <img
-                                                src={series.cover_url}
-                                                alt={series.title}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <div 
-                                                className="w-full h-full flex items-center justify-center"
-                                                style={{ backgroundColor: `${currentTheme.foreground}10` }}
-                                            >
-                                                <span style={{ color: `${currentTheme.foreground}50` }}>No Cover</span>
-                                            </div>
-                                        )}
+                                        <CoverImage
+                                            src={series.cover_url}
+                                            alt={series.title}
+                                            hoverScale={false}
+                                        />
                                         {/* Shine overlay */}
                                         <div
                                             className="absolute inset-0 opacity-20 pointer-events-none"
@@ -897,9 +889,9 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                 {chapter.is_owned && (
                                                                     <span 
                                                                         className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
-                                                                        style={{ backgroundColor: '#d1fae5', color: '#059669' }}
+                                                                        style={{ backgroundColor: 'rgba(234,179,8,0.15)', color: '#eab308' }}
                                                                     >
-                                                                        <CheckIcon size={10} color="#059669" />
+                                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                                         Owned
                                                                     </span>
                                                                 )}
@@ -987,8 +979,8 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                                         {formatDate(chapter.created_at)}
                                                                     </div>
                                                                     {chapter.is_owned && (
-                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full" style={{ backgroundColor: '#d1fae5', color: '#059669' }}>
-                                                                            <CheckIcon size={10} color="#059669" />
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full" style={{ backgroundColor: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
+                                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                                             Owned
                                                                         </span>
                                                                     )}
@@ -1055,24 +1047,13 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     border: `1px solid ${currentTheme.foreground}06`,
                                                 }}
                                             >
-                                                <div className="w-14 h-20 flex-shrink-0 rounded-lg overflow-hidden">
-                                                    {related.cover_url ? (
-                                                        <img
-                                                            src={related.cover_url}
-                                                            alt={related.title}
-                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                        />
-                                                    ) : (
-                                                        <div 
-                                                            className="w-full h-full flex items-center justify-center"
-                                                            style={{ backgroundColor: `${currentTheme.foreground}10` }}
-                                                        >
-                                                            <span className="text-[10px]" style={{ color: `${currentTheme.foreground}40` }}>
-                                                                No Cover
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                <CoverImage
+                                                    src={related.cover_url}
+                                                    alt={related.title}
+                                                    aspectClass=""
+                                                    containerClassName="w-14 h-20 flex-shrink-0 rounded-lg"
+                                                    hoverScale={true}
+                                                />
                                                 <div className="flex-1 min-w-0 py-0.5">
                                                     <h4 
                                                         className="font-semibold text-sm line-clamp-2 mb-1 group-hover:opacity-80 transition-opacity"

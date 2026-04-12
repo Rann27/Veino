@@ -86,7 +86,7 @@ class CommentController extends Controller
         $comment = $commentable->comments()->create([
             'user_id' => Auth::id(),
             'parent_id' => $validated['parent_id'] ?? null,
-            'content' => $validated['content'],
+            'content' => strip_tags($validated['content']),
         ]);
 
         // Increment comments_count for series only (not for replies)
@@ -129,7 +129,7 @@ class CommentController extends Controller
         ]);
 
         $comment->update([
-            'content' => $validated['content'],
+            'content' => strip_tags($validated['content']),
             'is_edited' => true,
             'edited_at' => now(),
         ]);

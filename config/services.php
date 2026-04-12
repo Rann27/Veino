@@ -41,9 +41,8 @@ return [
         'mode' => env('PAYPAL_MODE', 'sandbox'), // 'sandbox' or 'live'
     ],
 
-    'cryptomus' => [
-        'merchant_id' => env('CRYPTOMUS_MERCHANT_ID'),
-        'api_key' => env('CRYPTOMUS_API_KEY'),
+    'oxapay' => [
+        'merchant_key' => env('OXAPAY_MERCHANT_KEY'),
     ],
 
 ];

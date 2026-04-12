@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import CoverImage from '@/Components/CoverImage';
+import EmptyState from '@/Components/EmptyState';
+import { getStatusColor, getCardBg } from '@/constants/colors';
 
 interface Bookmark {
     id: number;
@@ -23,31 +26,6 @@ export default function Bookmarks({ bookmarks }: Props) {
     const { currentTheme } = useTheme();
     const [sortBy, setSortBy] = useState<'bookmarked_at' | 'series_title' | 'series_rating'>('bookmarked_at');
     const [searchTerm, setSearchTerm] = useState('');
-
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'ongoing':
-                return 'bg-green-100 text-green-800';
-            case 'completed':
-                return 'bg-blue-100 text-blue-800';
-            case 'hiatus':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'dropped':
-                return 'bg-red-100 text-red-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
-
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
 
     const getTimeAgo = (dateString: string) => {
         const now = new Date();
@@ -176,138 +154,76 @@ export default function Bookmarks({ bookmarks }: Props) {
                     {/* Bookmark Cards Grid */}
                     {filteredAndSortedBookmarks.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
-                            {filteredAndSortedBookmarks.map((bookmark) => (
-                                <Link
-                                    key={bookmark.id}
-                                    href={route('series.show', bookmark.series_slug)}
-                                    className="group"
-                                >
-                                    <div 
-                                        className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
-                                        style={{
-                                            backgroundColor: currentTheme.name === 'Light' 
-                                                ? 'rgba(248, 250, 252, 0.8)' 
-                                                : currentTheme.name === 'Dark'
-                                                ? 'rgba(30, 41, 59, 0.6)'
-                                                : currentTheme.name === 'Sepia'
-                                                ? 'rgba(244, 236, 216, 0.6)'
-                                                : currentTheme.name === 'Cool Dark'
-                                                ? 'rgba(49, 50, 68, 0.6)'
-                                                : currentTheme.name === 'Frost'
-                                                ? 'rgba(205, 220, 237, 0.6)'
-                                                : currentTheme.name === 'Solarized'
-                                                ? 'rgba(253, 246, 227, 0.6)'
-                                                : 'rgba(30, 41, 59, 0.6)',
-                                            border: `1px solid ${currentTheme.foreground}10`
-                                        }}
+                            {filteredAndSortedBookmarks.map((bookmark) => {
+                                const statusColor = getStatusColor(bookmark.series_status);
+                                return (
+                                    <Link
+                                        key={bookmark.id}
+                                        href={route('series.show', bookmark.series_slug)}
+                                        className="group"
                                     >
-                                        <div className="aspect-[2/3] bg-gray-200 rounded-md mb-3 overflow-hidden">
-                                            {bookmark.series_cover ? (
-                                                <img
+                                        <div
+                                            className="series-card rounded-lg p-3 h-full flex flex-col"
+                                            style={{
+                                                backgroundColor: getCardBg(currentTheme.name),
+                                                border: `1px solid ${currentTheme.foreground}10`,
+                                            }}
+                                        >
+                                            <div className="mb-3 overflow-hidden rounded-lg">
+                                                <CoverImage
                                                     src={bookmark.series_cover}
                                                     alt={bookmark.series_title}
-                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                                    containerClassName="cover-zoom"
+                                                    hoverScale={false}
                                                 />
-                                            ) : (
-                                                <div 
-                                                    className="w-full h-full flex items-center justify-center text-xs"
-                                                    style={{ color: `${currentTheme.foreground}60` }}
-                                                >
-                                                    No Cover
-                                                </div>
-                                            )}
-                                        </div>
-                                        
-                                        <h3 
-                                            className="font-semibold text-sm md:text-base line-clamp-2 mb-3 leading-tight"
-                                            style={{ color: currentTheme.foreground }}
-                                        >
-                                            {bookmark.series_title}
-                                        </h3>
-                                        
-                                        <p 
-                                            className="text-xs mb-2"
-                                            style={{ color: `${currentTheme.foreground}70` }}
-                                        >
-                                            by {bookmark.series_author}
-                                        </p>
-                                        
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <div className="flex items-center">
-                                                <span className="text-yellow-400">★</span>
-                                                <span 
-                                                    className="text-xs ml-1"
-                                                    style={{ color: `${currentTheme.foreground}80` }}
-                                                >
+                                            </div>
+
+                                            <h3
+                                                className="series-card-title font-semibold text-sm line-clamp-2 mb-1.5 leading-snug transition-colors duration-200"
+                                                style={{ color: currentTheme.foreground }}
+                                            >
+                                                {bookmark.series_title}
+                                            </h3>
+
+                                            <p className="text-xs mb-2" style={{ color: `${currentTheme.foreground}55` }}>
+                                                by {bookmark.series_author}
+                                            </p>
+
+                                            <div className="flex items-center gap-1.5 mb-2">
+                                                <span className="text-yellow-400 text-xs">★</span>
+                                                <span className="text-xs" style={{ color: `${currentTheme.foreground}70` }}>
                                                     {bookmark.series_rating || 'N/A'}
                                                 </span>
                                             </div>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-1 mb-2">
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(bookmark.series_status)}`}>
-                                                {bookmark.series_status}
-                                            </span>
-                                        </div>
-                                        
-                                        <div className="mt-auto">
-                                            <p 
-                                                className="text-xs"
-                                                style={{ color: `${currentTheme.foreground}60` }}
-                                            >
-                                                Bookmarked {getTimeAgo(bookmark.bookmarked_at)}
+
+                                            <div className="mb-2">
+                                                <span
+                                                    className="px-2 py-0.5 text-[10px] font-semibold rounded-full"
+                                                    style={{ backgroundColor: statusColor.dim, color: statusColor.bg }}
+                                                >
+                                                    {bookmark.series_status}
+                                                </span>
+                                            </div>
+
+                                            <p className="text-xs mt-auto" style={{ color: `${currentTheme.foreground}45` }}>
+                                                {getTimeAgo(bookmark.bookmarked_at)}
                                             </p>
                                         </div>
-                                    </div>
-                                </Link>
-                            ))}
+                                    </Link>
+                                );
+                            })}
                         </div>
                     ) : (
-                        <div className="text-center py-12">
-                            <div 
-                                className="rounded-lg shadow-sm border p-12"
-                                style={{
-                                    backgroundColor: currentTheme.background,
-                                    borderColor: `${currentTheme.foreground}20`
-                                }}
-                            >
-                                <svg 
-                                    className="w-16 h-16 mx-auto mb-4" 
-                                    fill="none" 
-                                    stroke="currentColor" 
-                                    viewBox="0 0 24 24"
-                                    style={{ color: `${currentTheme.foreground}40` }}
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        <EmptyState
+                            icon={
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                                 </svg>
-                                <h3 
-                                    className="text-xl font-medium mb-2"
-                                    style={{ color: currentTheme.foreground }}
-                                >
-                                    {searchTerm ? 'No bookmarks found' : 'No bookmarks yet'}
-                                </h3>
-                                <p 
-                                    className="mb-6"
-                                    style={{ color: `${currentTheme.foreground}60` }}
-                                >
-                                    {searchTerm 
-                                        ? 'Try adjusting your search terms'
-                                        : 'Start bookmarking your favorite series to save them for later!'
-                                    }
-                                </p>
-                                {!searchTerm && (
-                                    <Link
-                                        href={route('explore')}
-                                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                    >
-                                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                        </svg>
-                                        Explore Series
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
+                            }
+                            title={searchTerm ? 'No bookmarks found' : 'No bookmarks yet'}
+                            description={searchTerm ? 'Try adjusting your search terms.' : 'Start bookmarking your favorite series to save them for later!'}
+                            action={!searchTerm ? { label: 'Explore Series', href: route('explore'), variant: 'primary' } : undefined}
+                        />
                     )}
                 </div>
             </div>

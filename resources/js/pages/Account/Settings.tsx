@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
 
 interface User {
     id: number;
@@ -18,6 +19,7 @@ interface Props {
 
 function SettingsContent({ user }: Props) {
     const { currentTheme } = useTheme();
+    const { confirm } = useToast();
     const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'privacy'>('profile');
     const [isLoading, setIsLoading] = useState(false);
     const [showThemeModal, setShowThemeModal] = useState(false);
@@ -99,14 +101,19 @@ function SettingsContent({ user }: Props) {
 
     const handleDeleteAccount = () => {
         const password = prompt('Please enter your password to confirm account deletion:');
-        if (password && confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-            router.delete(route('account.delete'), {
-                data: { password },
-                onSuccess: () => {
-                    // Redirect will be handled by the backend
-                },
-            });
-        }
+        if (!password) return;
+        confirm(
+            'This action is permanent and cannot be undone. Your account and all data will be deleted.',
+            () => {
+                router.delete(route('account.delete'), {
+                    data: { password },
+                    onSuccess: () => {
+                        // Redirect will be handled by the backend
+                    },
+                });
+            },
+            'Delete Account?'
+        );
     };
 
     const formatDate = (dateString: string) => {

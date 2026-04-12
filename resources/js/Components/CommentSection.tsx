@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { useToast } from '@/Contexts/ToastContext';
 import { router } from '@inertiajs/react';
 
 // SVG Icons
@@ -74,6 +75,7 @@ export default function CommentSection({
     currentUserId,
 }: CommentSectionProps) {
     const { currentTheme } = useTheme();
+    const { confirm } = useToast();
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
     const [newComment, setNewComment] = useState('');
@@ -193,24 +195,24 @@ export default function CommentSection({
         }
     };
 
-    const handleDelete = async (commentId: number) => {
-        if (!confirm('Are you sure you want to delete this comment?')) return;
+    const handleDelete = (commentId: number) => {
+        confirm('This will permanently delete your comment.', async () => {
+            try {
+                const response = await fetch(route('comments.destroy', { id: commentId }), {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                });
 
-        try {
-            const response = await fetch(route('comments.destroy', { id: commentId }), {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-            });
-
-            if (response.ok) {
-                await loadComments();
+                if (response.ok) {
+                    await loadComments();
+                }
+            } catch (error) {
+                console.error('Error deleting comment:', error);
             }
-        } catch (error) {
-            console.error('Error deleting comment:', error);
-        }
+        }, 'Delete Comment');
     };
 
     const formatDate = (dateString: string) => {

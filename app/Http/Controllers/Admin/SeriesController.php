@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Genre;
 use App\Models\NativeLanguage;
+use App\Models\PaymentSetting;
 use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -122,14 +123,15 @@ class SeriesController extends Controller
                         ]);
 
         return Inertia::render('Admin/Series/Index', [
-            'series'      => $series,
-            'currentPage' => $page,
-            'totalPages'  => $totalPages,
-            'hasMore'     => $page < $totalPages,
-            'search'      => $search,
-            'type'        => $type,
-            'sort'        => $sort,
-            'total'       => $total,
+            'series'              => $series,
+            'currentPage'         => $page,
+            'totalPages'          => $totalPages,
+            'hasMore'             => $page < $totalPages,
+            'search'              => $search,
+            'type'                => $type,
+            'sort'                => $sort,
+            'total'               => $total,
+            'premiumChapterPrice' => PaymentSetting::get('premium_chapter_price', 10),
         ]);
     }
 
@@ -261,5 +263,16 @@ class SeriesController extends Controller
             'genres' => Genre::all(['id', 'name']),
             'native_languages' => NativeLanguage::all(['id', 'name']),
         ]);
+    }
+
+    public function updateChapterPrice(Request $request)
+    {
+        $validated = $request->validate([
+            'price' => 'required|integer|min:1|max:9999',
+        ]);
+
+        PaymentSetting::set('premium_chapter_price', $validated['price'], 'integer', 'Global coin price for unlocking a premium chapter');
+
+        return back()->with('success', 'Premium chapter price updated to ' . $validated['price'] . ' coins.');
     }
 }

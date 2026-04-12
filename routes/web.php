@@ -61,10 +61,10 @@ Route::get('/password/forgot', [ForgotPasswordController::class, 'showForgotForm
 
 // OTP-based reset (new system)
 Route::post('/password/send-otp', [ForgotPasswordController::class, 'sendOtp'])
-    ->name('password.send-otp')->middleware('guest');
+    ->name('password.send-otp')->middleware(['guest', 'throttle:5,1']);
 
 Route::post('/password/verify-otp', [ForgotPasswordController::class, 'verifyOtp'])
-    ->name('password.verify-otp')->middleware('guest');
+    ->name('password.verify-otp')->middleware(['guest', 'throttle:10,1']);
 
 // Legacy route (redirects to new flow)
 Route::post('/password/verify', [ForgotPasswordController::class, 'verifyUser'])
@@ -156,7 +156,7 @@ Route::middleware('auth')->group(function () {
 // Payment routes
 Route::middleware('auth')->group(function () {
     // New coin purchase flow
-    Route::post('/payment/purchase', [PaymentController::class, 'purchase'])->name('payment.purchase');
+    Route::post('/payment/purchase', [PaymentController::class, 'purchase'])->name('payment.purchase')->middleware('throttle:10,1');
     Route::get('/payment/status/{purchase}', [PaymentController::class, 'status'])->name('payment.status');
     Route::get('/payment/callback/{provider}/{purchase}', [PaymentController::class, 'callback'])->name('payment.callback');
     
@@ -204,6 +204,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/series/{series}', [SeriesController::class, 'update'])->name('series.update');
     Route::delete('/series/{series}', [SeriesController::class, 'destroy'])->name('series.destroy');
     Route::get('/series-form-data', [SeriesController::class, 'getFormData'])->name('series.form-data');
+    Route::post('/settings/chapter-price', [SeriesController::class, 'updateChapterPrice'])->name('settings.chapter-price');
     
     // Chapter Management
     Route::post('/series/{series}/chapters', [ChapterController::class, 'store'])->name('chapters.store');
