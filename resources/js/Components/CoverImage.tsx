@@ -24,6 +24,12 @@ export default function CoverImage({
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
 
+    // Reset state when src changes (e.g. slider switching between series)
+    React.useEffect(() => {
+        setLoaded(false);
+        setError(false);
+    }, [src]);
+
     const hasSrc = src && !error;
 
     return (

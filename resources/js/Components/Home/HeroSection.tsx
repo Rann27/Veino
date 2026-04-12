@@ -193,7 +193,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                     <CoverImage
                       src={series.cover_url}
                       alt={series.title}
-                      className="w-52 xl:w-60 2xl:w-64"
+                      containerClassName="w-52 xl:w-60 2xl:w-64"
                       hoverScale={false}
                     />
                     {/* Reflection/shine effect */}
