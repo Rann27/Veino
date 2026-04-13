@@ -345,20 +345,27 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
                             )}
                         </button>
 
-                        {/* OxaPay — coming soon */}
-                        <div className="relative group">
-                            <div className="flex flex-col items-center gap-2 p-4 rounded-xl opacity-35 cursor-not-allowed"
-                                style={{ backgroundColor: `${currentTheme.foreground}03`, border: `1.5px solid ${currentTheme.foreground}08` }}>
-                                <img src="/images/paymentlogo/oxapay.svg" alt="OxaPay" className="h-7 object-contain grayscale" />
-                                <span className="text-xs font-bold text-gray-400">OxaPay</span>
-                                <span className="text-[10px]" style={{ color: `${currentTheme.foreground}25` }}>Cryptocurrency</span>
-                            </div>
-                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg text-[11px] font-medium text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
-                                style={{ backgroundColor: '#111827', border: '1px solid rgba(255,255,255,0.08)' }}>
-                                ⏳ Coming soon
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[#111827]" />
-                            </div>
-                        </div>
+                        {/* OxaPay */}
+                        <button type="button" onClick={() => setPaymentMethod('oxapay')}
+                            className="relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200"
+                            style={{
+                                background: paymentMethod === 'oxapay'
+                                    ? 'linear-gradient(145deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06))'
+                                    : `${currentTheme.foreground}03`,
+                                border: `1.5px solid ${paymentMethod === 'oxapay' ? '#10b981' : `${currentTheme.foreground}08`}`,
+                                boxShadow: paymentMethod === 'oxapay' ? '0 4px 16px rgba(16,185,129,0.2)' : 'none',
+                            }}>
+                            <img src="/images/paymentlogo/oxapay.svg" alt="OxaPay" className="h-7 object-contain" />
+                            <span className="text-xs font-bold" style={{ color: '#10b981' }}>OxaPay</span>
+                            <span className="text-[10px]" style={{ color: `${currentTheme.foreground}40` }}>Cryptocurrency</span>
+                            {paymentMethod === 'oxapay' && (
+                                <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10b981' }}>
+                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                            )}
+                        </button>
                     </div>
                 </div>
 
