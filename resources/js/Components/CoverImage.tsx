@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
 
 interface CoverImageProps {
@@ -23,11 +23,29 @@ export default function CoverImage({
     const { currentTheme } = useTheme();
     const [loaded, setLoaded] = useState(false);
     const [error, setError] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
 
-    // Reset state when src changes (e.g. slider switching between series)
-    React.useEffect(() => {
+    // Reset state when src changes, then check if image is already cached
+    useEffect(() => {
         setLoaded(false);
         setError(false);
+
+        // If browser already has the image cached, onLoad won't fire again —
+        // check img.complete after a microtask to catch this case.
+        if (!src) return;
+        const check = () => {
+            const img = imgRef.current;
+            if (img && img.complete) {
+                if (img.naturalWidth > 0) {
+                    setLoaded(true);
+                } else {
+                    setError(true);
+                }
+            }
+        };
+        // Use requestAnimationFrame so the img element has time to render
+        const raf = requestAnimationFrame(check);
+        return () => cancelAnimationFrame(raf);
     }, [src]);
 
     const hasSrc = src && !error;
@@ -50,6 +68,7 @@ export default function CoverImage({
 
             {hasSrc ? (
                 <img
+                    ref={imgRef}
                     src={src}
                     alt={alt}
                     loading="lazy"

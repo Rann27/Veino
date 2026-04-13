@@ -733,12 +733,15 @@ function MembershipTab({ packages, flash, errors }: {
                             <div className="px-5 py-4" style={{ backgroundColor: `${currentTheme.foreground}03` }}>
                                 <ul className="space-y-2.5">
                                     {[
-                                        { icon: '📖', text: 'Unlock all premium chapters' },
-                                        { icon: '🚫', text: 'Completely ad-free reading' },
-                                        { icon: '⚡', text: 'Priority access to new releases' },
-                                    ].map(({ icon, text }) => (
+                                        'Unlock all premium chapters',
+                                        'Completely ad-free reading',
+                                        'Priority access to new releases',
+                                    ].map((text) => (
                                         <li key={text} className="flex items-center gap-3 text-sm" style={{ color: currentTheme.foreground }}>
-                                            <span className="text-base">{icon}</span>
+                                            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" fill="none">
+                                                <circle cx="8" cy="8" r="8" fill={`${SHINY_PURPLE}25`} />
+                                                <path d="M4.5 8l2.5 2.5 4.5-5" stroke={SHINY_PURPLE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
                                             <span>{text}</span>
                                         </li>
                                     ))}
