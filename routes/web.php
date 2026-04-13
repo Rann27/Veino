@@ -28,11 +28,12 @@ use App\Http\Controllers\Admin\EbookSeriesController as AdminEbookSeriesControll
 use App\Http\Controllers\ShopController;
 use Illuminate\Support\Facades\Auth;
 
-// Authentication Routes
-Route::get('/login', function () {
-    return Inertia::render('Auth/Login');
+// Authentication Routes — Combined Auth Page (named 'login' for Laravel auth middleware redirects)
+Route::get('/auth', function () {
+    return Inertia::render('Auth/Index');
 })->name('login')->middleware('guest');
 
+// Login POST route
 Route::post('/login', function (Illuminate\Http\Request $request) {
     $credentials = $request->validate([
         'email' => 'required|email',
@@ -47,13 +48,11 @@ Route::post('/login', function (Illuminate\Http\Request $request) {
     return back()->withErrors([
         'email' => 'The provided credentials do not match our records.',
     ]);
-})->middleware('guest');
+})->name('login.attempt')->middleware('guest');
 
-Route::get('/register', [RegisterController::class, 'showRegistrationForm'])
-    ->name('register')->middleware('guest');
-
+// Register POST route
 Route::post('/register', [RegisterController::class, 'register'])
-    ->middleware('guest');
+    ->name('register')->middleware('guest');
 
 // Forgot Password Routes
 Route::get('/password/forgot', [ForgotPasswordController::class, 'showForgotForm'])

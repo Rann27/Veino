@@ -56,7 +56,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Page transition progress bar
   const [pageLoading, setPageLoading] = useState(false);
@@ -92,7 +92,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
   
   // Auto-hide/show navbar on scroll with delay
   const [showNavbar, setShowNavbar] = useState(true);
-  const hideDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hideDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-hide navbar effect
   useEffect(() => {
@@ -586,7 +586,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                 </div>
               ) : (
                 <Link
-                  href="/login"
+                  href="/auth"
                   className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
                   style={{
                     backgroundColor: currentTheme.foreground,
@@ -854,7 +854,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               ) : (
                 <div className="mt-8 pt-6 border-t" style={{ borderColor: `${currentTheme.foreground}20` }}>
                   <Link
-                    href="/login"
+                    href="/auth"
                     className="block w-full text-center px-4 py-3 rounded-lg text-lg font-medium transition-colors"
                     style={{
                       backgroundColor: currentTheme.foreground,
