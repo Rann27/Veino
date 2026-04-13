@@ -858,8 +858,8 @@
     height: 64px;
     padding-bottom: env(safe-area-inset-bottom, 0px);
     border-top: 1px solid;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
 }
 
 @media (max-width: 768px) {

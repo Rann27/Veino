@@ -484,7 +484,9 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                     <div
                         className="absolute inset-0"
                         style={{
-                            background: `linear-gradient(90deg, ${currentTheme.background} 0%, ${currentTheme.background}E6 30%, ${currentTheme.background}99 60%, ${currentTheme.background}66 100%)`,
+                            background: isMobile
+                                ? `linear-gradient(to top, ${currentTheme.background} 0%, ${currentTheme.background}CC 30%, ${currentTheme.background}55 70%, transparent 100%)`
+                                : `linear-gradient(90deg, ${currentTheme.background} 0%, ${currentTheme.background}E6 30%, ${currentTheme.background}99 60%, ${currentTheme.background}66 100%)`,
                         }}
                     />
                     <div
@@ -522,7 +524,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                         <div className="flex flex-col md:flex-row gap-6 lg:gap-10">
                             {/* Cover Image + Action Buttons (below cover) */}
                             <div className="flex-shrink-0 flex flex-col items-center md:items-start w-full md:w-auto">
-                                <div className="w-48 sm:w-52 md:w-56 relative">
+                                <div className="w-full sm:w-52 md:w-56 relative">
                                     <div
                                         className="relative rounded-2xl overflow-hidden shadow-2xl"
                                         style={{ boxShadow: `0 25px 60px ${currentTheme.foreground}20` }}
@@ -541,7 +543,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                 </div>
 
                                 {/* Action Buttons - Below Cover */}
-                                <div className="w-48 sm:w-52 md:w-56 mt-4 flex flex-col gap-2.5">
+                                <div className="w-full sm:w-52 md:w-56 mt-4 flex flex-col gap-2.5">
                                     <Link
                                         href={route('chapters.show', [series.slug, '1'])}
                                         className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all hover:opacity-90 hover:shadow-lg text-sm"
@@ -737,25 +739,42 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                 {/* ─── Two Column: Chapters + Related ─── */}
                 <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* Chapter List */}
-                        <div className="lg:col-span-2">
+
+                        {/* ── Chapter List ── */}
+                        <div className="lg:col-span-2 flex flex-col">
                             <div
-                                className="rounded-2xl overflow-hidden"
+                                className="rounded-2xl overflow-hidden flex flex-col"
                                 style={{
+                                    height: isMobile ? 'auto' : '680px',
                                     backgroundColor: `${currentTheme.foreground}04`,
                                     border: `1px solid ${currentTheme.foreground}08`,
                                 }}
                             >
-                                {/* Chapter header with controls */}
-                                <div className="p-5 sm:p-6" style={{ borderBottom: `1px solid ${currentTheme.foreground}08` }}>
-                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-1 h-6 rounded-full" style={{ backgroundColor: currentTheme.foreground }} />
-                                            <h2 className="text-lg sm:text-xl font-bold" style={{ color: currentTheme.foreground }}>
-                                                Chapters ({filteredChapters.length})
+                                {/* Header */}
+                                <div
+                                    className="flex-shrink-0 px-5 py-4"
+                                    style={{
+                                        background: `linear-gradient(135deg, ${currentTheme.foreground}06 0%, ${currentTheme.foreground}02 100%)`,
+                                        borderBottom: `1px solid ${currentTheme.foreground}08`,
+                                    }}
+                                >
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div
+                                                className="w-1 h-6 rounded-full"
+                                                style={{ background: `linear-gradient(to bottom, ${SHINY_PURPLE}, ${SHINY_PURPLE}60)` }}
+                                            />
+                                            <h2 className="text-lg font-bold" style={{ color: currentTheme.foreground }}>
+                                                Chapters
                                             </h2>
+                                            <span
+                                                className="px-2 py-0.5 rounded-full text-xs font-bold"
+                                                style={{ backgroundColor: `${SHINY_PURPLE}18`, color: SHINY_PURPLE }}
+                                            >
+                                                {filteredChapters.length}
+                                            </span>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2">
                                             {/* Search */}
                                             <div className="relative">
                                                 <input
@@ -763,64 +782,57 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     placeholder="Search chapter..."
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="px-3 py-2 pr-8 rounded-lg focus:ring-2 transition-colors text-sm w-40"
+                                                    className="px-3 py-1.5 pr-8 rounded-lg text-xs w-36 focus:outline-none"
                                                     style={{
                                                         backgroundColor: `${currentTheme.foreground}06`,
-                                                        border: `1px solid ${currentTheme.foreground}12`,
+                                                        border: `1px solid ${currentTheme.foreground}10`,
                                                         color: currentTheme.foreground,
                                                     }}
                                                 />
-                                                <div className="absolute right-2.5 top-2.5 opacity-40">
-                                                    <SearchIcon size={16} color={currentTheme.foreground} />
+                                                <div className="absolute right-2 top-1.5 opacity-35">
+                                                    <SearchIcon size={14} color={currentTheme.foreground} />
                                                 </div>
                                             </div>
-
-                                            {/* View Mode Toggle - Desktop only */}
+                                            {/* View Mode — desktop only */}
                                             {!isMobile && (
                                                 <div
-                                                    className="flex items-center rounded-lg overflow-hidden"
-                                                    style={{ border: `1px solid ${currentTheme.foreground}12` }}
+                                                    className="flex rounded-lg overflow-hidden"
+                                                    style={{ border: `1px solid ${currentTheme.foreground}10` }}
                                                 >
-                                                    <button
-                                                        onClick={() => updateViewMode('detailed')}
-                                                        className="px-3 py-2 text-sm transition-colors flex items-center gap-2"
-                                                        style={{
-                                                            backgroundColor: viewMode === 'detailed' ? currentTheme.foreground : 'transparent',
-                                                            color: viewMode === 'detailed' ? currentTheme.background : `${currentTheme.foreground}80`,
-                                                        }}
-                                                    >
-                                                        <ListIcon size={14} color={viewMode === 'detailed' ? currentTheme.background : `${currentTheme.foreground}80`} />
-                                                        Detailed
-                                                    </button>
-                                                    <button
-                                                        onClick={() => updateViewMode('simple')}
-                                                        className="px-3 py-2 text-sm transition-colors flex items-center gap-2"
-                                                        style={{
-                                                            backgroundColor: viewMode === 'simple' ? currentTheme.foreground : 'transparent',
-                                                            color: viewMode === 'simple' ? currentTheme.background : `${currentTheme.foreground}80`,
-                                                        }}
-                                                    >
-                                                        <GridIcon size={14} color={viewMode === 'simple' ? currentTheme.background : `${currentTheme.foreground}80`} />
-                                                        Simple
-                                                    </button>
+                                                    {(['detailed', 'simple'] as const).map((mode) => (
+                                                        <button
+                                                            key={mode}
+                                                            onClick={() => updateViewMode(mode)}
+                                                            className="px-2.5 py-1.5 text-xs transition-colors flex items-center gap-1.5"
+                                                            style={{
+                                                                backgroundColor: viewMode === mode ? currentTheme.foreground : 'transparent',
+                                                                color: viewMode === mode ? currentTheme.background : `${currentTheme.foreground}60`,
+                                                            }}
+                                                        >
+                                                            {mode === 'detailed'
+                                                                ? <ListIcon size={12} color={viewMode === mode ? currentTheme.background : `${currentTheme.foreground}60`} />
+                                                                : <GridIcon size={12} color={viewMode === mode ? currentTheme.background : `${currentTheme.foreground}60`} />
+                                                            }
+                                                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             )}
-
                                             {/* Sort */}
                                             <select
                                                 value={sortOrder}
                                                 onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                                className="rounded-lg transition-colors text-sm"
+                                                className="rounded-lg text-xs"
                                                 style={{
                                                     backgroundColor: `${currentTheme.foreground}06`,
-                                                    border: `1px solid ${currentTheme.foreground}12`,
+                                                    border: `1px solid ${currentTheme.foreground}10`,
                                                     color: currentTheme.foreground,
-                                                    padding: '8px 2.5rem 8px 12px',
+                                                    padding: '6px 2rem 6px 10px',
                                                     appearance: 'none' as any,
-                                                    colorScheme: (() => { try { const h=currentTheme.background.replace(/^#/,''); return (parseInt(h.slice(0,2),16)*.299+parseInt(h.slice(2,4),16)*.587+parseInt(h.slice(4,6),16)*.114)>128?'light':'dark'; } catch{return 'dark';} })() as any,
-                                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(currentTheme.foreground)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
+                                                    colorScheme: (() => { try { const h = currentTheme.background.replace(/^#/, ''); return (parseInt(h.slice(0,2),16)*.299+parseInt(h.slice(2,4),16)*.587+parseInt(h.slice(4,6),16)*.114) > 128 ? 'light' : 'dark'; } catch { return 'dark'; } })() as any,
+                                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(currentTheme.foreground)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
                                                     backgroundRepeat: 'no-repeat',
-                                                    backgroundPosition: 'right 10px center',
+                                                    backgroundPosition: 'right 8px center',
                                                 }}
                                             >
                                                 <option value="asc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Oldest First</option>
@@ -832,170 +844,135 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
 
                                 {/* Chapter Content */}
                                 {viewMode === 'detailed' ? (
-                                    <div 
-                                        className="divide-y overflow-y-auto themed-scrollbar"
-                                        style={{ 
-                                            maxHeight: 'calc(100vh - 300px)',
-                                            minHeight: '500px',
-                                            borderTopColor: `${currentTheme.foreground}08`,
-                                            '--scrollbar-thumb': `${currentTheme.foreground}25`,
-                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
-                                            '--scrollbar-track': `${currentTheme.foreground}06`,
-                                        } as React.CSSProperties} 
-                                    >
-                                        {displayedChapters.map((chapter) => (
-                                            <Link
-                                                key={chapter.id}
-                                                href={route('chapters.show', [series.slug, chapter.chapter_link])}
-                                                className="block px-5 py-4 transition-all hover:brightness-95"
-                                                style={{ borderBottomColor: `${currentTheme.foreground}06` }}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-3 mb-1">
-                                                            <span 
-                                                                className="text-sm font-semibold"
-                                                                style={{ color: `${currentTheme.foreground}90` }}
-                                                            >
-                                                                {chapter.volume 
-                                                                    ? `Volume ${chapter.volume}`
-                                                                    : `Chapter ${chapter.chapter_number}`
-                                                                }
-                                                            </span>
-                                                            <h3 
-                                                                className="font-medium text-sm truncate"
-                                                                style={{ color: `${currentTheme.foreground}70` }}
-                                                            >
-                                                                {chapter.title}
-                                                            </h3>
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="flex items-center gap-1">
-                                                                    <CalendarIcon size={12} color={`${currentTheme.foreground}50`} />
-                                                                    <span className="text-xs" style={{ color: `${currentTheme.foreground}50` }}>
-                                                                        {formatDate(chapter.created_at)}
-                                                                    </span>
-                                                                </div>
-                                                                {chapter.is_premium && (
-                                                                    <span 
-                                                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
-                                                                        style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}
-                                                                    >
-                                                                        <PremiumDiamond size={12} />
-                                                                        Premium
-                                                                    </span>
-                                                                )}
-                                                                {chapter.is_owned && (
-                                                                    <span 
-                                                                        className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full"
-                                                                        style={{ backgroundColor: 'rgba(234,179,8,0.15)', color: '#eab308' }}
-                                                                    >
-                                                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                        Owned
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-1" style={{ color: `${currentTheme.foreground}45` }}>
-                                                                <EyeIcon className="w-3 h-3" />
-                                                                <span className="text-xs">{formatNumber(chapter.views)}</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}30` }}>
-                                                        <ChevronRightIcon size={18} color={`${currentTheme.foreground}30`} />
-                                                    </div>
-                                                </div>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div 
-                                        className={`grid gap-3 p-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} overflow-y-auto themed-scrollbar`}
-                                        style={{ 
-                                            maxHeight: 'calc(100vh - 300px)', 
-                                            minHeight: '500px',
-                                            '--scrollbar-thumb': `${currentTheme.foreground}25`,
-                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
-                                            '--scrollbar-track': `${currentTheme.foreground}06`,
+                                    <div
+                                        className="flex-1 overflow-y-auto themed-scrollbar"
+                                        style={{
+                                            maxHeight: isMobile ? '70vh' : undefined,
+                                            '--scrollbar-thumb': `${currentTheme.foreground}20`,
+                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}35`,
+                                            '--scrollbar-track': 'transparent',
                                         } as React.CSSProperties}
                                     >
                                         {displayedChapters.map((chapter) => (
                                             <Link
                                                 key={chapter.id}
                                                 href={route('chapters.show', [series.slug, chapter.chapter_link])}
-                                                className="block p-4 rounded-xl transition-all hover:shadow-md"
-                                                style={{ 
-                                                    border: `1px solid ${currentTheme.foreground}08`,
-                                                    backgroundColor: `${currentTheme.foreground}03`,
-                                                }}
+                                                className="flex items-center gap-0 transition-all duration-150 group"
+                                                style={{ borderBottom: `1px solid ${currentTheme.foreground}06` }}
                                             >
-                                                {isMobile ? (
-                                                    <div>
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <h3 className="font-semibold text-sm" style={{ color: currentTheme.foreground }}>
-                                                                    {chapter.volume ? `Volume ${chapter.volume}` : `Chapter ${chapter.chapter_number}`}
-                                                                </h3>
-                                                                {chapter.is_premium && (
-                                                                    <span className="inline-flex items-center px-1.5 py-0.5 text-xs rounded" style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}>
-                                                                        <PremiumDiamond size={10} />
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}50` }}>
-                                                                <CalendarIcon size={12} color={`${currentTheme.foreground}50`} />
-                                                                {formatDate(chapter.created_at)}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center justify-between">
-                                                            <p className="text-sm truncate flex-1 pr-2" style={{ color: `${currentTheme.foreground}80` }}>
-                                                                {chapter.title && chapter.title.length > 45 ? `${chapter.title.substring(0, 45)}...` : chapter.title || 'Untitled'}
+                                                {/* Premium left border indicator */}
+                                                <div
+                                                    className="w-0.5 self-stretch flex-shrink-0 transition-all duration-150"
+                                                    style={{
+                                                        backgroundColor: chapter.is_premium ? `${SHINY_PURPLE}60` : 'transparent',
+                                                    }}
+                                                />
+                                                <div
+                                                    className="flex-1 flex items-center gap-3 px-4 py-3.5 transition-colors duration-150"
+                                                    style={{
+                                                        backgroundColor: chapter.is_premium
+                                                            ? `${SHINY_PURPLE}04`
+                                                            : 'transparent',
+                                                    }}
+                                                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = `${SHINY_PURPLE}08`; }}
+                                                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = chapter.is_premium ? `${SHINY_PURPLE}04` : 'transparent'; }}
+                                                >
+                                                    {/* Chapter number chip */}
+                                                    <span
+                                                        className="text-xs font-bold w-9 text-center flex-shrink-0 py-1 rounded-md"
+                                                        style={{
+                                                            backgroundColor: chapter.is_premium ? `${SHINY_PURPLE}15` : `${currentTheme.foreground}08`,
+                                                            color: chapter.is_premium ? SHINY_PURPLE : `${currentTheme.foreground}60`,
+                                                        }}
+                                                    >
+                                                        {chapter.volume ? `V${chapter.volume}` : `${chapter.chapter_number}`}
+                                                    </span>
+                                                    {/* Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-0.5">
+                                                            <p className="text-sm font-medium truncate" style={{ color: currentTheme.foreground }}>
+                                                                {chapter.title || (chapter.volume ? `Volume ${chapter.volume}` : `Chapter ${chapter.chapter_number}`)}
                                                             </p>
-                                                            <div className="flex items-center gap-1 text-xs whitespace-nowrap" style={{ color: `${currentTheme.foreground}50` }}>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className="text-xs flex items-center gap-1" style={{ color: `${currentTheme.foreground}45` }}>
+                                                                <CalendarIcon size={11} color={`${currentTheme.foreground}45`} />
+                                                                {formatDate(chapter.created_at)}
+                                                            </span>
+                                                            <span className="text-xs flex items-center gap-1" style={{ color: `${currentTheme.foreground}45` }}>
                                                                 <EyeIcon className="w-3 h-3" />
                                                                 {formatNumber(chapter.views)}
-                                                            </div>
+                                                            </span>
+                                                            {chapter.is_premium && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: `${SHINY_PURPLE}18`, color: SHINY_PURPLE }}>
+                                                                    <PremiumDiamond size={10} />
+                                                                    Premium
+                                                                </span>
+                                                            )}
+                                                            {chapter.is_owned && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: 'rgba(234,179,8,0.12)', color: '#eab308' }}>
+                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                                    Owned
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center justify-between mb-3">
-                                                                <h3 className="font-semibold text-sm" style={{ color: currentTheme.foreground }}>
-                                                                    {chapter.volume ? `Volume ${chapter.volume}` : `Chapter ${chapter.chapter_number}`}
-                                                                </h3>
-                                                                {chapter.is_premium && (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full" style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}>
-                                                                        <PremiumDiamond size={12} />
-                                                                        Premium
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex items-center justify-between gap-2">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}50` }}>
-                                                                        <CalendarIcon size={12} color={`${currentTheme.foreground}50`} />
-                                                                        {formatDate(chapter.created_at)}
-                                                                    </div>
-                                                                    {chapter.is_owned && (
-                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full" style={{ backgroundColor: 'rgba(234,179,8,0.15)', color: '#eab308' }}>
-                                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                                                                            Owned
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex items-center gap-1 text-xs" style={{ color: `${currentTheme.foreground}50` }}>
-                                                                    <EyeIcon className="w-3 h-3" />
-                                                                    {formatNumber(chapter.views)}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center ml-3" style={{ color: `${currentTheme.foreground}30` }}>
-                                                            <ChevronRightIcon size={16} color={`${currentTheme.foreground}30`} />
-                                                        </div>
+                                                    <ChevronRightIcon size={15} color={`${currentTheme.foreground}25`} />
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div
+                                        className={`flex-1 overflow-y-auto themed-scrollbar grid gap-2.5 p-4 content-start ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}
+                                        style={{
+                                            maxHeight: isMobile ? '70vh' : undefined,
+                                            '--scrollbar-thumb': `${currentTheme.foreground}20`,
+                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}35`,
+                                            '--scrollbar-track': 'transparent',
+                                        } as React.CSSProperties}
+                                    >
+                                        {displayedChapters.map((chapter) => (
+                                            <Link
+                                                key={chapter.id}
+                                                href={route('chapters.show', [series.slug, chapter.chapter_link])}
+                                                className="flex items-center gap-3 p-3 rounded-xl transition-all duration-150 hover:shadow-sm group"
+                                                style={{
+                                                    border: `1px solid ${chapter.is_premium ? `${SHINY_PURPLE}20` : `${currentTheme.foreground}08`}`,
+                                                    backgroundColor: chapter.is_premium ? `${SHINY_PURPLE}04` : `${currentTheme.foreground}03`,
+                                                }}
+                                            >
+                                                {/* Number badge */}
+                                                <div
+                                                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                                                    style={{
+                                                        backgroundColor: chapter.is_premium ? `${SHINY_PURPLE}18` : `${currentTheme.foreground}08`,
+                                                        color: chapter.is_premium ? SHINY_PURPLE : `${currentTheme.foreground}70`,
+                                                    }}
+                                                >
+                                                    {chapter.volume ? `V${chapter.volume}` : chapter.chapter_number}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <p className="text-xs font-semibold truncate" style={{ color: currentTheme.foreground }}>
+                                                            {chapter.title || (chapter.volume ? `Vol ${chapter.volume}` : `Ch ${chapter.chapter_number}`)}
+                                                        </p>
+                                                        {chapter.is_premium && <PremiumDiamond size={12} />}
+                                                        {chapter.is_owned && (
+                                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                        )}
                                                     </div>
-                                                )}
+                                                    <div className="flex items-center gap-2 text-[10px]" style={{ color: `${currentTheme.foreground}45` }}>
+                                                        <span className="flex items-center gap-0.5">
+                                                            <CalendarIcon size={10} color={`${currentTheme.foreground}45`} />
+                                                            {formatDate(chapter.created_at)}
+                                                        </span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            <EyeIcon className="w-2.5 h-2.5" />
+                                                            {formatNumber(chapter.views)}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             </Link>
                                         ))}
                                     </div>
@@ -1003,72 +980,104 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
 
                                 {/* No Results */}
                                 {filteredChapters.length === 0 && (
-                                    <div className="text-center py-12">
-                                        <div className="mb-4 flex justify-center">
-                                            <BookIcon size={48} color={`${currentTheme.foreground}40`} />
-                                        </div>
-                                        <p className="text-lg" style={{ color: currentTheme.foreground }}>
-                                            {searchQuery ? 'No chapters found' : 'No chapters available'}
+                                    <div className="flex-1 flex flex-col items-center justify-center py-12">
+                                        <BookIcon size={40} color={`${currentTheme.foreground}25`} />
+                                        <p className="mt-3 text-sm font-medium" style={{ color: `${currentTheme.foreground}50` }}>
+                                            {searchQuery ? 'No chapters match your search' : 'No chapters available'}
                                         </p>
                                         {searchQuery && (
-                                            <p className="text-sm mt-2" style={{ color: `${currentTheme.foreground}50` }}>
-                                                Try adjusting your search terms
-                                            </p>
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="mt-2 text-xs underline"
+                                                style={{ color: SHINY_PURPLE }}
+                                            >
+                                                Clear search
+                                            </button>
                                         )}
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Related Series Sidebar */}
-                        <div className="space-y-6">
+                        {/* ── You Might Also Like ── */}
+                        <div className="flex flex-col">
                             {relatedSeries.length > 0 && (
                                 <div
-                                    className="rounded-2xl p-5 sm:p-6"
+                                    className="rounded-2xl overflow-hidden flex flex-col"
                                     style={{
+                                        height: isMobile ? 'auto' : '680px',
                                         backgroundColor: `${currentTheme.foreground}04`,
                                         border: `1px solid ${currentTheme.foreground}08`,
                                     }}
                                 >
-                                    <div className="flex items-center gap-3 mb-5">
-                                        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: currentTheme.foreground }} />
-                                        <h3 className="text-lg font-bold" style={{ color: currentTheme.foreground }}>
-                                            You Might Also Like
-                                        </h3>
+                                    {/* Header */}
+                                    <div
+                                        className="flex-shrink-0 px-5 py-4"
+                                        style={{
+                                            background: `linear-gradient(135deg, ${SHINY_PURPLE}08 0%, ${currentTheme.foreground}02 100%)`,
+                                            borderBottom: `1px solid ${currentTheme.foreground}08`,
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div
+                                                className="w-1 h-6 rounded-full"
+                                                style={{ background: `linear-gradient(to bottom, ${SHINY_PURPLE}, #e879f9)` }}
+                                            />
+                                            <h3 className="text-base font-bold" style={{ color: currentTheme.foreground }}>
+                                                You Might Also Like
+                                            </h3>
+                                        </div>
                                     </div>
-                                    <div className="space-y-3">
+
+                                    {/* List */}
+                                    <div
+                                        className="flex-1 overflow-y-auto themed-scrollbar p-3 space-y-2"
+                                        style={{
+                                            '--scrollbar-thumb': `${currentTheme.foreground}20`,
+                                            '--scrollbar-thumb-hover': `${currentTheme.foreground}35`,
+                                            '--scrollbar-track': 'transparent',
+                                        } as React.CSSProperties}
+                                    >
                                         {relatedSeries.map((related) => (
                                             <Link
                                                 key={related.id}
                                                 href={route('series.show', related.slug)}
-                                                className="flex gap-3 p-3 rounded-xl transition-all hover:shadow-md group"
+                                                className="flex gap-3 p-2.5 rounded-xl transition-all duration-200 group hover:-translate-y-0.5 hover:shadow-md"
                                                 style={{
                                                     backgroundColor: `${currentTheme.foreground}03`,
-                                                    border: `1px solid ${currentTheme.foreground}06`,
+                                                    border: `1px solid ${currentTheme.foreground}07`,
                                                 }}
+                                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${SHINY_PURPLE}25`; (e.currentTarget as HTMLElement).style.backgroundColor = `${SHINY_PURPLE}05`; }}
+                                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${currentTheme.foreground}07`; (e.currentTarget as HTMLElement).style.backgroundColor = `${currentTheme.foreground}03`; }}
                                             >
                                                 <CoverImage
                                                     src={related.cover_url}
                                                     alt={related.title}
                                                     aspectClass=""
-                                                    containerClassName="w-14 h-20 flex-shrink-0 rounded-lg"
-                                                    hoverScale={true}
+                                                    containerClassName="w-14 h-[84px] flex-shrink-0 rounded-lg"
+                                                    hoverScale={false}
                                                 />
-                                                <div className="flex-1 min-w-0 py-0.5">
-                                                    <h4 
-                                                        className="font-semibold text-sm line-clamp-2 mb-1 group-hover:opacity-80 transition-opacity"
-                                                        style={{ color: currentTheme.foreground }}
-                                                    >
-                                                        {related.title}
-                                                    </h4>
-                                                    <p className="text-xs mb-1" style={{ color: `${currentTheme.foreground}60` }}>
-                                                        by {related.author}
-                                                    </p>
-                                                    <div className="flex items-center text-xs" style={{ color: `${currentTheme.foreground}50` }}>
-                                                        <span className="text-yellow-400">★</span>
-                                                        <span className="ml-1 font-medium">{related.rating || 'N/A'}</span>
-                                                        <span className="mx-1.5">•</span>
-                                                        <span>{related.chapters_count} ch</span>
+                                                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                                                    <div>
+                                                        <h4
+                                                            className="font-semibold text-sm line-clamp-2 leading-snug mb-1 transition-colors duration-150"
+                                                            style={{ color: currentTheme.foreground }}
+                                                        >
+                                                            {related.title}
+                                                        </h4>
+                                                        <p className="text-xs truncate" style={{ color: `${currentTheme.foreground}55` }}>
+                                                            {related.author}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        <span className="flex items-center gap-0.5 text-xs">
+                                                            <span className="text-yellow-400 text-sm leading-none">★</span>
+                                                            <span className="font-semibold" style={{ color: currentTheme.foreground }}>{related.rating || 'N/A'}</span>
+                                                        </span>
+                                                        <span className="w-1 h-1 rounded-full" style={{ backgroundColor: `${currentTheme.foreground}25` }} />
+                                                        <span className="text-xs" style={{ color: `${currentTheme.foreground}50` }}>
+                                                            {related.chapters_count} ch
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </Link>
@@ -1077,6 +1086,7 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                 </div>
                             )}
                         </div>
+
                     </div>
                 </section>
 

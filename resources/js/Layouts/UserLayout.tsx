@@ -1123,6 +1123,61 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
 
 function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { display_name: string; membership_tier?: string } | null }) {
   const { currentTheme } = useTheme();
+  const [visible, setVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Scroll: hide after 1.5s of scrolling down, show immediately on scroll up
+  useEffect(() => {
+    let lastY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY < 20) {
+        if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
+        setVisible(true);
+      } else if (currentY > lastY + 4) {
+        if (!hideTimerRef.current) {
+          hideTimerRef.current = setTimeout(() => {
+            setVisible(false);
+            hideTimerRef.current = null;
+          }, 1500);
+        }
+      } else if (currentY < lastY - 4) {
+        if (hideTimerRef.current) { clearTimeout(hideTimerRef.current); hideTimerRef.current = null; }
+        setVisible(true);
+      }
+      lastY = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, []);
+
+  // Long press anywhere (0.5s) to show when hidden
+  useEffect(() => {
+    if (visible) return;
+    let pressTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleDown = () => {
+      pressTimer = setTimeout(() => setVisible(true), 500);
+    };
+    const handleUp = () => {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    };
+
+    document.addEventListener('pointerdown', handleDown);
+    document.addEventListener('pointerup', handleUp);
+    document.addEventListener('pointercancel', handleUp);
+    return () => {
+      document.removeEventListener('pointerdown', handleDown);
+      document.removeEventListener('pointerup', handleUp);
+      document.removeEventListener('pointercancel', handleUp);
+      if (pressTimer) clearTimeout(pressTimer);
+    };
+  }, [visible]);
 
   const isActive = (path: string) =>
     path === '/' ? currentPath === '/' : currentPath === path || currentPath.startsWith(path + '/');
@@ -1177,9 +1232,11 @@ function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { 
 
   return (
     <nav
-      className="mobile-bottom-nav"
+      className={`mobile-bottom-nav transition-transform duration-300 ease-in-out ${visible ? 'translate-y-0' : 'translate-y-full'}`}
       style={{
-        backgroundColor: `${currentTheme.background}e8`,
+        backgroundColor: `${currentTheme.background}33`,
+        backdropFilter: 'blur(50px)',
+        WebkitBackdropFilter: 'blur(50px)',
         borderColor: `${currentTheme.foreground}18`,
       }}
     >
