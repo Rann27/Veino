@@ -212,7 +212,7 @@ export default function CommentSection({
             } catch (error) {
                 console.error('Error deleting comment:', error);
             }
-        }, 'Delete Comment');
+        }, 'Delete Comment', 'danger');
     };
 
     const formatDate = (dateString: string) => {

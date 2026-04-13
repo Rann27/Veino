@@ -340,7 +340,8 @@ function ChapterShowContent({
                                     confirm(
                                         `Unlock this chapter for ¢${coinPrice}?`,
                                         () => router.post(route('chapters.purchase', [series.slug, chapter.chapter_link])),
-                                        'Buy Chapter'
+                                        'Buy Chapter',
+                                        'purchase'
                                     );
                                 }}
                                 className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90"

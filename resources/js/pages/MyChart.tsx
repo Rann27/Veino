@@ -39,7 +39,7 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
                 data: { chart_item_id: chartItemId },
                 preserveScroll: true
             });
-        });
+        }, 'Remove Item', 'danger');
     };
 
     const handleApplyVoucher = async () => {
