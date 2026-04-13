@@ -12,7 +12,7 @@ class OxapayService
 
     public function __construct()
     {
-        $this->merchantKey = config('services.oxapay.merchant_key', '');
+        $this->merchantKey = (string) config('services.oxapay.merchant_key', '');
     }
 
     public function isConfigured(): bool
