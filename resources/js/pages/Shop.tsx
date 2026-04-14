@@ -319,7 +319,7 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
                 {/* Payment Methods */}
                 <div className="rounded-2xl p-5"
                     style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
-                    <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}40` }}>
+                    <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}` }}>
                         Payment Method
                     </p>
                     <div className="grid grid-cols-2 gap-3">

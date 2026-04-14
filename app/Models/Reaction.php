@@ -10,6 +10,7 @@ class Reaction extends Model
 {
     protected $fillable = [
         'user_id',
+        'session_id',
         'reactable_type',
         'reactable_id',
         'type',

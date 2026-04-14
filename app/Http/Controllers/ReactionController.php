@@ -12,152 +12,129 @@ use Illuminate\Support\Facades\Auth;
 class ReactionController extends Controller
 {
     /**
-     * Toggle reaction (add if doesn't exist, update if different, remove if same)
+     * Toggle reaction.
+     * - Authenticated users: stored in DB keyed by user_id.
+     * - Anonymous users: stored in DB keyed by session_id (persists across page loads).
      */
     public function toggle(Request $request)
     {
-        if (!Auth::check()) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
         $validated = $request->validate([
             'reactable_type' => 'required|in:series,chapter,comment',
-            'reactable_id' => 'required|integer',
-            'type' => 'required|in:like,love,haha,angry,sad',
+            'reactable_id'   => 'required|integer',
+            'type'           => 'required|in:like,love,haha,angry,sad',
         ]);
 
         $reactable = $this->getReactable($validated['reactable_type'], $validated['reactable_id']);
-        
         if (!$reactable) {
             return response()->json(['error' => 'Not found'], 404);
         }
 
-        $userId = Auth::id();
         $reactableType = $this->getReactableModel($validated['reactable_type']);
+        $reactableId   = $validated['reactable_id'];
+        $type          = $validated['type'];
 
-        // Check if user already reacted
-        $existingReaction = Reaction::where([
-            'user_id' => $userId,
-            'reactable_type' => $reactableType,
-            'reactable_id' => $validated['reactable_id'],
-        ])->first();
-
-        if ($existingReaction) {
-            if ($existingReaction->type === $validated['type']) {
-                // Same reaction, remove it
-                $existingReaction->delete();
-                $action = 'removed';
-            } else {
-                // Different reaction, update it
-                $existingReaction->update(['type' => $validated['type']]);
-                $action = 'updated';
-            }
-        } else {
-            // No reaction, create new one
-            Reaction::create([
-                'user_id' => $userId,
+        if (Auth::check()) {
+            // ── Authenticated: keyed by user_id ───────────────────────────────
+            $existing = Reaction::where([
+                'user_id'        => Auth::id(),
                 'reactable_type' => $reactableType,
-                'reactable_id' => $validated['reactable_id'],
-                'type' => $validated['type'],
-            ]);
-            $action = 'added';
+                'reactable_id'   => $reactableId,
+            ])->first();
+        } else {
+            // ── Anonymous: keyed by session_id ───────────────────────────────
+            $existing = Reaction::where([
+                'session_id'     => $request->session()->getId(),
+                'reactable_type' => $reactableType,
+                'reactable_id'   => $reactableId,
+            ])->first();
         }
 
-        // Get updated reaction counts
-        $reactionCounts = Reaction::where([
-            'reactable_type' => $reactableType,
-            'reactable_id' => $validated['reactable_id'],
-        ])
-        ->selectRaw('type, count(*) as count')
-        ->groupBy('type')
-        ->pluck('count', 'type')
-        ->toArray();
-
-        // Get user's current reaction
-        $userReaction = Reaction::where([
-            'user_id' => $userId,
-            'reactable_type' => $reactableType,
-            'reactable_id' => $validated['reactable_id'],
-        ])->first();
+        if ($existing) {
+            if ($existing->type === $type) {
+                $existing->delete();
+                $userReaction = null;
+            } else {
+                $existing->update(['type' => $type]);
+                $userReaction = $type;
+            }
+        } else {
+            Reaction::create([
+                'user_id'        => Auth::id(),          // null for anonymous
+                'session_id'     => Auth::check() ? null : $request->session()->getId(),
+                'reactable_type' => $reactableType,
+                'reactable_id'   => $reactableId,
+                'type'           => $type,
+            ]);
+            $userReaction = $type;
+        }
 
         return response()->json([
-            'message' => 'Reaction ' . $action,
-            'action' => $action,
-            'reaction_counts' => $reactionCounts,
-            'user_reaction' => $userReaction?->type,
+            'reaction_counts' => $this->getCounts($reactableType, $reactableId),
+            'user_reaction'   => $userReaction,
         ]);
     }
 
     /**
-     * Get reactions for a reactable item
+     * Get reactions for a reactable item.
      */
     public function index(Request $request, $type, $id)
     {
         $reactable = $this->getReactable($type, $id);
-        
         if (!$reactable) {
             return response()->json(['error' => 'Not found'], 404);
         }
 
         $reactableType = $this->getReactableModel($type);
 
-        // Get reaction counts
-        $reactionCounts = Reaction::where([
+        if (Auth::check()) {
+            $userReaction = Reaction::where([
+                'user_id'        => Auth::id(),
+                'reactable_type' => $reactableType,
+                'reactable_id'   => $id,
+            ])->first()?->type;
+        } else {
+            $userReaction = Reaction::where([
+                'session_id'     => $request->session()->getId(),
+                'reactable_type' => $reactableType,
+                'reactable_id'   => $id,
+            ])->first()?->type;
+        }
+
+        return response()->json([
+            'reaction_counts' => $this->getCounts($reactableType, $id),
+            'user_reaction'   => $userReaction,
+        ]);
+    }
+
+    private function getCounts($reactableType, $reactableId): array
+    {
+        return Reaction::where([
             'reactable_type' => $reactableType,
-            'reactable_id' => $id,
+            'reactable_id'   => $reactableId,
         ])
         ->selectRaw('type, count(*) as count')
         ->groupBy('type')
         ->pluck('count', 'type')
         ->toArray();
-
-        // Get user's reaction if authenticated
-        $userReaction = null;
-        if (Auth::check()) {
-            $userReaction = Reaction::where([
-                'user_id' => Auth::id(),
-                'reactable_type' => $reactableType,
-                'reactable_id' => $id,
-            ])->first()?->type;
-        }
-
-        return response()->json([
-            'reaction_counts' => $reactionCounts,
-            'user_reaction' => $userReaction,
-        ]);
     }
 
-    /**
-     * Get reactable model instance
-     */
     private function getReactable($type, $id)
     {
-        switch ($type) {
-            case 'series':
-                return Series::find($id);
-            case 'chapter':
-                return Chapter::find($id);
-            case 'comment':
-                return Comment::find($id);
-            default:
-                return null;
-        }
+        return match ($type) {
+            'series'  => Series::find($id),
+            'chapter' => Chapter::find($id),
+            'comment' => Comment::find($id),
+            default   => null,
+        };
     }
 
-    /**
-     * Get reactable model class name
-     */
-    private function getReactableModel($type)
+    private function getReactableModel($type): ?string
     {
-        switch ($type) {
-            case 'series':
-                return Series::class;
-            case 'chapter':
-                return Chapter::class;
-            case 'comment':
-                return Comment::class;
-            default:
-                return null;
-        }
+        return match ($type) {
+            'series'  => Series::class,
+            'chapter' => Chapter::class,
+            'comment' => Comment::class,
+            default   => null,
+        };
     }
 }

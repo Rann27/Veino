@@ -309,16 +309,15 @@ Route::prefix('api')->group(function () {
     
     // Get reactions (public)
     Route::get('/reactions/{type}/{id}', [ReactionController::class, 'index'])->name('reactions.index');
-    
-    // Comment & Reaction actions (requires authentication)
+
+    // Reactions toggle — public (anonymous via session, authenticated via DB)
+    Route::post('/reactions/toggle', [ReactionController::class, 'toggle'])->name('reactions.toggle');
+
+    // Comment actions (requires authentication)
     Route::middleware('auth')->group(function () {
-        // Comments
         Route::post('/comments/{type}/{id}', [CommentController::class, 'store'])->name('comments.store');
         Route::put('/comments/{id}', [CommentController::class, 'update'])->name('comments.update');
         Route::delete('/comments/{id}', [CommentController::class, 'destroy'])->name('comments.destroy');
-        
-        // Reactions
-        Route::post('/reactions/toggle', [ReactionController::class, 'toggle'])->name('reactions.toggle');
     });
 });
 

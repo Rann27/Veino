@@ -25,6 +25,11 @@ function AuthContent({ tab: initialTab, errors: inertiaErrors }: AuthProps) {
     const [processing, setProcessing] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
+    // Password visibility toggles
+    const [showLoginPw, setShowLoginPw]       = useState(false);
+    const [showRegPw, setShowRegPw]           = useState(false);
+    const [showRegConfirmPw, setShowRegConfirmPw] = useState(false);
+
     // Login form
     const [loginData, setLoginData] = useState({
         email: '',
@@ -245,23 +250,46 @@ function AuthContent({ tab: initialTab, errors: inertiaErrors }: AuthProps) {
                                 >
                                     Password
                                 </label>
-                                <input
-                                    id="login-password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    value={loginData.password}
-                                    onChange={(e) => {
-                                        setLoginData(prev => ({ ...prev, password: e.target.value }));
-                                        clearError('password');
-                                    }}
-                                    className="w-full px-3.5 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors"
-                                    style={{
-                                        ...inputStyle(!!errors.password),
-                                        '--tw-ring-color': `${currentTheme.foreground}30`,
-                                    } as React.CSSProperties}
-                                    placeholder="Enter your password"
-                                />
+                                <div className="relative">
+                                    <input
+                                        id="login-password"
+                                        name="password"
+                                        type={showLoginPw ? 'text' : 'password'}
+                                        required
+                                        value={loginData.password}
+                                        onChange={(e) => {
+                                            setLoginData(prev => ({ ...prev, password: e.target.value }));
+                                            clearError('password');
+                                        }}
+                                        className="w-full px-3.5 py-2.5 pr-10 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors"
+                                        style={{
+                                            ...inputStyle(!!errors.password),
+                                            '--tw-ring-color': `${currentTheme.foreground}30`,
+                                        } as React.CSSProperties}
+                                        placeholder="Enter your password"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowLoginPw(v => !v)}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 transition-opacity hover:opacity-70"
+                                        style={{ color: `${currentTheme.foreground}50` }}
+                                        tabIndex={-1}
+                                        aria-label={showLoginPw ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showLoginPw ? (
+                                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        ) : (
+                                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
                                 {errors.password && (
                                     <p className="mt-1 text-xs" style={{ color: '#ef4444' }}>{errors.password}</p>
                                 )}
@@ -393,23 +421,46 @@ function AuthContent({ tab: initialTab, errors: inertiaErrors }: AuthProps) {
                                 >
                                     Password
                                 </label>
-                                <input
-                                    id="reg-password"
-                                    name="password"
-                                    type="password"
-                                    required
-                                    value={registerData.password}
-                                    onChange={(e) => {
-                                        setRegisterData(prev => ({ ...prev, password: e.target.value }));
-                                        clearError('password');
-                                    }}
-                                    className="w-full px-3.5 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors"
-                                    style={{
-                                        ...inputStyle(!!errors.password),
-                                        '--tw-ring-color': `${currentTheme.foreground}30`,
-                                    } as React.CSSProperties}
-                                    placeholder="Create a password"
-                                />
+                                <div className="relative">
+                                    <input
+                                        id="reg-password"
+                                        name="password"
+                                        type={showRegPw ? 'text' : 'password'}
+                                        required
+                                        value={registerData.password}
+                                        onChange={(e) => {
+                                            setRegisterData(prev => ({ ...prev, password: e.target.value }));
+                                            clearError('password');
+                                        }}
+                                        className="w-full px-3.5 py-2.5 pr-10 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors"
+                                        style={{
+                                            ...inputStyle(!!errors.password),
+                                            '--tw-ring-color': `${currentTheme.foreground}30`,
+                                        } as React.CSSProperties}
+                                        placeholder="Create a password"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRegPw(v => !v)}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 transition-opacity hover:opacity-70"
+                                        style={{ color: `${currentTheme.foreground}50` }}
+                                        tabIndex={-1}
+                                        aria-label={showRegPw ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showRegPw ? (
+                                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        ) : (
+                                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
                                 {errors.password && (
                                     <p className="mt-1 text-xs" style={{ color: '#ef4444' }}>{errors.password}</p>
                                 )}
@@ -424,23 +475,46 @@ function AuthContent({ tab: initialTab, errors: inertiaErrors }: AuthProps) {
                                 >
                                     Confirm Password
                                 </label>
-                                <input
-                                    id="reg-confirm"
-                                    name="password_confirmation"
-                                    type="password"
-                                    required
-                                    value={registerData.password_confirmation}
-                                    onChange={(e) => {
-                                        setRegisterData(prev => ({ ...prev, password_confirmation: e.target.value }));
-                                        clearError('password_confirmation');
-                                    }}
-                                    className="w-full px-3.5 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors"
-                                    style={{
-                                        ...inputStyle(!!errors.password_confirmation),
-                                        '--tw-ring-color': `${currentTheme.foreground}30`,
-                                    } as React.CSSProperties}
-                                    placeholder="Confirm your password"
-                                />
+                                <div className="relative">
+                                    <input
+                                        id="reg-confirm"
+                                        name="password_confirmation"
+                                        type={showRegConfirmPw ? 'text' : 'password'}
+                                        required
+                                        value={registerData.password_confirmation}
+                                        onChange={(e) => {
+                                            setRegisterData(prev => ({ ...prev, password_confirmation: e.target.value }));
+                                            clearError('password_confirmation');
+                                        }}
+                                        className="w-full px-3.5 py-2.5 pr-10 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-offset-0 transition-colors"
+                                        style={{
+                                            ...inputStyle(!!errors.password_confirmation),
+                                            '--tw-ring-color': `${currentTheme.foreground}30`,
+                                        } as React.CSSProperties}
+                                        placeholder="Confirm your password"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRegConfirmPw(v => !v)}
+                                        className="absolute inset-y-0 right-0 flex items-center pr-3 transition-opacity hover:opacity-70"
+                                        style={{ color: `${currentTheme.foreground}50` }}
+                                        tabIndex={-1}
+                                        aria-label={showRegConfirmPw ? 'Hide password' : 'Show password'}
+                                    >
+                                        {showRegConfirmPw ? (
+                                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        ) : (
+                                            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
                                 {errors.password_confirmation && (
                                     <p className="mt-1 text-xs" style={{ color: '#ef4444' }}>{errors.password_confirmation}</p>
                                 )}

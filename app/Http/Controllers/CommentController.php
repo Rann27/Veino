@@ -16,16 +16,28 @@ class CommentController extends Controller
     public function index(Request $request, $type, $id)
     {
         $commentable = $this->getCommentable($type, $id);
-        
+
         if (!$commentable) {
             return response()->json(['error' => 'Not found'], 404);
         }
 
-        $sortBy = $request->get('sort', 'newest'); // newest, oldest, popular
-        
-        $query = $commentable->comments()->with(['user', 'replies.user', 'reactions']);
-        
-        // Apply sorting
+        $sortBy  = $request->get('sort', 'newest');
+        $perPage = min((int) $request->get('per_page', 10), 50);
+        $page    = max(1, (int) $request->get('page', 1));
+
+        // Count total top-level comments (for pagination)
+        $topLevelTotal = $commentable->comments()->count();
+
+        // Count ALL comments including replies (for header display)
+        $totalAll = Comment::where('commentable_type', get_class($commentable))
+            ->where('commentable_id', $commentable->id)
+            ->count();
+
+        // Data query with eager loads, clear default order from relationship
+        $query = $commentable->comments()
+            ->with(['user', 'replies.user', 'replies.reactions', 'reactions'])
+            ->reorder();
+
         switch ($sortBy) {
             case 'oldest':
                 $query->orderBy('created_at', 'asc');
@@ -37,29 +49,38 @@ class CommentController extends Controller
                 $query->orderBy('created_at', 'desc');
                 break;
         }
-        
-        $comments = $query->get();
-        
-        // Add user reaction info
+
+        $comments = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        $hasMore  = ($page * $perPage) < $topLevelTotal;
+
+        // Add user_reaction and is_premium to each comment/reply user
         $userId = Auth::id();
-        if ($userId) {
-            $comments->each(function ($comment) use ($userId) {
+        $comments->each(function ($comment) use ($userId) {
+            $comment->user->is_premium = $comment->user->isPremiumMember();
+
+            if ($userId) {
                 $comment->user_reaction = $comment->reactions()
                     ->where('user_id', $userId)
                     ->first()?->type;
-                    
-                // Add reaction info for replies
-                $comment->replies->each(function ($reply) use ($userId) {
+            }
+
+            $comment->replies->each(function ($reply) use ($userId) {
+                $reply->user->is_premium = $reply->user->isPremiumMember();
+
+                if ($userId) {
                     $reply->user_reaction = $reply->reactions()
                         ->where('user_id', $userId)
                         ->first()?->type;
-                });
+                }
             });
-        }
-        
+        });
+
         return response()->json([
-            'comments' => $comments,
-            'total' => $comments->count(),
+            'comments'  => $comments,
+            'total'     => $topLevelTotal,
+            'total_all' => $totalAll,
+            'has_more'  => $hasMore,
+            'page'      => $page,
         ]);
     }
 
