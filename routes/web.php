@@ -211,6 +211,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/chapters/{chapter}', [ChapterController::class, 'destroy'])->name('chapters.destroy');
     Route::patch('/chapters/{chapter}/toggle-premium', [ChapterController::class, 'togglePremium'])->name('chapters.toggle-premium');
     Route::post('/chapters/upload-image', [ChapterController::class, 'uploadImage'])->name('chapters.upload-image');
+
+    // Batch Upload & Batch Manager
+    Route::get('/series/{series}/batch-upload', [\App\Http\Controllers\Admin\BatchController::class, 'batchUploadPage'])->name('chapters.batch-upload');
+    Route::post('/series/{series}/batch-store', [\App\Http\Controllers\Admin\BatchController::class, 'batchStore'])->name('chapters.batch-store');
+    Route::post('/api/batch/parse-docx', [\App\Http\Controllers\Admin\BatchController::class, 'parseDocx'])->name('api.batch.parse-docx');
+    Route::get('/series/{series}/batch-manager', [\App\Http\Controllers\Admin\BatchController::class, 'batchManagerPage'])->name('chapters.batch-manager');
+    Route::put('/series/{series}/batch-update', [\App\Http\Controllers\Admin\BatchController::class, 'batchUpdate'])->name('chapters.batch-update');
     
     // User Management
     Route::get('/user-management', [UserController::class, 'index'])->name('users.index');
