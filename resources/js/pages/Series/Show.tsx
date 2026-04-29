@@ -835,8 +835,8 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     backgroundPosition: 'right 8px center',
                                                 }}
                                             >
-                                                <option value="asc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Oldest First</option>
-                                                <option value="desc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Newest First</option>
+                                                <option value="asc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Ascending</option>
+                                                <option value="desc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Descending</option>
                                             </select>
                                         </div>
                                     </div>

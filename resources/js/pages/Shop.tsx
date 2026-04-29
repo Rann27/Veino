@@ -454,6 +454,81 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
                     )}
                 </div>
             </div>
+
+            {/* ── What's Coins? ── */}
+            <div className="mt-8 rounded-2xl p-6"
+                style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
+                <div className="flex items-center gap-2.5 mb-4">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.1))' }}>
+                        <span className="text-base font-black" style={{ color: '#f59e0b', fontFamily: 'serif' }}>¢</span>
+                    </div>
+                    <h3 className="text-base font-bold" style={{ color: currentTheme.foreground }}>What's Coins?</h3>
+                </div>
+
+                <p className="text-sm leading-relaxed mb-5" style={{ color: `${currentTheme.foreground}65` }}>
+                    Coins are the base currency of Veinovel. Top up once and spend them however you like — no subscription required.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Use 1: Membership */}
+                    <a
+                        href="/shop?tab=membership"
+                        className="flex items-start gap-3 p-4 rounded-xl transition-all hover:opacity-80 group"
+                        style={{ backgroundColor: `${currentTheme.foreground}06`, border: `1px solid ${currentTheme.foreground}08` }}
+                    >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ background: `linear-gradient(135deg, ${SHINY_PURPLE_DIM}, rgba(109,40,217,0.12))`, border: `1px solid ${SHINY_PURPLE}30` }}>
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                <path d="M12 2L3 9L12 22L21 9L12 2Z" fill={SHINY_PURPLE} stroke={SHINY_PURPLE} strokeWidth="0.5"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold group-hover:underline" style={{ color: SHINY_PURPLE }}>Buy Membership</p>
+                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                                Unlock all premium chapters for a set period.
+                            </p>
+                        </div>
+                    </a>
+
+                    {/* Use 2: Chapters */}
+                    <div className="flex items-start gap-3 p-4 rounded-xl"
+                        style={{ backgroundColor: `${currentTheme.foreground}06`, border: `1px solid ${currentTheme.foreground}08` }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.08))', border: '1px solid rgba(245,158,11,0.2)' }}>
+                            <svg className="w-4 h-4" fill="none" stroke="#f59e0b" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>Unlock Chapters</p>
+                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                                Buy individual premium chapters permanently — no membership needed.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Use 3: Ebook */}
+                    <a
+                        href="/epub-novels"
+                        className="flex items-start gap-3 p-4 rounded-xl transition-all hover:opacity-80 group"
+                        style={{ backgroundColor: `${currentTheme.foreground}06`, border: `1px solid ${currentTheme.foreground}08` }}
+                    >
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08))', border: '1px solid rgba(16,185,129,0.2)' }}>
+                            <svg className="w-4 h-4" fill="none" stroke="#10b981" viewBox="0 0 24 24" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold group-hover:underline" style={{ color: '#10b981' }}>Buy Ebooks</p>
+                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                                Download EPUB &amp; PDF novels to keep forever.
+                            </p>
+                        </div>
+                    </a>
+                </div>
+            </div>
         </div>
     );
 }

@@ -471,54 +471,56 @@ export default function ReaderSettingsModal({
                         </button>
 
                         {showThemeSelector && (
-                            <div 
+                            <div
                                 className="mt-2 p-2 rounded-lg"
                                 style={{
                                     backgroundColor: `${currentTheme.foreground}04`,
                                     border: `1px solid ${currentTheme.foreground}08`,
                                 }}
                             >
-                                <div className="grid grid-cols-1 gap-2">
-                                    {themePresets.map((preset) => (
-                                        <button
-                                            key={preset.name}
-                                            onClick={() => {
-                                                setTheme(preset);
-                                                setShowThemeSelector(false);
-                                            }}
-                                            className={`p-2 rounded border text-left transition-all text-sm ${
-                                                currentTheme.name === preset.name
-                                                    ? 'border-blue-500 bg-blue-50'
-                                                    : 'hover:opacity-80'
-                                            }`}
-                                            style={{
-                                                backgroundColor: currentTheme.name === preset.name 
-                                                    ? 'rgba(59, 130, 246, 0.1)' 
-                                                    : currentTheme.background,
-                                                borderColor: currentTheme.name === preset.name 
-                                                    ? '#3B82F6' 
-                                                    : `${currentTheme.foreground}20`,
-                                                color: currentTheme.foreground
-                                            }}
-                                        >
-                                            <div className="flex items-center space-x-2 mb-1">
-                                                <div 
-                                                    className="w-3 h-3 rounded border"
-                                                    style={{ 
-                                                        backgroundColor: preset.background,
-                                                        borderColor: `${currentTheme.foreground}30`
+                                <div className="grid grid-cols-2 gap-1.5">
+                                    {(() => {
+                                        // Build list: presets + saved custom (if any)
+                                        let savedCustom: { name: string; background: string; foreground: string; description: string } | null = null;
+                                        try {
+                                            const raw = localStorage.getItem('veinovel-custom-theme');
+                                            if (raw) {
+                                                const d = JSON.parse(raw);
+                                                if (d.foreground && d.background) {
+                                                    savedCustom = { name: 'Custom', background: d.background, foreground: d.foreground, description: 'Your custom theme' };
+                                                }
+                                            }
+                                        } catch {}
+
+                                        const allThemes = savedCustom ? [...themePresets, savedCustom] : themePresets;
+
+                                        return allThemes.map((preset) => {
+                                            const isActive = currentTheme.name === preset.name;
+                                            return (
+                                                <button
+                                                    key={preset.name}
+                                                    onClick={() => { setTheme(preset); setShowThemeSelector(false); }}
+                                                    className="p-2.5 rounded-lg text-left transition-all hover:opacity-90"
+                                                    style={{
+                                                        backgroundColor: isActive ? `${currentTheme.foreground}10` : currentTheme.background,
+                                                        border: `1.5px solid ${isActive ? '#7c3aed' : `${currentTheme.foreground}15`}`,
+                                                        color: currentTheme.foreground,
                                                     }}
-                                                />
-                                                <span className="font-medium">{preset.name}</span>
-                                            </div>
-                                            <p 
-                                                className="text-xs"
-                                                style={{ color: `${currentTheme.foreground}70` }}
-                                            >
-                                                {preset.description}
-                                            </p>
-                                        </button>
-                                    ))}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className="w-6 h-6 rounded flex-shrink-0"
+                                                            style={{
+                                                                background: `linear-gradient(135deg, ${preset.background} 50%, ${preset.foreground} 50%)`,
+                                                                border: `1px solid ${currentTheme.foreground}20`,
+                                                            }}
+                                                        />
+                                                        <span className="text-xs font-medium truncate">{preset.name}</span>
+                                                    </div>
+                                                </button>
+                                            );
+                                        });
+                                    })()}
                                 </div>
                             </div>
                         )}

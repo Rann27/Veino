@@ -20,10 +20,8 @@ class UserChapterController extends Controller
         
         $chapter = Chapter::where('series_id', $series->id)
             ->where('chapter_link', $chapterLink)
+            ->where('is_published', true)
             ->firstOrFail();
-
-        // Defer view increment to after response is sent (non-blocking)
-        defer(fn() => $chapter->increment('views'));
 
         // Check if user can access this chapter
         $canAccess = true;
@@ -55,6 +53,13 @@ class UserChapterController extends Controller
                 // Access granted if premium member OR has coin purchase
                 $canAccess = $isPremiumMember || $hasCoinPurchase;
             }
+        }
+
+        // Only count a view when the user can actually read the content.
+        // withoutTimestamps() prevents touching updated_at, which would
+        // incorrectly bubble the series up in the Latest Updates feed.
+        if ($canAccess) {
+            defer(fn() => Chapter::withoutTimestamps(fn() => $chapter->increment('views')));
         }
 
         // Get navigation chapters (using model methods for proper volume handling)
@@ -107,6 +112,7 @@ class UserChapterController extends Controller
         $series = Series::where('slug', $seriesSlug)->firstOrFail();
         $chapter = Chapter::where('series_id', $series->id)
             ->where('chapter_link', $chapterLink)
+            ->where('is_published', true)
             ->firstOrFail();
 
         // Must be a premium chapter
@@ -119,16 +125,6 @@ class UserChapterController extends Controller
             return back()->with('info', 'You already have access via Premium Membership.');
         }
 
-        // Already purchased with coins
-        $alreadyPurchased = ChapterPurchase::where('user_id', $user->id)
-            ->where('chapter_id', $chapter->id)
-            ->exists();
-
-        if ($alreadyPurchased) {
-            return back()->with('info', 'You have already unlocked this chapter.');
-        }
-
-        // Check sufficient coins
         $price = PaymentSetting::get('premium_chapter_price', 10);
         if ($price <= 0) {
             return back()->with('error', 'Premium chapter price is not configured.');
@@ -138,8 +134,17 @@ class UserChapterController extends Controller
             return back()->with('error', "Not enough coins. You need {$price} coins but have {$user->coins}.");
         }
 
-        // Process purchase atomically
+        // Process purchase atomically — lockForUpdate prevents double-purchase on concurrent requests
         DB::transaction(function () use ($user, $chapter, $price) {
+            $alreadyPurchased = ChapterPurchase::where('user_id', $user->id)
+                ->where('chapter_id', $chapter->id)
+                ->lockForUpdate()
+                ->exists();
+
+            if ($alreadyPurchased) {
+                return; // silently skip inside transaction
+            }
+
             // Deduct coins
             $user->deductCoins($price);
             $user->save();

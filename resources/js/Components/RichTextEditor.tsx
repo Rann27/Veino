@@ -49,25 +49,30 @@ class MyUploadAdapter {
       this.xhr = new XMLHttpRequest();
       
       this.xhr.open('POST', this.uploadUrl, true);
-      
-      // Add CSRF token
-      const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-      if (token) {
-        this.xhr.setRequestHeader('X-CSRF-TOKEN', token);
+
+      // Use XSRF-TOKEN cookie (always fresh); fallback to meta tag
+      const xsrfMatch = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+      if (xsrfMatch) {
+        this.xhr.setRequestHeader('X-XSRF-TOKEN', decodeURIComponent(xsrfMatch[1]));
+      } else {
+        const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (metaToken) this.xhr.setRequestHeader('X-CSRF-TOKEN', metaToken);
       }
-      
+
       this.xhr.responseType = 'json';
-      
+
       this.xhr.addEventListener('load', () => {
         const response = this.xhr!.response;
-        
-        if (!response || response.error) {
-          return reject(response && response.error ? response.error.message : 'Upload failed');
+
+        if (this.xhr!.status >= 400) {
+          return reject(`Upload failed (${this.xhr!.status})`);
         }
-        
-        resolve({
-          default: response.url
-        });
+
+        if (!response || response.error) {
+          return reject(response?.error?.message ?? 'Upload failed');
+        }
+
+        resolve({ default: response.url });
       });
       
       this.xhr.addEventListener('error', () => reject('Upload failed'));

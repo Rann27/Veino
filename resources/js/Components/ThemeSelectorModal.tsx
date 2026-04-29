@@ -30,15 +30,20 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
 
     const isCustomActive = currentTheme.name === 'Custom' && !isSystemTheme;
 
-    const handleCustomApply = () => {
-        const customTheme = {
-            name: 'Custom',
-            background: customBg,
-            foreground: customFg,
-            description: 'Custom theme',
-        };
-        localStorage.setItem('veinovel-custom-theme', JSON.stringify({ foreground: customFg, background: customBg }));
+    const applyCustom = (bg: string, fg: string) => {
+        const customTheme = { name: 'Custom', background: bg, foreground: fg, description: 'Custom theme' };
+        localStorage.setItem('veinovel-custom-theme', JSON.stringify({ foreground: fg, background: bg }));
         setTheme(customTheme);
+    };
+
+    const handleCustomBgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCustomBg(e.target.value);
+        applyCustom(e.target.value, customFg);
+    };
+
+    const handleCustomFgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setCustomFg(e.target.value);
+        applyCustom(customBg, e.target.value);
     };
 
     return (
@@ -201,18 +206,20 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
                                 );
                             })}
 
-                            {/* Custom Theme Card */}
-                            <div
-                                className={`relative p-4 rounded-xl text-left transition-all duration-200 ${
-                                    isSystemTheme ? 'opacity-50' : ''
+                            {/* Custom Theme Card — full width (col-span-2) */}
+                            <button
+                                onClick={() => !isSystemTheme && applyCustom(customBg, customFg)}
+                                disabled={isSystemTheme}
+                                className={`relative col-span-2 p-4 rounded-xl text-left transition-all duration-200 ${
+                                    isSystemTheme ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                                 }`}
                                 style={{
                                     border: `2px solid ${isCustomActive ? SHINY_PURPLE : `${currentTheme.foreground}12`}`,
                                     backgroundColor: isCustomActive ? SHINY_PURPLE_DIM : `${currentTheme.foreground}04`,
                                 }}
                             >
-                                <div className="flex items-center gap-3 mb-3">
-                                    {/* Preview swatch for custom */}
+                                <div className="flex items-center gap-4">
+                                    {/* Preview swatch */}
                                     <div
                                         className="w-10 h-10 rounded-lg shadow-sm flex-shrink-0"
                                         style={{
@@ -220,108 +227,54 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
                                             border: `1px solid ${currentTheme.foreground}15`,
                                         }}
                                     />
+
+                                    {/* Name + hint */}
                                     <div className="flex-1 min-w-0">
-                                        <div
-                                            className="font-medium text-sm"
-                                            style={{ color: currentTheme.foreground }}
-                                        >
+                                        <div className="font-medium text-sm" style={{ color: currentTheme.foreground }}>
                                             Custom
                                         </div>
-                                        <div className="flex items-center gap-1.5 mt-1">
-                                            <div
-                                                className="w-3 h-3 rounded-full border"
-                                                style={{
-                                                    backgroundColor: customBg,
-                                                    borderColor: `${currentTheme.foreground}20`,
-                                                }}
-                                            />
-                                            <div
-                                                className="w-3 h-3 rounded-full border"
-                                                style={{
-                                                    backgroundColor: customFg,
-                                                    borderColor: `${currentTheme.foreground}20`,
-                                                }}
-                                            />
+                                        <div className="text-xs mt-0.5" style={{ color: `${currentTheme.foreground}50` }}>
+                                            Click a circle to pick a color
                                         </div>
                                     </div>
-                                    {isCustomActive && (
-                                        <div>
-                                            <svg
-                                                className="w-5 h-5"
-                                                fill="currentColor"
-                                                viewBox="0 0 20 20"
-                                                style={{ color: SHINY_PURPLE }}
-                                            >
-                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    )}
-                                </div>
 
-                                {/* Color Pickers */}
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                        <label
-                                            className="text-xs font-medium w-20"
-                                            style={{ color: `${currentTheme.foreground}70` }}
-                                        >
-                                            Background
-                                        </label>
-                                        <div className="flex items-center gap-2 flex-1">
-                                            <input
-                                                type="color"
-                                                value={customBg}
-                                                onChange={(e) => setCustomBg(e.target.value)}
-                                                className="w-8 h-8 rounded cursor-pointer border-0 p-0"
-                                                style={{ backgroundColor: 'transparent' }}
-                                            />
-                                            <span
-                                                className="text-xs font-mono"
-                                                style={{ color: `${currentTheme.foreground}60` }}
-                                            >
-                                                {customBg.toUpperCase()}
-                                            </span>
+                                    {/* Color pickers */}
+                                    <div className="flex items-center gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex flex-col items-center gap-1">
+                                            <div className="relative" title="Background color">
+                                                <div className="w-7 h-7 rounded-full border-2 pointer-events-none"
+                                                    style={{ backgroundColor: customBg, borderColor: `${currentTheme.foreground}25` }} />
+                                                <input type="color" value={customBg}
+                                                    onChange={handleCustomBgChange}
+                                                    disabled={isSystemTheme}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    style={{ minWidth: 0 }} />
+                                            </div>
+                                            <span className="text-xs" style={{ color: `${currentTheme.foreground}45` }}>BG</span>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <label
-                                            className="text-xs font-medium w-20"
-                                            style={{ color: `${currentTheme.foreground}70` }}
-                                        >
-                                            Foreground
-                                        </label>
-                                        <div className="flex items-center gap-2 flex-1">
-                                            <input
-                                                type="color"
-                                                value={customFg}
-                                                onChange={(e) => setCustomFg(e.target.value)}
-                                                className="w-8 h-8 rounded cursor-pointer border-0 p-0"
-                                                style={{ backgroundColor: 'transparent' }}
-                                            />
-                                            <span
-                                                className="text-xs font-mono"
-                                                style={{ color: `${currentTheme.foreground}60` }}
-                                            >
-                                                {customFg.toUpperCase()}
-                                            </span>
+                                        <div className="flex flex-col items-center gap-1">
+                                            <div className="relative" title="Foreground color">
+                                                <div className="w-7 h-7 rounded-full border-2 pointer-events-none"
+                                                    style={{ backgroundColor: customFg, borderColor: `${currentTheme.foreground}25` }} />
+                                                <input type="color" value={customFg}
+                                                    onChange={handleCustomFgChange}
+                                                    disabled={isSystemTheme}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    style={{ minWidth: 0 }} />
+                                            </div>
+                                            <span className="text-xs" style={{ color: `${currentTheme.foreground}45` }}>FG</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Apply button */}
-                                <button
-                                    onClick={handleCustomApply}
-                                    disabled={isSystemTheme}
-                                    className="w-full mt-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:cursor-not-allowed"
-                                    style={{
-                                        backgroundColor: SHINY_PURPLE,
-                                        color: '#fff',
-                                        opacity: isSystemTheme ? 0.5 : 1,
-                                    }}
-                                >
-                                    Apply Custom
-                                </button>
-                            </div>
+                                {isCustomActive && (
+                                    <div className="absolute top-2 right-2">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style={{ color: SHINY_PURPLE }}>
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                )}
+                            </button>
                         </div>
 
                         {/* Auto-mode info */}

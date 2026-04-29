@@ -311,9 +311,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({
-                    theme_name: themeToSave.name,
-                    auto_theme: isSystemTheme,
-                    reader_settings: readerToSave,
+                    theme_name:       themeToSave.name,
+                    auto_theme:       isSystemTheme,
+                    reader_settings:  readerToSave,
+                    // Send custom colors so backend can persist and return them
+                    ...(themeToSave.name === 'Custom' ? {
+                        theme_background: themeToSave.background,
+                        theme_foreground: themeToSave.foreground,
+                    } : {}),
                 }),
             });
 
@@ -333,16 +338,24 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const setTheme = (theme: ThemePreset) => {
         setCurrentTheme(theme);
         setIsSystemTheme(false);
-        
-        // Apply theme immediately to CSS custom properties
+
         document.documentElement.style.setProperty('--theme-background', theme.background);
         document.documentElement.style.setProperty('--theme-foreground', theme.foreground);
-        
-        // Save to localStorage immediately
+
         localStorage.setItem('veinovel-theme', theme.name);
         localStorage.setItem('veinovel-system-theme', 'false');
-        
-        // Sync with backend for logged-in users
+
+        // Immediately persist full theme to cache so page navigations restore it
+        // without waiting for the async backend sync to complete.
+        try {
+            const existing = JSON.parse(localStorage.getItem('veinovel-theme-cache') ?? '{}');
+            localStorage.setItem('veinovel-theme-cache', JSON.stringify({
+                ...existing,
+                theme,
+                auto_theme: false,
+            }));
+        } catch {}
+
         syncWithBackend(theme);
     };
 

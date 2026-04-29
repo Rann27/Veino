@@ -14,11 +14,20 @@ class BlogController extends Controller
     private function sanitizeHtmlContent(string $content): string
     {
         $config = HTMLPurifier_Config::createDefault();
+        $config->set('HTML.DefinitionID', 'blog-content');
+        $config->set('HTML.DefinitionRev', 2);
         $config->set('HTML.Allowed', 'p,br,strong,em,b,i,u,h1,h2,h3,h4,h5,h6,ul,ol,li,a[href|title|target|rel],blockquote,code,pre,img[src|alt|width|height|class|style],figure[class|style],figcaption,span[class|style],div[class|style]');
         $config->set('HTML.SafeIframe', true);
         $config->set('URI.SafeIframeRegexp', '%^(https?:)?//%');
         $config->set('Attr.AllowedFrameTargets', ['_blank']);
         $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'data' => true]);
+
+        // Register figure & figcaption — CKEditor 5 wraps images in <figure class="image">
+        if ($def = $config->maybeGetRawHTMLDefinition()) {
+            $def->addElement('figure',     'Block',  'Flow',                'Common', ['class' => 'Text', 'style' => 'Text']);
+            $def->addElement('figcaption', 'Inline', 'Flow',                'Common');
+        }
+
         $purifier = new HTMLPurifier($config);
         return $purifier->purify($content);
     }

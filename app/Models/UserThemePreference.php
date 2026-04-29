@@ -10,6 +10,8 @@ class UserThemePreference extends Model
     protected $fillable = [
         'user_id',
         'theme_name',
+        'theme_background',
+        'theme_foreground',
         'auto_theme',
         'reader_settings',
     ];

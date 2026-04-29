@@ -95,7 +95,7 @@ function ChapterShowContent({
     const [showChapterList, setShowChapterList] = useState(false);
     const [showReaderSettings, setShowReaderSettings] = useState(false);
     const readerSettingsButtonRef = useRef<HTMLButtonElement>(null);
-    const hideDelayTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hideDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [inTextAds, setInTextAds] = useState<Array<{id: number; caption: string; link_url: string}>>([]);
     const [readingProgress, setReadingProgress] = useState(0);
 
@@ -328,7 +328,7 @@ function ChapterShowContent({
                         {/* Coin button */}
                         {!auth?.user ? (
                             <Link
-                                href="/login"
+                                href={route('login')}
                                 className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90"
                                 style={{ backgroundColor: '#eab308', color: '#000' }}
                             >

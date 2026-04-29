@@ -155,7 +155,7 @@ class HomeController extends Controller
         $query = Series::with(['nativeLanguage', 'genres'])
             ->withCount('chapters')
             ->whereHas('chapters')
-            ->select('series.*', \DB::raw('(SELECT MAX(created_at) FROM chapters WHERE chapters.series_id = series.id) as latest_chapter_date'))
+            ->select('series.*', \DB::raw('(SELECT MAX(updated_at) FROM chapters WHERE chapters.series_id = series.id) as latest_chapter_date'))
             ->orderByDesc('latest_chapter_date');
 
         if ($type === 'light-novel') {

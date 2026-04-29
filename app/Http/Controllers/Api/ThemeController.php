@@ -25,12 +25,22 @@ class ThemeController extends Controller
         }
 
         $preference = $user->getThemePreference();
-        $themes = UserThemePreference::getAvailableThemes();
-        $currentTheme = collect($themes)->firstWhere('name', $preference->theme_name) ?? $themes[0];
+        $themes     = UserThemePreference::getAvailableThemes();
+
+        if ($preference->theme_name === 'Custom') {
+            $currentTheme = [
+                'name'        => 'Custom',
+                'background'  => $preference->theme_background ?? '#ffffff',
+                'foreground'  => $preference->theme_foreground ?? '#000000',
+                'description' => 'Custom theme',
+            ];
+        } else {
+            $currentTheme = collect($themes)->firstWhere('name', $preference->theme_name) ?? $themes[0];
+        }
 
         return response()->json([
-            'theme' => $currentTheme,
-            'auto_theme' => $preference->auto_theme,
+            'theme'           => $currentTheme,
+            'auto_theme'      => $preference->auto_theme,
             'reader_settings' => $preference->reader_settings ?? UserThemePreference::getDefaultReaderSettings(),
         ]);
     }
@@ -47,17 +57,19 @@ class ThemeController extends Controller
         }
 
         $validated = $request->validate([
-            'theme_name' => 'required|string|in:Light,Dark,Sepia,Cool Dark,Frost,Solarized',
-            'auto_theme' => 'boolean',
-            'reader_settings' => 'array',
-            'reader_settings.fontFamily' => 'string',
-            'reader_settings.fontSize' => 'integer|min:8|max:32',
-            'reader_settings.lineHeight' => 'numeric|min:0.5|max:3',
-            'reader_settings.contentWidth' => 'integer|min:50|max:100',
-            'reader_settings.paragraphSpacing' => 'numeric|min:0.5|max:3.0',
-            'reader_settings.textAlign' => 'string|in:left,center,justify',
-            'reader_settings.textIndent' => 'numeric|min:0|max:4',
-            'reader_settings.hyphenation' => 'boolean',
+            'theme_name'       => 'required|string|in:Light,Dark,Sepia,Cool Dark,Frost,Solarized,Custom',
+            'auto_theme'       => 'boolean',
+            'theme_background' => 'nullable|string|regex:/^#[0-9a-fA-F]{6}$/',
+            'theme_foreground' => 'nullable|string|regex:/^#[0-9a-fA-F]{6}$/',
+            'reader_settings'  => 'array',
+            'reader_settings.fontFamily'        => 'string',
+            'reader_settings.fontSize'          => 'integer|min:8|max:32',
+            'reader_settings.lineHeight'        => 'numeric|min:0.5|max:3',
+            'reader_settings.contentWidth'      => 'integer|min:50|max:100',
+            'reader_settings.paragraphSpacing'  => 'numeric|min:0.5|max:3.0',
+            'reader_settings.textAlign'         => 'string|in:left,center,justify',
+            'reader_settings.textIndent'        => 'numeric|min:0|max:4',
+            'reader_settings.hyphenation'       => 'boolean',
         ]);
 
         $preference = $user->getThemePreference();
@@ -66,11 +78,21 @@ class ThemeController extends Controller
         $themes = UserThemePreference::getAvailableThemes();
         $currentTheme = collect($themes)->firstWhere('name', $preference->theme_name);
 
+        // For Custom theme, return stored custom colors
+        if ($preference->theme_name === 'Custom') {
+            $currentTheme = [
+                'name'        => 'Custom',
+                'background'  => $preference->theme_background ?? '#ffffff',
+                'foreground'  => $preference->theme_foreground ?? '#000000',
+                'description' => 'Custom theme',
+            ];
+        }
+
         return response()->json([
-            'theme' => $currentTheme,
-            'auto_theme' => $preference->auto_theme,
+            'theme'         => $currentTheme,
+            'auto_theme'    => $preference->auto_theme,
             'reader_settings' => $preference->reader_settings,
-            'message' => 'Theme preferences updated successfully'
+            'message'       => 'Theme preferences updated successfully',
         ]);
     }
 

@@ -40,7 +40,7 @@ class DocxParser
 
             // Heading 1 → chapter title (first occurrence only)
             if (!$titleFound && $this->isHeading($styleVal, 1)) {
-                $title      = strip_tags($inner);
+                $title      = html_entity_decode(strip_tags($inner), ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 $titleFound = true;
                 continue;
             }
@@ -60,7 +60,7 @@ class DocxParser
 
         // Fallback: no heading-1 found → use first paragraph as title
         if (!$titleFound && count($parts) > 0) {
-            $title = strip_tags(array_shift($parts));
+            $title = html_entity_decode(strip_tags(array_shift($parts)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
 
         return [

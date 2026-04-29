@@ -337,7 +337,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
             </div>
 
             {/* Right side */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               {/* Search Button */}
               <button
                 onClick={toggleSearch}
@@ -346,6 +346,18 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+
+              {/* Theme Settings Button — desktop only */}
+              <button
+                onClick={() => setShowThemeModal(true)}
+                className="hidden md:flex btn-ripple interactive-scale p-2 rounded-lg focus-ring"
+                style={{ color: currentTheme.foreground }}
+                title="Theme Settings"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
                 </svg>
               </button>
 
@@ -368,55 +380,37 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                   <div className="relative">
                     <button
                       onClick={toggleAccountMenu}
-                      className={`flex items-center space-x-2 p-2 rounded-full transition-colors${auth.user.membership_tier === 'premium' ? ' premium-avatar-ring' : ''}`}
-                      style={{
-                        color: currentTheme.foreground,
+                      className="p-0.5 rounded-full transition-all"
+                      style={auth.user.membership_tier === 'premium' ? {
+                        background: 'linear-gradient(135deg, #c084fc, #e879f9, #818cf8)',
+                        boxShadow: '0 0 10px #a78bfa60',
+                        padding: '2px',
+                      } : {
                         backgroundColor: showAccountMenu ? `${currentTheme.foreground}10` : 'transparent',
                       }}
+                      title={auth.user.display_name}
                     >
-                    {auth.user.avatar_url ? (
-                      <img
-                        src={auth.user.avatar_url}
-                        alt={auth.user.display_name}
-                        className="w-8 h-8 rounded-full object-cover"
-                        onError={(e) => {
-                          // Fallback to initials if image fails to load
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          const parent = target.parentElement;
-                          if (parent && !parent.querySelector('.avatar-initials') && auth.user) {
-                            const initialsDiv = document.createElement('div');
-                            initialsDiv.className = 'avatar-initials w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium';
-                            initialsDiv.style.backgroundColor = currentTheme.foreground;
-                            initialsDiv.style.color = currentTheme.background;
-                            if (auth.user.membership_tier === 'premium') {
-                              initialsDiv.style.border = '2px solid #a78bfa';
-                            }
-                            initialsDiv.textContent = getUserInitials(auth.user.display_name);
-                            parent.appendChild(initialsDiv);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
-                        style={{
-                          backgroundColor: currentTheme.foreground,
-                          color: currentTheme.background,
-                        }}
-                      >
-                        {getUserInitials(auth.user.display_name)}
+                      <div className="rounded-full overflow-hidden"
+                        style={auth.user.membership_tier === 'premium' ? { background: currentTheme.background } : {}}>
+                        {auth.user.avatar_url ? (
+                          <img
+                            src={auth.user.avatar_url}
+                            alt={auth.user.display_name}
+                            className="w-8 h-8 rounded-full object-cover block"
+                          />
+                        ) : (
+                          <div
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium"
+                            style={{
+                              backgroundColor: currentTheme.foreground,
+                              color: currentTheme.background,
+                            }}
+                          >
+                            {getUserInitials(auth.user.display_name)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <span 
-                      className="hidden md:block text-sm font-medium"
-                      style={{ 
-                        color: auth.user.membership_tier === 'premium' ? '#a78bfa' : currentTheme.foreground
-                      }}
-                    >
-                      {auth.user.display_name}
-                    </span>
-                  </button>
+                    </button>
 
                   {/* Account Dropdown */}
                   {showAccountMenu && (
@@ -427,65 +421,56 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         borderColor: `${currentTheme.foreground}20`
                       }}
                     >
-                      {/* Coin Balance */}
-                      <div 
-                        className="px-4 py-2 text-sm border-b"
-                        style={{
-                          borderColor: `${currentTheme.foreground}20`
-                        }}
+                      {/* User info + Coin Balance */}
+                      <div
+                        className="px-4 py-3 text-sm border-b"
+                        style={{ borderColor: `${currentTheme.foreground}20` }}
                       >
-                        <Link 
+                        <p className="font-semibold truncate mb-1.5" style={{ color: currentTheme.foreground }}>
+                          {auth.user.display_name}
+                        </p>
+                        <Link
                           href="/account/coins"
                           className="flex items-center justify-between hover:opacity-70 transition-opacity"
                         >
-                          <span style={{ color: currentTheme.foreground, opacity: 0.7 }}>
+                          <span style={{ color: currentTheme.foreground, opacity: 0.6, fontSize: '0.75rem' }}>
                             Coin Balance
                           </span>
-                          <span 
-                            className="font-bold text-lg"
-                            style={{ color: '#f59e0b' }}
-                          >
+                          <span className="font-bold" style={{ color: '#f59e0b' }}>
                             ¢{auth.user.coins?.toLocaleString() || 0}
                           </span>
                         </Link>
                       </div>
 
                       {/* Membership Status */}
-                      <div 
-                        className="px-4 py-3 text-sm border-b font-medium flex items-center gap-2"
-                        style={{
-                          color: auth.user.membership_tier === 'premium' ? '#a78bfa' : currentTheme.foreground,
-                          borderColor: `${currentTheme.foreground}20`
-                        }}
+                      <div
+                        className="px-4 py-2.5 text-sm border-b"
+                        style={{ borderColor: `${currentTheme.foreground}20` }}
                       >
                         {auth.user.membership_tier === 'premium' ? (
-                          <>
-                            {/* Shiny Diamond SVG */}
-                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                              <defs>
-                                <linearGradient id="diamondGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                  <stop offset="0%" style={{ stopColor: '#c084fc', stopOpacity: 1 }} />
-                                  <stop offset="50%" style={{ stopColor: '#e879f9', stopOpacity: 1 }} />
-                                  <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-                                </linearGradient>
-                              </defs>
-                              <path 
-                                d="M12 2L3 9L12 22L21 9L12 2Z" 
-                                fill="url(#diamondGradient)"
-                                stroke="#fff"
-                                strokeWidth="0.5"
-                              />
-                              <path 
-                                d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" 
-                                stroke="#fff" 
-                                strokeWidth="0.3" 
-                                opacity="0.6"
-                              />
-                            </svg>
-                            <span className="font-semibold">Premium Member</span>
-                          </>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+                                <defs>
+                                  <linearGradient id="diamondGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style={{ stopColor: '#c084fc', stopOpacity: 1 }} />
+                                    <stop offset="50%" style={{ stopColor: '#e879f9', stopOpacity: 1 }} />
+                                    <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
+                                  </linearGradient>
+                                </defs>
+                                <path d="M12 2L3 9L12 22L21 9L12 2Z" fill="url(#diamondGradient)" stroke="#fff" strokeWidth="0.5"/>
+                                <path d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" stroke="#fff" strokeWidth="0.3" opacity="0.6"/>
+                              </svg>
+                              <span className="font-semibold" style={{ color: '#a78bfa' }}>Premium</span>
+                            </div>
+                            {auth.user.membership_expires_at && (
+                              <span className="text-xs" style={{ color: `${currentTheme.foreground}50` }}>
+                                Exp. {new Date(auth.user.membership_expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
                         ) : (
-                          <span>Basic Member</span>
+                          <span className="text-xs" style={{ color: `${currentTheme.foreground}50` }}>Basic Member</span>
                         )}
                       </div>
                       
@@ -536,21 +521,6 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
                         </svg>
                         Bookmark
                       </Link>
-                      
-                      {/* Theme Settings */}
-                      <button
-                        onClick={() => {
-                          setShowThemeModal(true);
-                          setShowAccountMenu(false);
-                        }}
-                        className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm transition-colors hover:opacity-70"
-                        style={{ color: currentTheme.foreground }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="currentColor"/>
-                        </svg>
-                        Theme Settings
-                      </button>
                       
                       {/* Settings */}
                       <Link 
