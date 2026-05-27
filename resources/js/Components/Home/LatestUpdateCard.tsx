@@ -26,6 +26,7 @@ interface LatestUpdateCardProps {
     id: number;
     title: string;
     slug: string;
+    type?: 'light-novel' | 'web-novel';
     cover_url?: string;
     rating: number;
     chapters_count?: number;
@@ -44,10 +45,14 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
   const { currentTheme } = useTheme();
 
   const formatChapterDisplay = (chapter: Chapter): string => {
-    if (chapter.volume) {
-      return `Vol ${chapter.volume} Ch ${chapter.chapter_number}`;
+    if (series.type === 'light-novel') {
+      const title = chapter.title.trim();
+      const titlePrefix = title.includes(':') ? title.slice(0, title.indexOf(':')).trim() : title;
+
+      return `Vol ${chapter.volume ?? chapter.chapter_number} ${titlePrefix || title}`;
     }
-    return `Ch ${chapter.chapter_number}`;
+
+    return `Chapter ${chapter.chapter_number}`;
   };
 
   const timeAgo = (dateStr?: string): string => {
@@ -92,9 +97,9 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
       premiumGroup = premiumChs.slice(0, 4);
       freeGroup = [];
     } else {
-      // Both exist: 2 premium + 2 free
+      // Both exist: up to 2 premium, free fills remaining slots to total 4
       premiumGroup = premiumChs.slice(0, 2);
-      freeGroup = freeChs.slice(0, 2);
+      freeGroup = freeChs.slice(0, 4 - premiumGroup.length);
     }
 
     return { premiumGroup, freeGroup, hasBothTypes };
@@ -102,11 +107,10 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
 
   const { premiumGroup, freeGroup, hasBothTypes } = getChapterGroups();
 
-  // Dummy rows to pad chapter list to always 4 slots
-  const premiumDummies = hasBothTypes ? Math.max(0, 2 - premiumGroup.length) : 0;
-  const freeDummies = hasBothTypes
-    ? Math.max(0, 2 - freeGroup.length)
-    : Math.max(0, 4 - (premiumGroup.length + freeGroup.length));
+  // Dummy rows to pad total to 4 slots
+  // Premium group: no padding — separator sits right after however many premium chapters exist
+  const premiumDummies = 0;
+  const freeDummies = Math.max(0, 4 - premiumGroup.length - freeGroup.length);
 
   const DummyRow = () => (
     <div className="px-2.5 py-1.5 rounded-lg">

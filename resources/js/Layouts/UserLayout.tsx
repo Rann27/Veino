@@ -41,9 +41,11 @@ interface PageProps {
 interface UserLayoutProps {
   children: React.ReactNode;
   title?: string;
+  hideMobileBottomNav?: boolean;
+  hideSiteChrome?: boolean;
 }
 
-function UserLayoutContent({ children, title }: UserLayoutProps) {
+function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideSiteChrome = false }: UserLayoutProps) {
   const { auth, flash } = usePage<PageProps>().props;
   const { currentTheme } = useTheme();
   const [showSearch, setShowSearch] = useState(false);
@@ -265,7 +267,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
 
       {/* Navbar */}
       <nav 
-        className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-[50px] border-b transition-all duration-500 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-[50px] border-b transition-all duration-500 ease-in-out ${hideSiteChrome ? 'hidden' : ''} ${
           showNavbar ? 'translate-y-0' : '-translate-y-full'
         }`}
         style={{ 
@@ -936,7 +938,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       )}
 
       {/* Spacer for fixed navbar */}
-      <div className="h-16" />
+      <div className={hideSiteChrome ? 'h-0' : 'h-16'} />
 
       {/* Main Content */}
       <main className={`transition-all duration-300 has-bottom-nav ${
@@ -949,7 +951,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
 
       {/* Footer */}
       <footer
-        className="backdrop-blur-[50px] border-t py-6"
+        className={`backdrop-blur-[50px] border-t py-6 ${hideSiteChrome ? 'hidden' : ''}`}
         style={{
           backgroundColor: `${currentTheme.background}80`,
           borderColor: `${currentTheme.foreground}20`
@@ -1084,7 +1086,7 @@ function UserLayoutContent({ children, title }: UserLayoutProps) {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <MobileBottomNav currentPath={currentPath} user={auth?.user} />
+      {!hideMobileBottomNav && <MobileBottomNav currentPath={currentPath} user={auth?.user} />}
     </div>
   );
 }
@@ -1229,11 +1231,11 @@ function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { 
   );
 }
 
-export default function UserLayout({ children, title }: UserLayoutProps) {
+export default function UserLayout({ children, title, hideMobileBottomNav, hideSiteChrome }: UserLayoutProps) {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <UserLayoutContent children={children} title={title} />
+        <UserLayoutContent children={children} title={title} hideMobileBottomNav={hideMobileBottomNav} hideSiteChrome={hideSiteChrome} />
       </ToastProvider>
     </ThemeProvider>
   );

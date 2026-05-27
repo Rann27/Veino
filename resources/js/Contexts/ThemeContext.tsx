@@ -100,7 +100,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
                 fontFamily: 'Inter, sans-serif',
                 fontSize: 16,
                 lineHeight: 1.6,
-                contentWidth: 75,
+                contentWidth: 60,
                 paragraphSpacing: 1.5,
                 textAlign: 'justify',
                 textIndent: 2,
@@ -110,7 +110,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         
         // Check if mobile
         const isMobile = window.innerWidth <= 768;
-        const defaultContentWidth = isMobile ? 95 : 75;
+        const defaultContentWidth = isMobile ? 95 : 60;
         
         try {
             // Try cache first

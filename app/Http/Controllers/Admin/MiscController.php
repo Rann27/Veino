@@ -58,8 +58,8 @@ class MiscController extends Controller
     {
         $config = $this->getConfig();
         
-        // Get all series for dropdown options
-        $allSeries = Series::select('id', 'title', 'slug')
+        // Get all series for homepage selection options
+        $allSeries = Series::select('id', 'title', 'slug', 'cover_url')
             ->orderBy('title')
             ->get();
 

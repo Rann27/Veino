@@ -29,7 +29,8 @@ export default function ReaderSettingsModal({
 }: ReaderSettingsModalProps) {
     const { currentTheme, setTheme, readerSettings, updateReaderSettings } = useTheme();
     const [settings, setSettings] = useState<ReaderSettings>(readerSettings);
-    const [showThemeSelector, setShowThemeSelector] = useState(false);
+    const [customFg, setCustomFg] = useState('#000000');
+    const [customBg, setCustomBg] = useState('#ffffff');
     const [position, setPosition] = useState({ top: 0, left: 0 });
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -37,19 +38,35 @@ export default function ReaderSettingsModal({
         setSettings(readerSettings);
     }, [readerSettings]);
 
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('veinovel-custom-theme');
+            if (saved) {
+                const data = JSON.parse(saved);
+                if (data.foreground) setCustomFg(data.foreground);
+                if (data.background) setCustomBg(data.background);
+            }
+        } catch {}
+    }, []);
+
     // Calculate position based on trigger element
     useEffect(() => {
         if (isOpen && triggerElement) {
-            const rect = triggerElement.getBoundingClientRect();
-            const modalWidth = 320; // Approximate modal width
-            const modalHeight = 400; // Approximate modal height
-            
-            let top = rect.bottom + 8; // 8px spacing below trigger
-            let left = rect.left - modalWidth + rect.width; // Align right edge
-            
-            // Check if modal goes off screen
             const viewportWidth = window.innerWidth;
             const viewportHeight = window.innerHeight;
+            const isMobile = viewportWidth <= 768;
+
+            if (isMobile) {
+                setPosition({ top: 16, left: 16 });
+                return;
+            }
+
+            const rect = triggerElement.getBoundingClientRect();
+            const modalWidth = 320; // Approximate modal width
+            const modalHeight = Math.min(512, viewportHeight - 96); // Matches desktop max-height
+            
+            let top = rect.bottom + 12;
+            let left = rect.left - modalWidth + rect.width; // Align right edge
             
             // Adjust horizontal position if off screen
             if (left < 8) {
@@ -58,10 +75,11 @@ export default function ReaderSettingsModal({
                 left = viewportWidth - modalWidth - 8; // 8px margin from right edge
             }
             
-            // Adjust vertical position if off screen
-            if (top + modalHeight > viewportHeight - 8) {
-                top = rect.top - modalHeight - 8; // Position above trigger
+            if (top + modalHeight > viewportHeight - 24) {
+                top = rect.top - modalHeight - 12;
             }
+
+            top = Math.min(Math.max(top, 24), viewportHeight - modalHeight - 24);
             
             setPosition({ top, left });
         }
@@ -104,11 +122,12 @@ export default function ReaderSettingsModal({
     };
 
     const resetToDefaults = () => {
+        const defaultContentWidth = typeof window !== 'undefined' && window.innerWidth <= 768 ? 95 : 60;
         const defaultSettings: ReaderSettings = {
             fontFamily: 'Inter, sans-serif',
             fontSize: 16,
             lineHeight: 1.6,
-            contentWidth: 75,
+            contentWidth: defaultContentWidth,
             paragraphSpacing: 1.5,
             textAlign: 'justify',
             textIndent: 2,
@@ -118,24 +137,43 @@ export default function ReaderSettingsModal({
         updateReaderSettings(defaultSettings);
     };
 
+    const applyCustomTheme = (background: string, foreground: string) => {
+        const customTheme = { name: 'Custom', background, foreground, description: 'Custom reader theme' };
+        localStorage.setItem('veinovel-custom-theme', JSON.stringify({ background, foreground }));
+        setTheme(customTheme);
+    };
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 pointer-events-none">
+        <div
+            className="fixed inset-0 z-50 pointer-events-auto"
+            style={{
+                backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                backdropFilter: 'blur(2px)',
+                WebkitBackdropFilter: 'blur(2px)',
+            }}
+            onMouseDown={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+        >
             {/* Floating Modal */}
             <div 
                 ref={modalRef}
-                className="absolute rounded-2xl shadow-2xl w-80 max-h-[32rem] overflow-y-auto pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200 themed-scrollbar"
+                className="absolute rounded-2xl shadow-2xl w-[calc(100vw-2rem)] sm:w-80 max-h-[calc(100vh-5rem)] sm:max-h-[32rem] overflow-y-auto pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200 themed-scrollbar"
                 style={{
                     top: `${position.top}px`,
                     left: `${position.left}px`,
-                    backgroundColor: currentTheme.background,
+                    backgroundColor: `${currentTheme.background}CC`,
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
                     border: `1px solid ${currentTheme.foreground}12`,
                     boxShadow: `0 20px 60px ${currentTheme.foreground}15`,
                     '--scrollbar-thumb': `${currentTheme.foreground}25`,
                     '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
                     '--scrollbar-track': `${currentTheme.foreground}06`,
                 } as React.CSSProperties}
+                onMouseDown={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div 
@@ -205,17 +243,6 @@ export default function ReaderSettingsModal({
                                 </option>
                             ))}
                         </select>
-                        <div 
-                            className="mt-2 p-3 rounded-lg text-sm leading-relaxed"
-                            style={{ 
-                                backgroundColor: `${currentTheme.foreground}05`,
-                                color: `${currentTheme.foreground}70`,
-                                fontFamily: settings.fontFamily,
-                                border: `1px solid ${currentTheme.foreground}06`,
-                            }}
-                        >
-                            The quick brown fox jumps over the lazy dog. This is a preview of the selected font.
-                        </div>
                     </div>
 
                     {/* Font Size */}
@@ -440,96 +467,107 @@ export default function ReaderSettingsModal({
 
                     {/* Theme Selector */}
                     <div>
-                        <label 
+                        <label
                             className="block text-xs font-semibold uppercase tracking-wider mb-2"
                             style={{ color: `${currentTheme.foreground}60` }}
                         >
                             Theme
                         </label>
-                        <button
-                            onClick={() => setShowThemeSelector(!showThemeSelector)}
-                            className="w-full p-3 rounded-lg hover:opacity-80 transition-opacity flex items-center justify-between text-sm"
+                        <div
+                            className="grid grid-cols-2 gap-2 p-2 rounded-lg"
                             style={{
-                                backgroundColor: `${currentTheme.foreground}06`,
-                                border: `1px solid ${currentTheme.foreground}12`,
-                                color: currentTheme.foreground
+                                backgroundColor: `${currentTheme.foreground}04`,
+                                border: `1px solid ${currentTheme.foreground}08`,
                             }}
                         >
-                            <div className="flex items-center space-x-3">
-                                <div 
-                                    className="w-5 h-5 rounded border"
-                                    style={{ 
-                                        backgroundColor: currentTheme.background,
-                                        borderColor: `${currentTheme.foreground}30`
-                                    }}
-                                />
-                                <span>{currentTheme.name}</span>
-                            </div>
-                            <svg className={`w-4 h-4 transition-transform ${showThemeSelector ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
+                            {themePresets.map((preset) => {
+                                const isActive = currentTheme.name === preset.name;
+                                return (
+                                    <button
+                                        key={preset.name}
+                                        onClick={() => setTheme(preset)}
+                                        className="p-2.5 rounded-lg text-left transition-all hover:opacity-90"
+                                        style={{
+                                            backgroundColor: isActive ? `${currentTheme.foreground}10` : `${currentTheme.foreground}03`,
+                                            border: `1.5px solid ${isActive ? '#7c3aed' : `${currentTheme.foreground}15`}`,
+                                            color: currentTheme.foreground,
+                                        }}
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <div
+                                                className="w-6 h-6 rounded flex-shrink-0"
+                                                style={{
+                                                    background: `linear-gradient(135deg, ${preset.background} 50%, ${preset.foreground} 50%)`,
+                                                    border: `1px solid ${currentTheme.foreground}20`,
+                                                }}
+                                            />
+                                            <span className="text-xs font-medium truncate">{preset.name}</span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
 
-                        {showThemeSelector && (
                             <div
-                                className="mt-2 p-2 rounded-lg"
+                                className="col-span-2 rounded-lg p-2.5"
                                 style={{
-                                    backgroundColor: `${currentTheme.foreground}04`,
-                                    border: `1px solid ${currentTheme.foreground}08`,
+                                    backgroundColor: currentTheme.name === 'Custom' ? `${currentTheme.foreground}10` : `${currentTheme.foreground}03`,
+                                    border: `1.5px solid ${currentTheme.name === 'Custom' ? '#7c3aed' : `${currentTheme.foreground}15`}`,
                                 }}
                             >
-                                <div className="grid grid-cols-2 gap-1.5">
-                                    {(() => {
-                                        // Build list: presets + saved custom (if any)
-                                        let savedCustom: { name: string; background: string; foreground: string; description: string } | null = null;
-                                        try {
-                                            const raw = localStorage.getItem('veinovel-custom-theme');
-                                            if (raw) {
-                                                const d = JSON.parse(raw);
-                                                if (d.foreground && d.background) {
-                                                    savedCustom = { name: 'Custom', background: d.background, foreground: d.foreground, description: 'Your custom theme' };
-                                                }
-                                            }
-                                        } catch {}
-
-                                        const allThemes = savedCustom ? [...themePresets, savedCustom] : themePresets;
-
-                                        return allThemes.map((preset) => {
-                                            const isActive = currentTheme.name === preset.name;
-                                            return (
-                                                <button
-                                                    key={preset.name}
-                                                    onClick={() => { setTheme(preset); setShowThemeSelector(false); }}
-                                                    className="p-2.5 rounded-lg text-left transition-all hover:opacity-90"
-                                                    style={{
-                                                        backgroundColor: isActive ? `${currentTheme.foreground}10` : currentTheme.background,
-                                                        border: `1.5px solid ${isActive ? '#7c3aed' : `${currentTheme.foreground}15`}`,
-                                                        color: currentTheme.foreground,
-                                                    }}
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <div
-                                                            className="w-6 h-6 rounded flex-shrink-0"
-                                                            style={{
-                                                                background: `linear-gradient(135deg, ${preset.background} 50%, ${preset.foreground} 50%)`,
-                                                                border: `1px solid ${currentTheme.foreground}20`,
-                                                            }}
-                                                        />
-                                                        <span className="text-xs font-medium truncate">{preset.name}</span>
-                                                    </div>
-                                                </button>
-                                            );
-                                        });
-                                    })()}
+                                <button
+                                    type="button"
+                                    onClick={() => applyCustomTheme(customBg, customFg)}
+                                    className="w-full flex items-center gap-2 text-left"
+                                    style={{ color: currentTheme.foreground }}
+                                >
+                                    <div
+                                        className="w-6 h-6 rounded flex-shrink-0"
+                                        style={{
+                                            background: `linear-gradient(135deg, ${customBg} 50%, ${customFg} 50%)`,
+                                            border: `1px solid ${currentTheme.foreground}20`,
+                                        }}
+                                    />
+                                    <span className="text-xs font-medium">Custom Color</span>
+                                </button>
+                                <div className="mt-3 grid grid-cols-2 gap-2">
+                                    <label className="flex items-center gap-2 text-xs" style={{ color: `${currentTheme.foreground}70` }}>
+                                        <span>BG</span>
+                                        <input
+                                            type="color"
+                                            value={customBg}
+                                            onChange={(e) => {
+                                                setCustomBg(e.target.value);
+                                                applyCustomTheme(e.target.value, customFg);
+                                            }}
+                                            className="h-7 w-full rounded cursor-pointer"
+                                        />
+                                    </label>
+                                    <label className="flex items-center gap-2 text-xs" style={{ color: `${currentTheme.foreground}70` }}>
+                                        <span>FG</span>
+                                        <input
+                                            type="color"
+                                            value={customFg}
+                                            onChange={(e) => {
+                                                setCustomFg(e.target.value);
+                                                applyCustomTheme(customBg, e.target.value);
+                                            }}
+                                            className="h-7 w-full rounded cursor-pointer"
+                                        />
+                                    </label>
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </div>
 
                     {/* Action Buttons */}
                     <div 
-                        className="flex justify-between items-center pt-4 mt-1"
-                        style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}
+                        className="sticky bottom-0 flex justify-between items-center pt-4 pb-1 mt-1"
+                        style={{
+                            borderTop: `1px solid ${currentTheme.foreground}10`,
+                            backgroundColor: `${currentTheme.background}CC`,
+                            backdropFilter: 'blur(10px)',
+                            WebkitBackdropFilter: 'blur(10px)',
+                        }}
                     >
                         <button
                             onClick={resetToDefaults}

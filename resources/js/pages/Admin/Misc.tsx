@@ -1,15 +1,30 @@
 ﻿import { useState, FormEvent, useRef } from 'react';
 import { router, usePage, Head } from '@inertiajs/react';
+import React from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import axios from 'axios';
 
-interface Series { id: number; title: string; slug: string; }
+interface Series { id: number; title: string; slug: string; cover_url?: string | null; }
 interface BannerData { image_path: string; image_url: string; link_url: string; alt: string; }
 interface Props {
     allSeries: Series[];
     config: { hero_series: number[]; featured_series: number[]; banners: BannerData[]; };
     [key: string]: any;
+}
+
+interface SeriesComboboxProps {
+    value: number;
+    allSeries: Series[];
+    onChange: (value: number) => void;
+    placeholder: string;
+    fg: string;
+    muted: string;
+    border: string;
+    inputBg: string;
+    panelBg: string;
+    cardBg: string;
+    accent: string;
 }
 
 function hexToRgb(hex: string) {
@@ -24,6 +39,309 @@ function isLight(hex: string) {
 function wa(hex: string, a: number) {
     const { r, g, b } = hexToRgb(hex);
     return `rgba(${r},${g},${b},${a})`;
+}
+
+function normalizeSearch(value: string) {
+    return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function SeriesCombobox({
+    value,
+    allSeries,
+    onChange,
+    placeholder,
+    fg,
+    muted,
+    border,
+    inputBg,
+    panelBg,
+    cardBg,
+    accent,
+}: SeriesComboboxProps) {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const [highlightedIndex, setHighlightedIndex] = useState(0);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const selectedSeries = allSeries.find((series) => series.id === value) || null;
+
+    const filteredSeries = React.useMemo(() => {
+        const normalizedQuery = normalizeSearch(query);
+
+        if (!normalizedQuery) return allSeries.slice(0, 80);
+
+        const terms = normalizedQuery.split(' ').filter(Boolean);
+
+        return allSeries
+            .map((series) => {
+                const title = normalizeSearch(series.title);
+                const slug = normalizeSearch(series.slug);
+                const haystack = `${title} ${slug}`;
+                const exactStart = title.startsWith(normalizedQuery) ? 0 : 1;
+                const allTermsMatch = terms.every((term) => haystack.includes(term));
+
+                return { series, score: allTermsMatch ? exactStart : 99 };
+            })
+            .filter((item) => item.score < 99)
+            .sort((a, b) => a.score - b.score || a.series.title.localeCompare(b.series.title))
+            .slice(0, 80)
+            .map((item) => item.series);
+    }, [allSeries, query]);
+
+    React.useEffect(() => {
+        const handlePointerDown = (event: MouseEvent) => {
+            if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+                setOpen(false);
+                setQuery('');
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, []);
+
+    React.useEffect(() => {
+        setHighlightedIndex(0);
+    }, [query, open]);
+
+    const chooseSeries = (seriesId: number) => {
+        onChange(seriesId);
+        setQuery('');
+        setOpen(false);
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (!open && ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
+            setOpen(true);
+        }
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setHighlightedIndex((index) => Math.min(index + 1, filteredSeries.length - 1));
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            setHighlightedIndex((index) => Math.max(index - 1, 0));
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            if (open && filteredSeries[highlightedIndex]) {
+                chooseSeries(filteredSeries[highlightedIndex].id);
+            }
+        } else if (event.key === 'Escape') {
+            setOpen(false);
+            setQuery('');
+        }
+    };
+
+    return (
+        <div ref={rootRef} style={{ position: 'relative', flex: 1, minWidth: 0 }}>
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    minHeight: '42px',
+                    padding: '6px 10px',
+                    background: inputBg,
+                    border: `1px solid ${open ? accent : border}`,
+                    borderRadius: '7px',
+                    boxShadow: open ? `0 0 0 3px ${accent}22` : 'none',
+                    transition: 'border-color 0.15s, box-shadow 0.15s',
+                }}
+            >
+                <div
+                    style={{
+                        width: '28px',
+                        height: '34px',
+                        flexShrink: 0,
+                        borderRadius: '5px',
+                        overflow: 'hidden',
+                        background: panelBg,
+                        border: `1px solid ${border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    {selectedSeries?.cover_url ? (
+                        <img
+                            src={selectedSeries.cover_url}
+                            alt=""
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                            onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                        />
+                    ) : (
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: wa(fg, 0.22) }} />
+                    )}
+                </div>
+                <input
+                    value={open ? query : selectedSeries?.title || ''}
+                    onChange={(event) => {
+                        setQuery(event.target.value);
+                        setOpen(true);
+                    }}
+                    onFocus={() => setOpen(true)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={selectedSeries ? selectedSeries.title : placeholder}
+                    aria-label="Search series"
+                    role="combobox"
+                    aria-expanded={open}
+                    style={{
+                        flex: 1,
+                        minWidth: 0,
+                        border: 'none',
+                        outline: 'none',
+                        background: 'transparent',
+                        color: fg,
+                        fontSize: '13px',
+                    }}
+                />
+                {value > 0 && (
+                    <button
+                        type="button"
+                        onClick={() => chooseSeries(0)}
+                        title="Clear slot"
+                        aria-label="Clear slot"
+                        style={{
+                            width: '26px',
+                            height: '26px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: 'none',
+                            borderRadius: '6px',
+                            background: wa(fg, 0.08),
+                            color: muted,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <svg style={{ width: '14px', height: '14px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
+                <button
+                    type="button"
+                    onClick={() => setOpen((state) => !state)}
+                    aria-label="Toggle series list"
+                    style={{
+                        width: '26px',
+                        height: '26px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: 'transparent',
+                        color: muted,
+                        cursor: 'pointer',
+                    }}
+                >
+                    <svg style={{ width: '14px', height: '14px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m6 9 6 6 6-6" />
+                    </svg>
+                </button>
+            </div>
+
+            {open && (
+                <div
+                    role="listbox"
+                    style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 6px)',
+                        left: 0,
+                        right: 0,
+                        zIndex: 30,
+                        maxHeight: '300px',
+                        overflowY: 'auto',
+                        padding: '6px',
+                        background: cardBg,
+                        border: `1px solid ${border}`,
+                        borderRadius: '10px',
+                        boxShadow: '0 18px 42px rgba(0,0,0,0.28)',
+                    }}
+                >
+                    <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => chooseSeries(0)}
+                        style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px',
+                            border: 'none',
+                            borderRadius: '8px',
+                            background: value === 0 ? wa(fg, 0.1) : 'transparent',
+                            color: muted,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: '13px',
+                        }}
+                    >
+                        <span style={{ width: '28px', height: '34px', borderRadius: '5px', background: panelBg, border: `1px solid ${border}` }} />
+                        None
+                    </button>
+                    {filteredSeries.length > 0 ? filteredSeries.map((series, index) => (
+                        <button
+                            key={series.id}
+                            type="button"
+                            role="option"
+                            aria-selected={series.id === value}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onMouseEnter={() => setHighlightedIndex(index)}
+                            onClick={() => chooseSeries(series.id)}
+                            style={{
+                                width: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '8px',
+                                border: 'none',
+                                borderRadius: '8px',
+                                background: index === highlightedIndex || series.id === value ? wa(fg, 0.1) : 'transparent',
+                                color: fg,
+                                cursor: 'pointer',
+                                textAlign: 'left',
+                            }}
+                        >
+                            <div
+                                style={{
+                                    width: '28px',
+                                    height: '38px',
+                                    flexShrink: 0,
+                                    borderRadius: '5px',
+                                    overflow: 'hidden',
+                                    background: panelBg,
+                                    border: `1px solid ${border}`,
+                                }}
+                            >
+                                {series.cover_url && (
+                                    <img
+                                        src={series.cover_url}
+                                        alt=""
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                        onError={(event) => { event.currentTarget.style.display = 'none'; }}
+                                    />
+                                )}
+                            </div>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{ fontSize: '13px', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {series.title}
+                                </div>
+                                <div style={{ fontSize: '11px', color: muted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {series.slug}
+                                </div>
+                            </div>
+                        </button>
+                    )) : (
+                        <div style={{ padding: '16px 10px', color: muted, fontSize: '13px', textAlign: 'center' }}>
+                            No matching series
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }
 
 function MiscContent() {
@@ -100,11 +418,11 @@ function MiscContent() {
         if (fileInputRefs.current[index]) fileInputRefs.current[index]!.value = '';
     };
 
-    const updateHeroSeries = (index: number, value: string) => {
-        const n = [...heroSeries]; n[index] = parseInt(value) || 0; setHeroSeries(n);
+    const updateHeroSeries = (index: number, value: string | number) => {
+        const n = [...heroSeries]; n[index] = typeof value === 'number' ? value : parseInt(value) || 0; setHeroSeries(n);
     };
-    const updateFeaturedSeries = (index: number, value: string) => {
-        const n = [...featuredSeries]; n[index] = parseInt(value) || 0; setFeaturedSeries(n);
+    const updateFeaturedSeries = (index: number, value: string | number) => {
+        const n = [...featuredSeries]; n[index] = typeof value === 'number' ? value : parseInt(value) || 0; setFeaturedSeries(n);
     };
 
     const selStyle: React.CSSProperties = {
@@ -149,13 +467,19 @@ function MiscContent() {
                         {heroSeries.map((seriesId, index) => (
                             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <span style={slotLabel}>Slot {index + 1}</span>
-                                <select value={seriesId} onChange={(e) => updateHeroSeries(index, e.target.value)} style={selStyle}>
-                                    <option value="0" style={optStyle}>-- None --</option>
-                                    {allSeries.map(s => <option key={s.id} value={s.id} style={optStyle}>{s.title}</option>)}
-                                </select>
-                                {seriesId > 0 && (
-                                    <button type="button" onClick={() => updateHeroSeries(index, '0')} style={{ fontSize: '13px', color: muted, background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 1 }} title="Clear slot"></button>
-                                )}
+                                <SeriesCombobox
+                                    value={seriesId}
+                                    allSeries={allSeries}
+                                    onChange={(value) => updateHeroSeries(index, value)}
+                                    placeholder="Search series for hero slot"
+                                    fg={fg}
+                                    muted={muted}
+                                    border={border}
+                                    inputBg={inputBg}
+                                    panelBg={panelBg}
+                                    cardBg={currentTheme.background}
+                                    accent={accent}
+                                />
                             </div>
                         ))}
                     </div>
@@ -172,13 +496,19 @@ function MiscContent() {
                         {featuredSeries.map((seriesId, index) => (
                             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <span style={slotLabel}>Slot {index + 1}</span>
-                                <select value={seriesId} onChange={(e) => updateFeaturedSeries(index, e.target.value)} style={selStyle}>
-                                    <option value="0" style={optStyle}>-- None --</option>
-                                    {allSeries.map(s => <option key={s.id} value={s.id} style={optStyle}>{s.title}</option>)}
-                                </select>
-                                {seriesId > 0 && (
-                                    <button type="button" onClick={() => updateFeaturedSeries(index, '0')} style={{ fontSize: '13px', color: muted, background: 'none', border: 'none', cursor: 'pointer', padding: '4px', lineHeight: 1 }} title="Clear slot"></button>
-                                )}
+                                <SeriesCombobox
+                                    value={seriesId}
+                                    allSeries={allSeries}
+                                    onChange={(value) => updateFeaturedSeries(index, value)}
+                                    placeholder="Search series for featured slot"
+                                    fg={fg}
+                                    muted={muted}
+                                    border={border}
+                                    inputBg={inputBg}
+                                    panelBg={panelBg}
+                                    cardBg={currentTheme.background}
+                                    accent={accent}
+                                />
                             </div>
                         ))}
                     </div>

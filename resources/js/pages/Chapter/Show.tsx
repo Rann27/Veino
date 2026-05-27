@@ -35,12 +35,14 @@ interface Series {
     id: number;
     title: string;
     slug: string;
+    type?: 'light-novel' | 'web-novel';
 }
 
 interface Chapter {
     id: number;
     title: string;
     chapter_number: number;
+    volume?: number;
     chapter_link: string;
     content: string | null;
     is_premium: boolean;
@@ -98,6 +100,19 @@ function ChapterShowContent({
     const hideDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [inTextAds, setInTextAds] = useState<Array<{id: number; caption: string; link_url: string}>>([]);
     const [readingProgress, setReadingProgress] = useState(0);
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
+    const effectiveContentWidth = isMobileViewport ? 95 : readerSettings.contentWidth;
+
+    useEffect(() => {
+        const syncViewportMode = () => {
+            setIsMobileViewport(window.innerWidth <= 768);
+        };
+
+        syncViewportMode();
+        window.addEventListener('resize', syncViewportMode);
+
+        return () => window.removeEventListener('resize', syncViewportMode);
+    }, []);
 
     useEffect(() => {
         let lastY = 0;
@@ -196,6 +211,17 @@ function ChapterShowContent({
     const jumpToChapter = (chapterLink: string) => {
         router.get(route('chapters.show', [series.slug, chapterLink]));
         setShowChapterList(false);
+    };
+
+    const formatChapterLabel = (ch: { title: string; chapter_number: number; volume?: number }) => {
+        if (series.type === 'light-novel') {
+            const title = ch.title.trim();
+            const titlePrefix = title.includes(':') ? title.slice(0, title.indexOf(':')).trim() : title;
+
+            return `Vol ${ch.volume ?? chapter.volume ?? ch.chapter_number} ${titlePrefix || title}`;
+        }
+
+        return `Chapter ${ch.chapter_number}`;
     };
 
     // Helper function to inject in-text ads every 40 lines
@@ -391,23 +417,51 @@ function ChapterShowContent({
             {/* Reading Progress Bar */}
             <div
                 className="reading-progress-bar"
-                style={{ width: `${readingProgress}%` }}
+                style={{ width: `${readingProgress}%`, top: 'auto', bottom: showNavbar ? '64px' : '0' }}
             />
 
-            {/* Sticky Navigation Bar */}
+            {/* Sticky Back Button */}
             <div
-                className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-500 ease-in-out ${
-                    showNavbar ? 'translate-y-0' : '-translate-y-full'
+                className={`fixed top-3 left-3 sm:top-4 sm:left-4 z-50 transition-all duration-500 ease-in-out ${
+                    showNavbar ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'
+                }`}
+            >
+                <Link
+                    href={route('series.show', series.slug)}
+                    className="w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-all reading-bar-btn"
+                    style={{
+                        color: currentTheme.foreground,
+                        backgroundColor: `${currentTheme.background}D9`,
+                        border: `1px solid ${currentTheme.foreground}15`,
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                    }}
+                    aria-label="Back to series"
+                    title="Back to series"
+                >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                </Link>
+            </div>
+
+            {/* Bottom Reading Bar */}
+            <div
+                className={`fixed bottom-0 left-0 right-0 z-50 border-t transition-all duration-500 ease-in-out ${
+                    showNavbar ? 'translate-y-0' : 'translate-y-full'
                 }`}
                 style={{
-                    backgroundColor: currentTheme.background,
-                    borderColor: `${currentTheme.foreground}20`
+                    backgroundColor: `${currentTheme.background}E6`,
+                    borderColor: `${currentTheme.foreground}20`,
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                 }}
             >
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
+                    <div className="grid grid-cols-4 h-16 items-center">
                         {/* Left Section */}
-                        <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
+                        <div className="hidden">
                         <Link
                             href={route('series.show', series.slug)}
                             className="font-medium transition-all reading-bar-btn px-3 py-1.5 rounded-lg text-sm sm:text-base"
@@ -436,11 +490,11 @@ function ChapterShowContent({
                         </div>
 
                         {/* Center Section - Chapter Navigation */}
-                        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-                            {prevChapter && (
+                        <div className="contents">
+                            {prevChapter ? (
                                 <Link
                                     href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
-                                    className="p-2 rounded transition-all reading-bar-btn"
+                                    className="order-1 h-full flex items-center justify-center rounded transition-all reading-bar-btn"
                                     style={{ color: currentTheme.foreground }}
                                     title={`Previous: ${prevChapter.title}`}
                                 >
@@ -448,13 +502,19 @@ function ChapterShowContent({
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                     </svg>
                                 </Link>
+                            ) : (
+                                <button type="button" disabled className="order-1 h-full flex items-center justify-center rounded opacity-30" style={{ color: currentTheme.foreground }} aria-label="No previous chapter">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
                             )}
                             
-                            <div className="relative">
+                            <div className="relative order-2 h-full">
                                 {/* Both Mobile and Desktop: Simple burger menu for chapter list */}
                                 <button
                                     onClick={() => setShowChapterList(!showChapterList)}
-                                    className="p-2 rounded transition-all reading-bar-btn"
+                                    className="h-full w-full flex items-center justify-center rounded transition-all reading-bar-btn"
                                     style={{
                                         color: currentTheme.foreground
                                     }}
@@ -468,7 +528,7 @@ function ChapterShowContent({
                                 
                                 {showChapterList && (
                                     <div 
-                                        className="absolute top-full left-1/2 transform -translate-x-1/2 sm:left-0 sm:transform-none mt-1 w-72 sm:w-80 border rounded-xl shadow-2xl max-h-96 overflow-y-auto z-10 themed-scrollbar"
+                                        className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 sm:w-80 border rounded-xl shadow-2xl max-h-96 overflow-y-auto z-10 themed-scrollbar"
                                         style={{
                                             backgroundColor: currentTheme.background,
                                             borderColor: `${currentTheme.foreground}15`,
@@ -490,7 +550,7 @@ function ChapterShowContent({
                                                 }}
                                             >
                                                 <span className="truncate text-sm sm:text-base">
-                                                    {ch.volume ? `Vol ${ch.volume} Ch ${ch.chapter_number}` : `Chapter ${ch.chapter_number}`}: {ch.title}
+                                                    {formatChapterLabel(ch)}
                                                 </span>
                                                 {ch.is_premium && (
                                                     <span className="ml-2 flex-shrink-0">
@@ -503,10 +563,10 @@ function ChapterShowContent({
                                 )}
                             </div>
                             
-                            {nextChapter && (
+                            {nextChapter ? (
                                 <Link
                                     href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
-                                    className="p-2 rounded transition-all reading-bar-btn"
+                                    className="order-4 h-full flex items-center justify-center rounded transition-all reading-bar-btn"
                                     style={{ color: currentTheme.foreground }}
                                     title={`Next: ${nextChapter.title}`}
                                 >
@@ -514,16 +574,22 @@ function ChapterShowContent({
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                     </svg>
                                 </Link>
+                            ) : (
+                                <button type="button" disabled className="order-4 h-full flex items-center justify-center rounded opacity-30" style={{ color: currentTheme.foreground }} aria-label="No next chapter">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
                             )}
                         </div>
 
                         {/* Right Section - Reading Settings */}
-                        <div className="flex items-center flex-shrink-0">
+                        <div className="contents">
                             {/* Reader Settings Button */}
                             <button
                                 ref={readerSettingsButtonRef}
-                                onClick={() => setShowReaderSettings(true)}
-                                className="p-2 rounded transition-all reading-bar-btn"
+                                onClick={() => setShowReaderSettings((open) => !open)}
+                                className="order-3 h-full flex items-center justify-center rounded transition-all reading-bar-btn"
                                 style={{ color: currentTheme.foreground }}
                                 title="Reader settings"
                             >
@@ -539,13 +605,13 @@ function ChapterShowContent({
 
             {/* Chapter Content */}
             <div 
-                className="min-h-screen pt-16"
+                className="min-h-screen pt-4 pb-20"
                 style={{ backgroundColor: currentTheme.background }}
             >
                 <div 
                     className="mx-auto px-4 sm:px-8 lg:px-12 py-10 rounded-2xl"
                     style={{ 
-                        maxWidth: `${readerSettings.contentWidth}%`,
+                        maxWidth: `${effectiveContentWidth}%`,
                         width: '100%',
                         backgroundColor: `${currentTheme.foreground}03`,
                         border: `1px solid ${currentTheme.foreground}08`,
@@ -829,7 +895,7 @@ function ChapterShowContent({
 export default function ChapterShow(props: Props) {
     const isPaywall = !props.canAccess && props.chapter.is_premium;
     return (
-        <UserLayout>
+        <UserLayout hideMobileBottomNav hideSiteChrome>
             <ChapterShowContent {...props} />
         </UserLayout>
     );
