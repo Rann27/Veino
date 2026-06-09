@@ -20,6 +20,7 @@ interface MembershipPackage {
     name: string;
     tier: string;
     price_usd: string;
+    gimmick_price_usd?: string | null;
     coin_price: number;
     gimmick_price?: string | null;
     duration_days: number;
@@ -551,6 +552,7 @@ function MembershipTab({ packages, flash, errors }: {
 
     const userCoins = page.props.auth.user.coins;
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'coins' | 'paypal' | 'oxapay'>('coins');
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -561,10 +563,22 @@ function MembershipTab({ packages, flash, errors }: {
     const [voucherError, setVoucherError] = useState<string | null>(null);
     const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
 
+    const isRealCurrency = paymentMethod !== 'coins';
+
     const extractMessage = (value: unknown): string | undefined => {
         if (!value) return undefined;
         if (Array.isArray(value)) return value.find((e) => typeof e === 'string') as string | undefined;
         return typeof value === 'string' ? value : undefined;
+    };
+
+    // Clear voucher when switching away from coins
+    const handlePaymentMethodChange = (method: 'coins' | 'paypal' | 'oxapay') => {
+        setPaymentMethod(method);
+        if (method !== 'coins') {
+            setVoucherCode('');
+            setVoucherData(null);
+            setVoucherError(null);
+        }
     };
 
     useEffect(() => {
@@ -627,28 +641,44 @@ function MembershipTab({ packages, flash, errors }: {
     const handleConfirmPurchase = () => {
         if (!selectedPackage) return;
         setErrorMessage(null); setShowConfirmModal(false);
-        router.post(route('membership.purchase'), {
+
+        const payload: Record<string, any> = {
             package_id: selectedPackage,
-            voucher_code: voucherData ? voucherCode.toUpperCase() : null,
-        }, {
-            preserveScroll: true,
+            payment_method: paymentMethod,
+        };
+
+        // Voucher only for coins
+        if (paymentMethod === 'coins' && voucherData) {
+            payload.voucher_code = voucherCode.toUpperCase();
+        }
+
+        router.post(route('membership.purchase'), payload, {
+            preserveScroll: paymentMethod === 'coins',
             onStart: () => setIsProcessing(true),
             onError: (formErrors) => {
                 const message = extractMessage(formErrors.membership) || extractMessage(formErrors.error) || extractMessage(Object.values(formErrors)[0]) || 'Purchase failed. Please try again.';
                 setErrorMessage(message);
+                setIsProcessing(false);
             },
-            onSuccess: () => { setErrorMessage(null); setShowSuccess(true); },
-            onFinish: () => setIsProcessing(false),
+            onSuccess: () => {
+                if (paymentMethod === 'coins') { setErrorMessage(null); setShowSuccess(true); }
+                setIsProcessing(false);
+            },
+            onFinish: () => {},
         });
     };
 
     const selectedPkg = packages.find(p => p.id === selectedPackage);
     const finalCost = voucherData ? voucherData.final_amount : selectedPkg?.coin_price ?? 0;
-    const canAffordSelected = selectedPkg ? userCoins >= finalCost : true;
+    const canAffordSelected = isRealCurrency ? true : (selectedPkg ? userCoins >= finalCost : true);
+
+    const priceUsd = selectedPkg ? parseFloat(selectedPkg.price_usd) : 0;
+    const gimmickUsd = selectedPkg?.gimmick_price_usd ? parseFloat(selectedPkg.gimmick_price_usd) : 0;
+    const usdSavePct = gimmickUsd > priceUsd ? Math.round(((gimmickUsd - priceUsd) / gimmickUsd) * 100) : 0;
 
     return (
         <div className="w-full">
-            {/* Confirm Modal */}
+            {/* ── Confirm Modal ── */}
             {showConfirmModal && selectedPkg && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }} onClick={() => setShowConfirmModal(false)}>
                     <div className="rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl overflow-hidden backdrop-blur-xl"
@@ -662,8 +692,25 @@ function MembershipTab({ packages, flash, errors }: {
                         <p className="text-sm mb-4" style={{ color: `${currentTheme.foreground}60` }}>
                             <span className="font-bold" style={{ color: SHINY_PURPLE }}>{selectedPkg.name}</span> — {selectedPkg.duration_days} days
                         </p>
+
                         <div className="rounded-xl p-4 mb-4 text-left space-y-2 text-sm" style={{ backgroundColor: `${currentTheme.foreground}06` }}>
-                            {voucherData ? (
+                            {isRealCurrency ? (
+                                <>
+                                    {gimmickUsd > priceUsd && (
+                                        <div className="flex justify-between">
+                                            <span style={{ color: `${currentTheme.foreground}50` }}>Regular Price</span>
+                                            <span className="line-through opacity-40" style={{ color: currentTheme.foreground }}>${gimmickUsd.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between pt-2" style={{ borderTop: gimmickUsd > priceUsd ? `1px solid ${currentTheme.foreground}10` : undefined }}>
+                                        <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
+                                        <span className="text-xl font-extrabold" style={{ color: SHINY_PURPLE }}>${priceUsd.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                    </div>
+                                    <p className="text-[11px] pt-1" style={{ color: `${currentTheme.foreground}40` }}>
+                                        You'll be redirected to {paymentMethod === 'paypal' ? 'PayPal' : 'OxaPay'} to complete your payment.
+                                    </p>
+                                </>
+                            ) : voucherData ? (
                                 <>
                                     <div className="flex justify-between"><span style={{ color: `${currentTheme.foreground}50` }}>Original</span><span className="line-through opacity-40" style={{ color: currentTheme.foreground }}>¢{selectedPkg.coin_price.toLocaleString()}</span></div>
                                     <div className="flex justify-between"><span className="text-emerald-400">Voucher ({voucherCode})</span><span className="text-emerald-400">−¢{voucherData.discount_amount.toLocaleString()}</span></div>
@@ -673,20 +720,24 @@ function MembershipTab({ packages, flash, errors }: {
                                 <div className="flex justify-between"><span style={{ color: `${currentTheme.foreground}50` }}>Total Cost</span><span className="text-xl font-extrabold text-amber-400">¢{selectedPkg.coin_price.toLocaleString()}</span></div>
                             )}
                         </div>
-                        <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}40` }}>
-                            After purchase: <span className="font-bold text-amber-400">¢{(userCoins - finalCost).toLocaleString()}</span> remaining
-                        </p>
+
+                        {!isRealCurrency && (
+                            <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}40` }}>
+                                After purchase: <span className="font-bold text-amber-400">¢{(userCoins - finalCost).toLocaleString()}</span> remaining
+                            </p>
+                        )}
+
                         <div className="flex gap-3">
                             <button onClick={() => setShowConfirmModal(false)} className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-70" style={{ border: `1px solid ${currentTheme.foreground}15`, color: `${currentTheme.foreground}60` }}>Cancel</button>
                             <button onClick={handleConfirmPurchase} disabled={isProcessing} className="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all hover:brightness-110 disabled:opacity-50" style={{ backgroundColor: SHINY_PURPLE, color: '#fff' }}>
-                                {isProcessing ? 'Processing...' : 'Confirm'}
+                                {isProcessing ? 'Processing...' : isRealCurrency ? 'Continue →' : 'Confirm'}
                             </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Success Modal */}
+            {/* ── Success Modal ── */}
             {showSuccess && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }} onClick={() => setShowSuccess(false)}>
                     <div className="rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl backdrop-blur-xl"
@@ -725,7 +776,6 @@ function MembershipTab({ packages, flash, errors }: {
                     </div>
                 )}
 
-                {/* Two-column layout */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] gap-6 items-start">
 
                     {/* ── Left: Package Cards ── */}
@@ -737,9 +787,12 @@ function MembershipTab({ packages, flash, errors }: {
                             {packages.map((pkg) => {
                                 const coinPrice = pkg.coin_price;
                                 const originalCoinPrice = pkg.discount_percentage > 0 ? getOriginalCoinPrice(coinPrice, pkg.discount_percentage) : 0;
+                                const pkgPriceUsd = parseFloat(pkg.price_usd);
+                                const pkgGimmickUsd = pkg.gimmick_price_usd ? parseFloat(pkg.gimmick_price_usd) : 0;
+                                const pkgUsdSavePct = pkgGimmickUsd > pkgPriceUsd ? Math.round(((pkgGimmickUsd - pkgPriceUsd) / pkgGimmickUsd) * 100) : 0;
                                 const isSelected = selectedPackage === pkg.id;
                                 const isBestValue = pkg.duration_days === 365;
-                                const canAfford = userCoins >= coinPrice;
+                                const canAfford = isRealCurrency ? true : userCoins >= coinPrice;
 
                                 return (
                                     <button key={pkg.id} type="button" onClick={() => setSelectedPackage(isSelected ? null : pkg.id)}
@@ -754,7 +807,6 @@ function MembershipTab({ packages, flash, errors }: {
                                             opacity: canAfford ? 1 : 0.45,
                                         }}>
 
-                                        {/* Shine */}
                                         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                                             style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.04) 0%, transparent 70%)' }} />
 
@@ -766,7 +818,7 @@ function MembershipTab({ packages, flash, errors }: {
                                                         ✦ BEST VALUE
                                                     </span>
                                                 )}
-                                                {!canAfford && (
+                                                {!isRealCurrency && !canAfford && (
                                                     <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/20">
                                                         NEED MORE COINS
                                                     </span>
@@ -782,17 +834,36 @@ function MembershipTab({ packages, flash, errors }: {
                                         <h3 className="font-extrabold text-base mb-1" style={{ color: currentTheme.foreground }}>{pkg.name}</h3>
                                         <p className="text-xs mb-3" style={{ color: `${currentTheme.foreground}45` }}>{pkg.duration_days} days of unlimited access</p>
 
-                                        <div className="flex items-end gap-2">
-                                            <span className="text-3xl font-extrabold text-amber-400">¢{coinPrice.toLocaleString()}</span>
-                                            {originalCoinPrice > 0 && (
-                                                <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>¢{originalCoinPrice.toLocaleString()}</span>
-                                            )}
-                                        </div>
-
-                                        {pkg.discount_percentage > 0 && (
-                                            <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
-                                                style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}20` }}>
-                                                Save {pkg.discount_percentage}%
+                                        {/* Price display — switches based on payment method */}
+                                        {isRealCurrency ? (
+                                            <div>
+                                                <div className="flex items-end gap-2">
+                                                    <span className="text-3xl font-extrabold" style={{ color: SHINY_PURPLE }}>${pkgPriceUsd.toFixed(2)}</span>
+                                                    {pkgGimmickUsd > pkgPriceUsd && (
+                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>${pkgGimmickUsd.toFixed(2)}</span>
+                                                    )}
+                                                </div>
+                                                {pkgUsdSavePct > 0 && (
+                                                    <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
+                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}20` }}>
+                                                        Save {pkgUsdSavePct}%
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                <div className="flex items-end gap-2">
+                                                    <span className="text-3xl font-extrabold text-amber-400">¢{coinPrice.toLocaleString()}</span>
+                                                    {originalCoinPrice > 0 && (
+                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>¢{originalCoinPrice.toLocaleString()}</span>
+                                                    )}
+                                                </div>
+                                                {pkg.discount_percentage > 0 && (
+                                                    <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
+                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}20` }}>
+                                                        Save {pkg.discount_percentage}%
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </button>
@@ -805,20 +876,14 @@ function MembershipTab({ packages, flash, errors }: {
                     <div className="flex flex-col gap-4">
 
                         {/* What You'll Get */}
-                        <div className="rounded-2xl overflow-hidden"
-                            style={{ border: `1px solid ${SHINY_PURPLE}20` }}>
-                            <div className="px-5 py-3 flex items-center gap-2"
-                                style={{ background: `linear-gradient(90deg, ${SHINY_PURPLE}18, ${SHINY_PURPLE}08)` }}>
+                        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${SHINY_PURPLE}20` }}>
+                            <div className="px-5 py-3 flex items-center gap-2" style={{ background: `linear-gradient(90deg, ${SHINY_PURPLE}18, ${SHINY_PURPLE}08)` }}>
                                 <PremiumDiamond size={14} />
                                 <span className="text-xs font-extrabold uppercase tracking-wider" style={{ color: SHINY_PURPLE }}>What You'll Get</span>
                             </div>
                             <div className="px-5 py-4" style={{ backgroundColor: `${currentTheme.foreground}03` }}>
                                 <ul className="space-y-2.5">
-                                    {[
-                                        'Unlock all premium chapters',
-                                        'Completely ad-free reading',
-                                        'Priority access to new releases',
-                                    ].map((text) => (
+                                    {['Unlock all premium chapters', 'Completely ad-free reading', 'Access to EPUB downloads'].map((text) => (
                                         <li key={text} className="flex items-center gap-3 text-sm" style={{ color: currentTheme.foreground }}>
                                             <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" fill="none">
                                                 <circle cx="8" cy="8" r="8" fill={`${SHINY_PURPLE}25`} />
@@ -831,67 +896,175 @@ function MembershipTab({ packages, flash, errors }: {
                             </div>
                         </div>
 
-                        {/* Coin Balance */}
-                        <div className="rounded-2xl p-4 flex items-center justify-between"
-                            style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
-                            <div>
-                                <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: `${currentTheme.foreground}40` }}>Your Balance</p>
-                                <p className="text-2xl font-extrabold text-amber-400">¢{userCoins.toLocaleString()}</p>
+                        {/* ── Payment Method Selector ── */}
+                        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${currentTheme.foreground}10` }}>
+                            <div className="px-5 py-3" style={{ backgroundColor: `${currentTheme.foreground}04` }}>
+                                <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: `${currentTheme.foreground}40` }}>Payment Method</p>
                             </div>
-                            {selectedPkg && !canAffordSelected && (
-                                <div className="text-right">
-                                    <p className="text-xs text-red-400 mb-2">Need ¢{(finalCost - userCoins).toLocaleString()} more</p>
-                                    <a href="/shop?tab=coins" className="inline-block px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:brightness-110"
-                                        style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-                                        Buy Coins
-                                    </a>
-                                </div>
-                            )}
-                            {selectedPkg && canAffordSelected && (
-                                <div className="text-right">
-                                    <p className="text-[10px] uppercase tracking-widest font-medium mb-0.5" style={{ color: `${currentTheme.foreground}35` }}>After purchase</p>
-                                    <p className="text-lg font-bold" style={{ color: `${currentTheme.foreground}60` }}>¢{(userCoins - finalCost).toLocaleString()}</p>
+                            <div className="p-3 grid grid-cols-3 gap-2" style={{ backgroundColor: `${currentTheme.foreground}02` }}>
+                                {/* Coins */}
+                                <button type="button" onClick={() => handlePaymentMethodChange('coins')}
+                                    className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200"
+                                    style={{
+                                        background: paymentMethod === 'coins'
+                                            ? `linear-gradient(145deg, ${SHINY_PURPLE}15, ${SHINY_PURPLE}06)`
+                                            : `${currentTheme.foreground}03`,
+                                        border: `1.5px solid ${paymentMethod === 'coins' ? SHINY_PURPLE : `${currentTheme.foreground}08`}`,
+                                        boxShadow: paymentMethod === 'coins' ? `0 4px 16px ${SHINY_PURPLE}20` : 'none',
+                                    }}>
+                                    <span className="text-lg font-black text-amber-400" style={{ fontFamily: 'serif' }}>¢</span>
+                                    <span className="text-[10px] font-bold" style={{ color: paymentMethod === 'coins' ? SHINY_PURPLE : `${currentTheme.foreground}50` }}>Coins</span>
+                                    {paymentMethod === 'coins' && (
+                                        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ backgroundColor: SHINY_PURPLE }}>
+                                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                        </div>
+                                    )}
+                                </button>
+
+                                {/* PayPal */}
+                                <button type="button" onClick={() => handlePaymentMethodChange('paypal')}
+                                    className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200"
+                                    style={{
+                                        background: paymentMethod === 'paypal'
+                                            ? 'linear-gradient(145deg, rgba(37,99,235,0.12), rgba(59,130,246,0.05))'
+                                            : `${currentTheme.foreground}03`,
+                                        border: `1.5px solid ${paymentMethod === 'paypal' ? '#3b82f6' : `${currentTheme.foreground}08`}`,
+                                        boxShadow: paymentMethod === 'paypal' ? '0 4px 16px rgba(59,130,246,0.2)' : 'none',
+                                    }}>
+                                    <img src="/images/paymentlogo/paypal.svg" alt="PayPal" className="h-5 object-contain" />
+                                    <span className="text-[10px] font-bold text-blue-400">PayPal</span>
+                                    {paymentMethod === 'paypal' && (
+                                        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 flex items-center justify-center">
+                                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                        </div>
+                                    )}
+                                </button>
+
+                                {/* OxaPay */}
+                                <button type="button" onClick={() => handlePaymentMethodChange('oxapay')}
+                                    className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200"
+                                    style={{
+                                        background: paymentMethod === 'oxapay'
+                                            ? 'linear-gradient(145deg, rgba(16,185,129,0.12), rgba(5,150,105,0.05))'
+                                            : `${currentTheme.foreground}03`,
+                                        border: `1.5px solid ${paymentMethod === 'oxapay' ? '#10b981' : `${currentTheme.foreground}08`}`,
+                                        boxShadow: paymentMethod === 'oxapay' ? '0 4px 16px rgba(16,185,129,0.2)' : 'none',
+                                    }}>
+                                    <img src="/images/paymentlogo/oxapay.svg" alt="OxaPay" className="h-5 object-contain" />
+                                    <span className="text-[10px] font-bold" style={{ color: '#10b981' }}>OxaPay</span>
+                                    {paymentMethod === 'oxapay' && (
+                                        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10b981' }}>
+                                            <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                        </div>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Real-currency note */}
+                            {isRealCurrency && (
+                                <div className="px-4 pb-3 flex items-center gap-2">
+                                    <svg className="w-3 h-3 text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                    <p className="text-[10px]" style={{ color: `${currentTheme.foreground}40` }}>
+                                        Secure payment · Vouchers not applicable for real currency
+                                    </p>
                                 </div>
                             )}
                         </div>
 
-                        {/* Voucher */}
-                        <div className="rounded-2xl p-4" style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
-                            <p className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: `${currentTheme.foreground}40` }}>Have a Voucher?</p>
-                            {!voucherData ? (
-                                <>
-                                    <div className="flex gap-2">
-                                        <input type="text" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
-                                            placeholder={selectedPackage ? 'Enter code…' : 'Select a plan first'}
-                                            disabled={!selectedPackage || isApplyingVoucher}
-                                            className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none uppercase disabled:cursor-not-allowed"
-                                            style={{
-                                                border: `1px solid ${voucherError ? '#ef4444' : `${currentTheme.foreground}12`}`,
-                                                backgroundColor: `${currentTheme.foreground}05`,
-                                                color: currentTheme.foreground,
-                                                opacity: selectedPackage ? 1 : 0.45,
-                                            }} />
-                                        <button type="button" onClick={handleApplyVoucher} disabled={!voucherCode.trim() || isApplyingVoucher || !selectedPackage}
-                                            className="px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-                                            style={{ backgroundColor: SHINY_PURPLE, color: '#fff' }}>
-                                            {isApplyingVoucher ? '…' : 'Apply'}
-                                        </button>
-                                    </div>
-                                    {voucherError && <p className="mt-1.5 text-xs text-red-400">{voucherError}</p>}
-                                </>
-                            ) : (
-                                <div className="flex items-center justify-between px-3 py-2 rounded-xl"
-                                    style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                        {/* ── Coins method: Balance + Voucher ── */}
+                        {!isRealCurrency && (
+                            <>
+                                <div className="rounded-2xl p-4 flex items-center justify-between"
+                                    style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
                                     <div>
-                                        <p className="text-xs font-extrabold text-emerald-400">{voucherCode}</p>
-                                        <p className="text-[10px] text-emerald-400 opacity-70">−{voucherData.discount_type === 'percent' ? `${voucherData.discount_value}%` : `¢${voucherData.discount_value}`} applied</p>
+                                        <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: `${currentTheme.foreground}40` }}>Your Balance</p>
+                                        <p className="text-2xl font-extrabold text-amber-400">¢{userCoins.toLocaleString()}</p>
                                     </div>
-                                    <button type="button" onClick={handleRemoveVoucher} className="text-xs font-bold text-red-400 hover:opacity-70 transition-opacity">Remove</button>
+                                    {selectedPkg && !canAffordSelected && (
+                                        <div className="text-right">
+                                            <p className="text-xs text-red-400 mb-2">Need ¢{(finalCost - userCoins).toLocaleString()} more</p>
+                                            <a href="/shop?tab=coins" className="inline-block px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:brightness-110"
+                                                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+                                                Buy Coins
+                                            </a>
+                                        </div>
+                                    )}
+                                    {selectedPkg && canAffordSelected && (
+                                        <div className="text-right">
+                                            <p className="text-[10px] uppercase tracking-widest font-medium mb-0.5" style={{ color: `${currentTheme.foreground}35` }}>After purchase</p>
+                                            <p className="text-lg font-bold" style={{ color: `${currentTheme.foreground}60` }}>¢{(userCoins - finalCost).toLocaleString()}</p>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Buy Button */}
+                                {/* Voucher */}
+                                <div className="rounded-2xl p-4" style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
+                                    <p className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: `${currentTheme.foreground}40` }}>Have a Voucher?</p>
+                                    {!voucherData ? (
+                                        <>
+                                            <div className="flex gap-2">
+                                                <input type="text" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
+                                                    placeholder={selectedPackage ? 'Enter code…' : 'Select a plan first'}
+                                                    disabled={!selectedPackage || isApplyingVoucher}
+                                                    className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none uppercase disabled:cursor-not-allowed"
+                                                    style={{
+                                                        border: `1px solid ${voucherError ? '#ef4444' : `${currentTheme.foreground}12`}`,
+                                                        backgroundColor: `${currentTheme.foreground}05`,
+                                                        color: currentTheme.foreground,
+                                                        opacity: selectedPackage ? 1 : 0.45,
+                                                    }} />
+                                                <button type="button" onClick={handleApplyVoucher} disabled={!voucherCode.trim() || isApplyingVoucher || !selectedPackage}
+                                                    className="px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
+                                                    style={{ backgroundColor: SHINY_PURPLE, color: '#fff' }}>
+                                                    {isApplyingVoucher ? '…' : 'Apply'}
+                                                </button>
+                                            </div>
+                                            {voucherError && <p className="mt-1.5 text-xs text-red-400">{voucherError}</p>}
+                                        </>
+                                    ) : (
+                                        <div className="flex items-center justify-between px-3 py-2 rounded-xl"
+                                            style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                            <div>
+                                                <p className="text-xs font-extrabold text-emerald-400">{voucherCode}</p>
+                                                <p className="text-[10px] text-emerald-400 opacity-70">−{voucherData.discount_type === 'percent' ? `${voucherData.discount_value}%` : `¢${voucherData.discount_value}`} applied</p>
+                                            </div>
+                                            <button type="button" onClick={handleRemoveVoucher} className="text-xs font-bold text-red-400 hover:opacity-70 transition-opacity">Remove</button>
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+
+                        {/* ── Real currency: USD summary ── */}
+                        {isRealCurrency && selectedPkg && (
+                            <div className="rounded-2xl p-4" style={{ background: `linear-gradient(145deg, ${SHINY_PURPLE}10, ${SHINY_PURPLE}04)`, border: `1px solid ${SHINY_PURPLE}20` }}>
+                                <p className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: SHINY_PURPLE }}>Order Summary</p>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span style={{ color: `${currentTheme.foreground}55` }}>Plan</span>
+                                        <span className="font-semibold" style={{ color: currentTheme.foreground }}>{selectedPkg.name}</span>
+                                    </div>
+                                    {gimmickUsd > priceUsd && (
+                                        <div className="flex justify-between">
+                                            <span style={{ color: `${currentTheme.foreground}55` }}>Regular Price</span>
+                                            <span className="line-through opacity-40" style={{ color: currentTheme.foreground }}>${gimmickUsd.toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    {usdSavePct > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-emerald-400">Discount</span>
+                                            <span className="text-emerald-400">−{usdSavePct}%</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${SHINY_PURPLE}20` }}>
+                                        <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
+                                        <span className="text-xl font-extrabold" style={{ color: SHINY_PURPLE }}>${priceUsd.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Submit Button ── */}
                         <button type="submit" disabled={!selectedPackage || !canAffordSelected || isProcessing}
                             className="w-full py-4 rounded-2xl font-extrabold text-base transition-all duration-300"
                             style={{
@@ -904,12 +1077,21 @@ function MembershipTab({ packages, flash, errors }: {
                             {isProcessing ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-                                    Processing…
+                                    Redirecting…
                                 </span>
                             ) : !selectedPackage ? 'Select a Plan to Continue'
                               : !canAffordSelected ? `Need ¢${(finalCost - userCoins).toLocaleString()} More`
-                              : `Buy with ¢${finalCost.toLocaleString()} Coins ✦`}
+                              : isRealCurrency
+                                ? `Pay $${priceUsd.toFixed(2)} with ${paymentMethod === 'paypal' ? 'PayPal' : 'OxaPay'} →`
+                                : `Buy with ¢${finalCost.toLocaleString()} Coins ✦`}
                         </button>
+
+                        {selectedPkg && (
+                            <p className="text-center text-[11px] flex items-center justify-center gap-1" style={{ color: `${currentTheme.foreground}30` }}>
+                                <svg className="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                Secure payment · SSL encrypted
+                            </p>
+                        )}
                     </div>
                 </div>
             </form>

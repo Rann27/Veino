@@ -49,6 +49,15 @@ interface Series {
   chapters?: Chapter[];
 }
 
+interface EpubSeries {
+  id: number;
+  title: string;
+  slug: string;
+  cover_url?: string;
+  price_range: string;
+  free_for_premium_members?: boolean;
+}
+
 interface Banner {
   image_url: string;
   link_url?: string;
@@ -77,6 +86,7 @@ interface HomeProps {
   heroSeries: Series[];
   featuredSeries: Series[];
   latestUpdates: Series[];
+  epubSeries?: EpubSeries[];
   newSeries: Series[];
   blogs: Blog[];
   banners: Banner[];
@@ -88,6 +98,7 @@ function HomeContent({
   heroSeries,
   featuredSeries,
   latestUpdates,
+  epubSeries = [],
   newSeries,
   blogs,
   banners,
@@ -381,6 +392,91 @@ function HomeContent({
 
       {/* ─── 5. Latest Updates Section (Tabbed) ─── */}
       <LatestUpdatesSection initialData={latestUpdates} />
+
+      {epubSeries.length > 0 && (
+        <section className="py-8 sm:py-12" style={{ backgroundColor: currentTheme.background }}>
+          <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-1 h-6 rounded-full"
+                  style={{
+                    background: `linear-gradient(to bottom, ${SHINY_PURPLE}, ${SHINY_PURPLE}40)`,
+                  }}
+                />
+                <h2
+                  className="text-xl sm:text-2xl font-bold section-title"
+                  style={{ color: currentTheme.foreground }}
+                >
+                  Epub Novels
+                </h2>
+              </div>
+
+              <Link
+                href="/epub-novels"
+                className="text-sm font-semibold transition-opacity hover:opacity-70"
+                style={{ color: `${currentTheme.foreground}75` }}
+              >
+                View All
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
+              {epubSeries.map((series) => (
+                <Link
+                  key={series.id}
+                  href={`/epub-novels/${series.slug}`}
+                  className="group"
+                >
+                  <div className="relative mb-2 sm:mb-3">
+                    <CoverImage
+                      src={series.cover_url}
+                      alt={series.title}
+                      containerClassName="rounded-lg"
+                      hoverScale={true}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg pointer-events-none" />
+                    {series.free_for_premium_members && (
+                      <div
+                        className="absolute left-1.5 right-1.5 bottom-1.5 sm:left-2 sm:right-2 sm:bottom-2 flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] font-bold shadow-lg backdrop-blur-sm"
+                        style={{
+                          backgroundColor: 'rgba(17, 12, 36, 0.82)',
+                          color: '#f4e8ff',
+                          border: '1px solid rgba(216, 180, 254, 0.38)',
+                          fontFamily: 'Poppins, sans-serif',
+                        }}
+                      >
+                        <PremiumDiamond size={11} />
+                        <span className="truncate">Free for Premium Member</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <h3
+                    className="font-semibold text-xs sm:text-sm md:text-base mb-1 sm:mb-2 line-clamp-2 group-hover:opacity-80 transition-opacity"
+                    style={{
+                      fontFamily: 'Poppins, sans-serif',
+                      color: currentTheme.foreground,
+                    }}
+                  >
+                    {series.title}
+                  </h3>
+
+                  <p
+                    className="text-sm sm:text-base md:text-lg font-bold"
+                    style={{
+                      fontFamily: 'Poppins, sans-serif',
+                      color: '#f59e0b',
+                    }}
+                  >
+                    {series.free_for_premium_members ? 'Free' : series.price_range}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── 5. New Series Section ─── */}
       <section className="py-8 sm:py-12" style={{ backgroundColor: currentTheme.background }}>

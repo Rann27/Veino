@@ -7,6 +7,7 @@ interface MembershipPackage {
   id: number;
   name: string;
   gimmick_price: number | null;
+  gimmick_price_usd: number | null;
   price_usd: number;
   coin_price: number;
   discount_percentage: number;
@@ -65,6 +66,8 @@ function PaymentContent({ membershipPackages, coinPackages, paymentSettings }: P
     name: '',
     gimmick_price: '',
     coin_price: '',
+    price_usd: '',
+    gimmick_price_usd: '',
     is_active: true,
   });
 
@@ -83,6 +86,8 @@ function PaymentContent({ membershipPackages, coinPackages, paymentSettings }: P
       name: pkg.name,
       gimmick_price: pkg.gimmick_price?.toString() || '',
       coin_price: pkg.coin_price.toString(),
+      price_usd: pkg.price_usd?.toString() || '',
+      gimmick_price_usd: pkg.gimmick_price_usd?.toString() || '',
       is_active: pkg.is_active,
     });
   };
@@ -94,11 +99,13 @@ function PaymentContent({ membershipPackages, coinPackages, paymentSettings }: P
         name: packageFormData.name,
         gimmick_price: packageFormData.gimmick_price ? parseFloat(packageFormData.gimmick_price) : null,
         coin_price: parseInt(packageFormData.coin_price),
+        price_usd: parseFloat(packageFormData.price_usd),
+        gimmick_price_usd: packageFormData.gimmick_price_usd ? parseFloat(packageFormData.gimmick_price_usd) : null,
         is_active: packageFormData.is_active,
       }, {
         onSuccess: () => {
           setEditingPackage(null);
-          setPackageFormData({ name: '', gimmick_price: '', coin_price: '', is_active: true });
+          setPackageFormData({ name: '', gimmick_price: '', coin_price: '', price_usd: '', gimmick_price_usd: '', is_active: true });
         }
       });
     }
@@ -194,17 +201,31 @@ function PaymentContent({ membershipPackages, coinPackages, paymentSettings }: P
                   <h3 style={{ color: fg, fontWeight: 600, fontSize: '18px', marginBottom: '12px' }}>{pkg.name}</h3>
                   
                   <div style={{ marginTop: '8px' }}>
+                    {/* Coin price */}
                     {gimmickPrice > 0 && gimmickPrice > coinPrice && (
                       <div style={{ color: muted, textDecoration: 'line-through', fontSize: '13px' }}>
-                        {gimmickPrice.toLocaleString()}
+                        ¢{gimmickPrice.toLocaleString()}
                       </div>
                     )}
                     <div style={{ marginTop: '4px' }}>
                       <span style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
-                        {coinPrice.toLocaleString()}
+                        ¢{coinPrice.toLocaleString()}
                       </span>
                     </div>
                     <div style={{ fontSize: '11px', color: muted, marginTop: '4px' }}>coins</div>
+
+                    {/* USD price */}
+                    <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${border}` }}>
+                      {pkg.gimmick_price_usd && parseFloat(pkg.gimmick_price_usd.toString()) > parseFloat(pkg.price_usd.toString()) && (
+                        <div style={{ color: muted, textDecoration: 'line-through', fontSize: '12px' }}>
+                          ${parseFloat(pkg.gimmick_price_usd.toString()).toFixed(2)}
+                        </div>
+                      )}
+                      <span style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e' }}>
+                        ${parseFloat(pkg.price_usd.toString()).toFixed(2)}
+                      </span>
+                      <span style={{ fontSize: '11px', color: muted, marginLeft: '4px' }}>USD</span>
+                    </div>
                   </div>
 
                   <div style={{ marginTop: '12px' }}>
@@ -579,6 +600,37 @@ function PaymentContent({ membershipPackages, coinPackages, paymentSettings }: P
                   required
                 />
                 <p style={{ marginTop: '4px', fontSize: '11px', color: muted }}>Actual coin price users will pay</p>
+              </div>
+
+              <div style={{ height: '1px', background: border, margin: '4px 0' }} />
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: fg, marginBottom: '6px' }}>Gimmick Price (USD) <span style={{ color: muted, fontWeight: 400 }}>— strikethrough</span></label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={packageFormData.gimmick_price_usd}
+                  onChange={(e) => setPackageFormData(prev => ({ ...prev, gimmick_price_usd: e.target.value }))}
+                  style={editInputStyle}
+                  placeholder="10.00"
+                />
+                <p style={{ marginTop: '4px', fontSize: '11px', color: muted }}>Crossed-out USD price shown to users — optional</p>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: fg, marginBottom: '6px' }}>Real Price (USD)</label>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={packageFormData.price_usd}
+                  onChange={(e) => setPackageFormData(prev => ({ ...prev, price_usd: e.target.value }))}
+                  style={editInputStyle}
+                  placeholder="6.49"
+                  required
+                />
+                <p style={{ marginTop: '4px', fontSize: '11px', color: muted }}>Actual USD price charged via PayPal / OxaPay</p>
               </div>
 
               {packageFormData.gimmick_price && packageFormData.coin_price &&

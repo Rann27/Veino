@@ -54,6 +54,10 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
   const [showPremiumCongrats, setShowPremiumCongrats] = useState(false);
   const [premiumGrantedData, setPremiumGrantedData] = useState<any>(null);
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [showShopDropdown, setShowShopDropdown] = useState(false);
+  const [showMobileShopExpand, setShowMobileShopExpand] = useState(false);
+  const shopDropdownRef = useRef<HTMLDivElement>(null);
+  const shopHoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -193,6 +197,18 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
     }
   }, [showSuggestions]);
 
+  // Close shop dropdown when clicking outside
+  useEffect(() => {
+    if (!showShopDropdown) return;
+    const handleClick = (e: MouseEvent) => {
+      if (shopDropdownRef.current && !shopDropdownRef.current.contains(e.target as Node)) {
+        setShowShopDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showShopDropdown]);
+
   // Premium congratulations modal detection
   useEffect(() => {
     if (flash?.premium_granted) {
@@ -318,13 +334,76 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                 >
                   Epub Novels
                 </Link>
+                {/* Shop dropdown */}
+                <div
+                  ref={shopDropdownRef}
+                  className="relative"
+                  onMouseEnter={() => {
+                    if (shopHoverTimerRef.current) clearTimeout(shopHoverTimerRef.current);
+                    setShowShopDropdown(true);
+                  }}
+                  onMouseLeave={() => {
+                    shopHoverTimerRef.current = setTimeout(() => setShowShopDropdown(false), 150);
+                  }}
+                >
+                  <button
+                    onClick={() => setShowShopDropdown(v => !v)}
+                    className={`flex items-center gap-1 px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg${isNavActive('/shop') ? ' nav-active-dot' : ''}`}
+                    style={{ color: currentTheme.foreground }}
+                  >
+                    Shop
+                    <svg
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${showShopDropdown ? 'rotate-180' : ''}`}
+                      fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+
+                  {showShopDropdown && (
+                    <div
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-40 rounded-xl border overflow-hidden shadow-2xl z-50"
+                      style={{
+                        backgroundColor: currentTheme.background,
+                        borderColor: `${currentTheme.foreground}18`,
+                        backdropFilter: 'blur(20px)',
+                      }}
+                    >
+                      <Link
+                        href="/shop?tab=coins"
+                        prefetch
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-all hover:opacity-80"
+                        style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+                        onClick={() => setShowShopDropdown(false)}
+                      >
+                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Coins
+                      </Link>
+                      <div style={{ height: '1px', backgroundColor: `${currentTheme.foreground}10` }} />
+                      <Link
+                        href="/shop?tab=membership"
+                        prefetch
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-all hover:opacity-80"
+                        style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+                        onClick={() => setShowShopDropdown(false)}
+                      >
+                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                        Membership
+                      </Link>
+                    </div>
+                  )}
+                </div>
                 <Link
-                  href="/shop"
+                  href="/request"
                   prefetch
-                  className={`px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg${isNavActive('/shop') ? ' nav-active-dot' : ''}`}
+                  className={`px-3 py-2 text-sm font-medium transition-all nav-link rounded-lg${isNavActive('/request') ? ' nav-active-dot' : ''}`}
                   style={{ color: currentTheme.foreground }}
                 >
-                  Shop
+                  Request
                 </Link>
                 <a 
                   href="https://discord.gg/5HcJf7p3ZG" 
@@ -488,6 +567,18 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                         Dashboard
                       </Link>
                       
+                      {/* My Request */}
+                      <Link 
+                        href="/request?tab=mine" 
+                        className="flex items-center gap-2 px-4 py-2 text-sm transition-colors hover:opacity-70"
+                        style={{ color: currentTheme.foreground }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 11.75 11 13.75 15.5 9.25M8 3h8l1.2 2H20c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h2.8L8 3Zm.9 2-.6 1h9.4l-.6-1H8.9Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        My Request
+                      </Link>
+                       
                       {/* My Chart */}
                       <Link 
                         href="/my-chart" 
@@ -656,8 +747,52 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                 >
                   Epub Novels
                 </Link>
+                {/* Shop expandable */}
+                <div>
+                  <button
+                    className="flex items-center justify-between w-full px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg text-left"
+                    style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+                    onClick={() => setShowMobileShopExpand(v => !v)}
+                  >
+                    Shop
+                    <svg
+                      className={`w-4 h-4 transition-transform duration-200 ${showMobileShopExpand ? 'rotate-180' : ''}`}
+                      fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showMobileShopExpand && (
+                    <div className="mt-1 ml-4 space-y-1">
+                      <Link
+                        href="/shop?tab=coins"
+                        prefetch
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-base font-medium transition-colors hover:opacity-70 rounded-lg"
+                        style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}08` }}
+                        onClick={toggleMobileSidebar}
+                      >
+                        <svg className="w-4 h-4 opacity-60" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Coins
+                      </Link>
+                      <Link
+                        href="/shop?tab=membership"
+                        prefetch
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-base font-medium transition-colors hover:opacity-70 rounded-lg"
+                        style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}08` }}
+                        onClick={toggleMobileSidebar}
+                      >
+                        <svg className="w-4 h-4 opacity-60" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                        Membership
+                      </Link>
+                    </div>
+                  )}
+                </div>
                 <Link 
-                  href="/shop" 
+                  href="/request" 
                   prefetch
                   className="block px-4 py-3 text-lg font-medium transition-colors hover:opacity-70 rounded-lg"
                   style={{ 
@@ -666,7 +801,7 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                   }}
                   onClick={toggleMobileSidebar}
                 >
-                  Shop
+                  Request
                 </Link>
                 <a 
                   href="https://discord.gg/5HcJf7p3ZG" 
@@ -763,6 +898,20 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                         <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" fill="currentColor"/>
                       </svg>
                       Dashboard
+                    </Link>
+                    <Link
+                      href="/request?tab=mine"
+                      className="flex items-center gap-3 px-4 py-2 text-sm transition-colors hover:opacity-70 rounded-lg"
+                      style={{ 
+                        color: currentTheme.foreground,
+                        backgroundColor: `${currentTheme.foreground}05`
+                      }}
+                      onClick={toggleMobileSidebar}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 11.75 11 13.75 15.5 9.25M8 3h8l1.2 2H20c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V7c0-1.1.9-2 2-2h2.8L8 3Zm.9 2-.6 1h9.4l-.6-1H8.9Z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      My Request
                     </Link>
                     <Link
                       href="/account/settings"
@@ -1096,6 +1245,8 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
 function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { display_name: string; membership_tier?: string } | null }) {
   const { currentTheme } = useTheme();
   const [visible, setVisible] = useState(true);
+  const [showShopPopup, setShowShopPopup] = useState(false);
+  const shopPopupRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Scroll: hide after 1.5s of scrolling down, show immediately on scroll up
@@ -1191,43 +1342,102 @@ function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { 
         </svg>
       ),
     },
-    {
-      path: '/shop',
-      label: 'Shop',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-        </svg>
-      ),
-    },
   ];
 
+  const shopActive = currentPath === '/shop' || currentPath.startsWith('/shop/');
+
   return (
-    <nav
-      className={`mobile-bottom-nav transition-transform duration-300 ease-in-out ${visible ? 'translate-y-0' : 'translate-y-full'}`}
-      style={{
-        backgroundColor: `${currentTheme.background}33`,
-        backdropFilter: 'blur(50px)',
-        WebkitBackdropFilter: 'blur(50px)',
-        borderColor: `${currentTheme.foreground}18`,
-      }}
-    >
-      {navItems.map(item => {
-        const active = isActive(item.path);
-        return (
-          <Link
-            key={item.path}
-            href={item.path}
-            className={`mobile-nav-item${active ? ' active' : ''}`}
-            style={{ color: active ? '#a78bfa' : `${currentTheme.foreground}70` }}
+    <>
+      {/* Shop popup overlay */}
+      {showShopPopup && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowShopPopup(false)}
+          />
+          <div
+            ref={shopPopupRef}
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 rounded-2xl border shadow-2xl overflow-hidden"
+            style={{
+              backgroundColor: currentTheme.background,
+              borderColor: `${currentTheme.foreground}20`,
+              backdropFilter: 'blur(30px)',
+              minWidth: '200px',
+            }}
           >
-            <span className="mobile-nav-icon">{item.icon}</span>
-            <span className="mobile-nav-label">{item.label}</span>
-            {active && <span className="mobile-nav-dot" />}
-          </Link>
-        );
-      })}
-    </nav>
+            <div className="px-4 pt-3 pb-2">
+              <p className="text-xs font-semibold uppercase tracking-wider opacity-40" style={{ color: currentTheme.foreground }}>Shop</p>
+            </div>
+            <Link
+              href="/shop?tab=coins"
+              prefetch
+              className="flex items-center gap-3 px-4 py-3 transition-all active:opacity-60"
+              style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+              onClick={() => setShowShopPopup(false)}
+            >
+              <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-base font-medium">Coins</span>
+            </Link>
+            <div style={{ height: '1px', backgroundColor: `${currentTheme.foreground}10` }} />
+            <Link
+              href="/shop?tab=membership"
+              prefetch
+              className="flex items-center gap-3 px-4 py-3 transition-all active:opacity-60"
+              style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+              onClick={() => setShowShopPopup(false)}
+            >
+              <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              <span className="text-base font-medium">Membership</span>
+            </Link>
+          </div>
+        </>
+      )}
+
+      <nav
+        className={`mobile-bottom-nav transition-transform duration-300 ease-in-out ${visible ? 'translate-y-0' : 'translate-y-full'}`}
+        style={{
+          backgroundColor: `${currentTheme.background}33`,
+          backdropFilter: 'blur(50px)',
+          WebkitBackdropFilter: 'blur(50px)',
+          borderColor: `${currentTheme.foreground}18`,
+        }}
+      >
+        {navItems.map(item => {
+          const active = isActive(item.path);
+          return (
+            <Link
+              key={item.path}
+              href={item.path}
+              className={`mobile-nav-item${active ? ' active' : ''}`}
+              style={{ color: active ? '#a78bfa' : `${currentTheme.foreground}70` }}
+            >
+              <span className="mobile-nav-icon">{item.icon}</span>
+              <span className="mobile-nav-label">{item.label}</span>
+              {active && <span className="mobile-nav-dot" />}
+            </Link>
+          );
+        })}
+
+        {/* Shop button with popup */}
+        <button
+          className={`mobile-nav-item${shopActive || showShopPopup ? ' active' : ''}`}
+          style={{ color: shopActive || showShopPopup ? '#a78bfa' : `${currentTheme.foreground}70` }}
+          onClick={() => setShowShopPopup(v => !v)}
+        >
+          <span className="mobile-nav-icon">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </span>
+          <span className="mobile-nav-label">Shop</span>
+          {(shopActive || showShopPopup) && <span className="mobile-nav-dot" />}
+        </button>
+      </nav>
+    </>
   );
 }
 

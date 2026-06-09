@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Genre;
 use App\Models\NativeLanguage;
 use App\Models\PaymentSetting;
+use App\Models\EbookSeries;
 use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -147,6 +148,7 @@ class SeriesController extends Controller
 
         return Inertia::render('Admin/Series/Show', [
             'series' => $seriesData,
+            'ebookSeriesOptions' => EbookSeries::orderBy('title')->get(['id', 'title', 'slug']),
         ]);
     }
 
@@ -262,6 +264,7 @@ class SeriesController extends Controller
         return response()->json([
             'genres' => Genre::all(['id', 'name']),
             'native_languages' => NativeLanguage::all(['id', 'name']),
+            'ebook_series_options' => EbookSeries::orderBy('title')->get(['id', 'title', 'slug']),
         ]);
     }
 

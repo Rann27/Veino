@@ -117,6 +117,7 @@ interface Series {
     comments_count: number;
     show_epub_button?: boolean;
     epub_series_slug?: string;
+    epub_free_for_premium_members?: boolean;
     is_mature?: boolean;
 }
 
@@ -561,17 +562,25 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                     {series.show_epub_button && series.epub_series_slug && (
                                         <Link
                                             href={route('epub-novels.show', series.epub_series_slug)}
-                                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                                            className={`inline-flex items-center justify-center gap-2 px-5 border rounded-xl text-sm font-semibold transition-all hover:opacity-80 ${series.epub_free_for_premium_members ? 'py-2' : 'py-2.5'}`}
                                             style={{
                                                 borderColor: `${currentTheme.foreground}30`,
                                                 color: currentTheme.foreground,
                                                 backgroundColor: `${currentTheme.foreground}06`,
                                             }}
                                         >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                             </svg>
-                                            Download Epub
+                                            <span className="flex flex-col items-center leading-none">
+                                                <span>Download Epub</span>
+                                                {series.epub_free_for_premium_members && (
+                                                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: SHINY_PURPLE }}>
+                                                        <PremiumDiamond size={10} />
+                                                        Free for Premium Member
+                                                    </span>
+                                                )}
+                                            </span>
                                         </Link>
                                     )}
 

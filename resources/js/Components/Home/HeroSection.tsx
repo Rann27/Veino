@@ -27,6 +27,7 @@ interface HeroSectionProps {
 export default function HeroSection({ heroSeries }: HeroSectionProps) {
   const { currentTheme } = useTheme();
   const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
@@ -35,11 +36,19 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
   const slideTo = useCallback(
     (index: number) => {
       if (isTransitioning || index === current) return;
+      const lastIndex = heroSeries.length - 1;
+      const forward = index === 0 && current === lastIndex
+        ? true
+        : index === lastIndex && current === 0
+          ? false
+          : index > current;
+
+      setDirection(forward ? 1 : -1);
       setIsTransitioning(true);
       setCurrent(index);
-      setTimeout(() => setIsTransitioning(false), 600);
+      setTimeout(() => setIsTransitioning(false), 650);
     },
-    [current, isTransitioning]
+    [current, heroSeries.length, isTransitioning]
   );
 
   const next = useCallback(() => {
@@ -89,6 +98,29 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
       onTouchEnd={handleTouchEnd}
     >
       <div className="relative h-[320px] sm:h-[380px] md:h-[420px] lg:h-[460px]">
+        <style>
+          {`
+            @keyframes heroContentSlideIn {
+              from {
+                opacity: 0;
+                transform: translateX(var(--hero-slide-from, 36px));
+              }
+              to {
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
+
+            @keyframes heroBackgroundSlideIn {
+              from {
+                transform: translateX(var(--hero-bg-slide-from, 28px)) scale(1.18);
+              }
+              to {
+                transform: translateX(0) scale(1.15);
+              }
+            }
+          `}
+        </style>
         {/* Background Cover - full bleed */}
         {heroSeries.map((s, i) => (
           <div
@@ -103,6 +135,10 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                   backgroundImage: `url(${s.cover_url})`,
                   transform: 'scale(1.15)',
                   filter: 'blur(2px)',
+                  ['--hero-bg-slide-from' as string]: `${direction * 28}px`,
+                  animation: i === current
+                    ? 'heroBackgroundSlideIn 720ms cubic-bezier(0.22, 1, 0.36, 1) both'
+                    : undefined,
                 }}
               />
             )}
@@ -118,7 +154,15 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
         ))}
 
         {/* Content — entire area is clickable */}
-        <div className="relative h-full flex items-center z-10 cursor-pointer" onClick={() => router.visit(`/series/${series.slug}`)}>
+        <div
+          key={series.id}
+          className="relative h-full flex items-center z-10 cursor-pointer will-change-transform"
+          style={{
+            ['--hero-slide-from' as string]: `${direction * 42}px`,
+            animation: 'heroContentSlideIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both',
+          }}
+          onClick={() => router.visit(`/series/${series.slug}`)}
+        >
           <div className="w-full px-6 sm:px-8 lg:px-12 xl:px-20">
             <div className="flex items-center max-w-[1600px] mx-auto">
               {/* Left: Info — takes most space on desktop */}
@@ -215,7 +259,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
           <>
             <button
               onClick={(e) => { e.stopPropagation(); prev(); }}
-              className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all opacity-60 hover:opacity-100"
+              className="hidden sm:flex absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center transition-all opacity-60 hover:opacity-100"
               style={{
                 backgroundColor: `${currentTheme.background}80`,
                 color: currentTheme.foreground,
@@ -228,7 +272,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); next(); }}
-              className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all opacity-60 hover:opacity-100"
+              className="hidden sm:flex absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center transition-all opacity-60 hover:opacity-100"
               style={{
                 backgroundColor: `${currentTheme.background}80`,
                 color: currentTheme.foreground,

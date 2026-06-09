@@ -82,6 +82,7 @@ class HandleInertiaRequests extends Middleware
                 'premium_granted' => $premiumGrantedData,
                 'otp_sent' => session('otp_sent'),
                 'otp_email' => session('otp_email'),
+                'request_commission_sent' => session('request_commission_sent'),
             ],
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),

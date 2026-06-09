@@ -71,6 +71,7 @@ class Transaction extends Model
             'admin_grant' => '🎁 Admin Grant (Coins)',
             'admin_deduction' => '📉 Admin Deduction',
             'admin_membership_grant' => '👑 Premium Membership (Admin)',
+            'commission_payment' => 'Commission Paid',
             default => $this->type,
         };
     }

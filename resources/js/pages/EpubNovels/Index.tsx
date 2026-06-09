@@ -4,6 +4,7 @@ import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
+import PremiumDiamond from '@/Components/PremiumDiamond';
 
 interface Genre {
     id: number;
@@ -17,6 +18,7 @@ interface EbookSeries {
     cover_url: string;
     price_range: string;
     genres: Genre[];
+    free_for_premium_members?: boolean;
 }
 
 interface Props {
@@ -124,7 +126,7 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                     color: currentTheme.foreground
                                 }}
                             >
-                                Purchase and download your favorite light novels in EPUB format
+                                Buy EPUB volumes or enjoy selected series free with Premium
                             </p>
                         </div>
                     </div>
@@ -317,6 +319,19 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                                 hoverScale={true}
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg pointer-events-none" />
+                                            {s.free_for_premium_members && (
+                                                <div className="absolute left-1.5 right-1.5 bottom-1.5 sm:left-2 sm:right-2 sm:bottom-2 flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] font-bold shadow-lg backdrop-blur-sm"
+                                                    style={{
+                                                        backgroundColor: 'rgba(17, 12, 36, 0.82)',
+                                                        color: '#f4e8ff',
+                                                        border: '1px solid rgba(216, 180, 254, 0.38)',
+                                                        fontFamily: 'Poppins, sans-serif',
+                                                    }}
+                                                >
+                                                    <PremiumDiamond size={11} />
+                                                    <span className="truncate">Free for Premium Member</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <h3 
@@ -336,7 +351,7 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                                 color: '#f59e0b'
                                             }}
                                         >
-                                            {s.price_range}
+                                            {s.free_for_premium_members ? 'Free' : s.price_range}
                                         </p>
 
                                         {/* Genres */}

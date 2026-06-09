@@ -28,6 +28,7 @@ interface Series {
     artist?: string;
     items_count: number;
     price_range: string;
+    free_for_premium_members?: boolean;
 }
 
 interface Props {
@@ -190,8 +191,23 @@ function IndexContent({ series }: Props) {
                                         )}
                                         <span style={{ fontSize: '0.875rem', color: muted }}>{item.items_count} items</span>
                                         <span style={{ fontSize: '0.875rem', color: accent, fontWeight: 600 }}>
-                                            {item.price_range}
+                                            {item.free_for_premium_members ? 'Free For Premium Member' : item.price_range}
                                         </span>
+                                        {item.free_for_premium_members && (
+                                            <span
+                                                style={{
+                                                    fontSize: '0.75rem',
+                                                    color: '#a78bfa',
+                                                    fontWeight: 700,
+                                                    padding: '0.125rem 0.5rem',
+                                                    borderRadius: '999px',
+                                                    border: '1px solid rgba(167,139,250,0.35)',
+                                                    background: 'rgba(167,139,250,0.12)',
+                                                }}
+                                            >
+                                                Premium Access
+                                            </span>
+                                        )}
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <Link

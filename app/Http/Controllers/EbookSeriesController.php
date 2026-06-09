@@ -58,6 +58,7 @@ class EbookSeriesController extends Controller
         $series->getCollection()->transform(function ($s) {
             $s->price_range = $s->price_range;
             $s->cover_url = $s->cover_url;
+            $s->free_for_premium_members = (bool) $s->free_for_premium_members;
             return $s;
         });
 
@@ -67,9 +68,13 @@ class EbookSeriesController extends Controller
         $totalPrice = 0;
         
         if ($userId) {
+            $user = auth()->user();
             $chartItems = \App\Models\ChartItem::where('user_id', $userId)
                 ->with(['ebookItem.ebookSeries'])
                 ->get()
+                ->reject(function ($chartItem) use ($user) {
+                    return $chartItem->ebookItem->isFreeForPremiumMember($user);
+                })
                 ->map(function ($chartItem) {
                     return [
                         'chart_item_id' => $chartItem->id,
@@ -111,7 +116,12 @@ class EbookSeriesController extends Controller
         $userId = auth()->id();
 
         // Add status for each item (in cart, purchased, etc)
-        $items = $series->items->map(function ($item) use ($userId) {
+        $user = auth()->user();
+        $hasPremiumSeriesAccess = $user && $series->free_for_premium_members && $user->isPremiumMember();
+
+        $items = $series->items->map(function ($item) use ($userId, $hasPremiumSeriesAccess) {
+            $isPurchased = $userId ? $item->isPurchasedBy($userId) : false;
+
             return [
                 'id' => $item->id,
                 'title' => $item->title,
@@ -121,8 +131,10 @@ class EbookSeriesController extends Controller
                 'price_coins' => $item->price_coins,
                 'order' => $item->order,
                 'has_pdf_file' => !empty($item->pdf_file_path),
-                'is_in_cart' => $userId ? $item->isInCartOf($userId) : false,
-                'is_purchased' => $userId ? $item->isPurchasedBy($userId) : false,
+                'is_in_cart' => $userId && !$hasPremiumSeriesAccess ? $item->isInCartOf($userId) : false,
+                'is_purchased' => $isPurchased || $hasPremiumSeriesAccess,
+                'is_owned' => $isPurchased,
+                'is_premium_access' => $hasPremiumSeriesAccess && !$isPurchased,
             ];
         });
 
@@ -134,6 +146,9 @@ class EbookSeriesController extends Controller
             $chartItems = \App\Models\ChartItem::where('user_id', $userId)
                 ->with(['ebookItem.ebookSeries'])
                 ->get()
+                ->reject(function ($chartItem) use ($user) {
+                    return $chartItem->ebookItem->isFreeForPremiumMember($user);
+                })
                 ->map(function ($chartItem) {
                     return [
                         'chart_item_id' => $chartItem->id,
@@ -162,6 +177,8 @@ class EbookSeriesController extends Controller
                 'genres' => $series->genres,
                 'show_trial_button' => $series->show_trial_button,
                 'series_slug' => $series->series_slug,
+                'free_for_premium_members' => (bool) $series->free_for_premium_members,
+                'has_premium_access' => (bool) $hasPremiumSeriesAccess,
             ],
             'items' => $items,
             'chartItems' => $chartItems,

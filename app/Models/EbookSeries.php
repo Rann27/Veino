@@ -22,12 +22,14 @@ class EbookSeries extends Model
         'native_language_id',
         'show_trial_button',
         'series_slug',
+        'free_for_premium_members',
     ];
 
     protected $appends = ['cover_url', 'price_range'];
 
     protected $casts = [
         'show_trial_button' => 'boolean',
+        'free_for_premium_members' => 'boolean',
     ];
 
     protected static function boot()

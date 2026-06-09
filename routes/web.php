@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\SeriesController;
 use App\Http\Controllers\Admin\TransactionHistoryController;
+use App\Http\Controllers\Admin\RequestCommissionController as AdminRequestCommissionController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\SitemapController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\ChartController;
 use App\Http\Controllers\BookshelfController;
 use App\Http\Controllers\Admin\EbookSeriesController as AdminEbookSeriesController;
 use App\Http\Controllers\ShopController;
+use App\Http\Controllers\RequestCommissionController;
 use Illuminate\Support\Facades\Auth;
 
 // Authentication Routes — Combined Auth Page (named 'login' for Laravel auth middleware redirects)
@@ -139,6 +141,10 @@ Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name(
 
 // Shopping Cart Routes (requires authentication)
 Route::middleware('auth')->group(function () {
+    Route::get('/request', [RequestCommissionController::class, 'index'])->name('request.index');
+    Route::post('/request', [RequestCommissionController::class, 'store'])->name('request.store');
+    Route::post('/request/{requestCommission}/pay', [RequestCommissionController::class, 'pay'])->name('request.pay');
+
     Route::get('/my-chart', [ChartController::class, 'index'])->name('my-chart');
     Route::post('/chart/add', [ChartController::class, 'add'])->name('chart.add');
     Route::post('/chart/add-all', [ChartController::class, 'addAll'])->name('chart.add-all');
@@ -170,6 +176,9 @@ Route::get('/payment/paypal-config', [PaymentController::class, 'getPayPalConfig
 
 // PayPal IPN (can be accessed without auth)
 Route::post('/payment/paypal-ipn', [PaymentController::class, 'handleIPN'])->name('payment.paypal-ipn');
+
+// Coin purchase webhooks (public — called by payment gateways, no auth)
+Route::post('/payment/webhook/{provider}', [PaymentController::class, 'webhook'])->name('payment.webhook');
 
 // Account routes (requires authentication)
 Route::middleware('auth')->group(function () {
@@ -234,6 +243,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     // Transaction History
     Route::get('/transaction-history', [TransactionHistoryController::class, 'index'])->name('transaction-history.index');
+
+    // Request / Commission Management
+    Route::get('/request-commission', [AdminRequestCommissionController::class, 'index'])->name('request-commission.index');
+    Route::put('/request-commission/{requestCommission}', [AdminRequestCommissionController::class, 'update'])->name('request-commission.update');
     
     // Blog Management
     Route::post('/blog/upload-image', [App\Http\Controllers\Admin\BlogController::class, 'uploadImage'])->name('blog.upload-image');

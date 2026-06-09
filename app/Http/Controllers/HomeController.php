@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Series;
 use App\Models\Chapter;
 use App\Models\Blog;
+use App\Models\EbookSeries;
 use App\Models\ReadingHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -70,6 +71,19 @@ class HomeController extends Controller
         // Latest updates - merged Light Novel + Web Novel with premium/free chapter mix
         $latestUpdates = $this->getLatestUpdates('all', 12);
 
+        // Epub novels - latest ebook series for homepage preview
+        $epubSeries = EbookSeries::with('items')
+            ->orderBy('created_at', 'desc')
+            ->take(12)
+            ->get()
+            ->map(function ($series) {
+                $series->cover_url = $series->cover_url;
+                $series->price_range = $series->price_range;
+                $series->free_for_premium_members = (bool) $series->free_for_premium_members;
+
+                return $series;
+            });
+
         // New series - recently published (16 cards for fullwidth grid)
         $newSeries = Series::with(['nativeLanguage', 'genres'])
             ->withCount('chapters')
@@ -129,6 +143,7 @@ class HomeController extends Controller
             'heroSeries' => $heroSeries,
             'featuredSeries' => $featuredSeries,
             'latestUpdates' => $latestUpdates,
+            'epubSeries' => $epubSeries,
             'newSeries' => $newSeries,
             'showPremiumCongrats' => $showPremiumCongrats,
             'blogs' => $blogs,
@@ -164,7 +179,14 @@ class HomeController extends Controller
             $query->where('type', 'web-novel');
         }
 
-        $series = $query->take($limit)->get();
+        $series = $query
+            ->orderByDesc('series.updated_at')
+            ->orderByDesc('series.id')
+            ->take($limit * 3)
+            ->get()
+            ->unique('id')
+            ->take($limit)
+            ->values();
 
         // Load top 2 premium + top 2 free chapters per series in 2 batch queries (avoids N+1)
         $seriesIds = $series->pluck('id');
@@ -192,7 +214,7 @@ class HomeController extends Controller
             $premium = $premiumChapters->get($s->id, collect());
             $free    = $freeChapters->get($s->id, collect());
             // Premium first, then free — frontend splits by is_premium flag
-            $s->setRelation('chapters', $premium->concat($free)->values());
+            $s->setRelation('chapters', $premium->concat($free)->unique('id')->values());
         });
 
         return $series;

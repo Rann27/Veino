@@ -41,11 +41,22 @@ interface LatestUpdatesSectionProps {
   initialData: Series[];
 }
 
+function uniqueSeries(series: Series[]): Series[] {
+  const seen = new Set<number>();
+
+  return series.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
 export default function LatestUpdatesSection({ initialData }: LatestUpdatesSectionProps) {
   const { currentTheme } = useTheme();
+  const normalizedInitialData = uniqueSeries(initialData);
   const [activeTab, setActiveTab] = useState<TabType>('all');
   const [data, setData] = useState<Record<TabType, Series[]>>({
-    'all': initialData,
+    'all': normalizedInitialData,
     'light-novel': [],
     'web-novel': [],
   });
@@ -76,7 +87,7 @@ export default function LatestUpdatesSection({ initialData }: LatestUpdatesSecti
       const res = await fetch(`/api/home/latest-updates?type=${type}`);
       if (res.ok) {
         const json = await res.json();
-        setData((prev) => ({ ...prev, [type]: json }));
+        setData((prev) => ({ ...prev, [type]: uniqueSeries(json) }));
         setLoaded((prev) => ({ ...prev, [type]: true }));
       }
     } catch (err) {
@@ -85,6 +96,10 @@ export default function LatestUpdatesSection({ initialData }: LatestUpdatesSecti
       setLoading(false);
     }
   }, [loaded]);
+
+  useEffect(() => {
+    setData((prev) => ({ ...prev, all: uniqueSeries(initialData) }));
+  }, [initialData]);
 
   const currentData = data[activeTab];
 

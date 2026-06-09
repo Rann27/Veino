@@ -4,6 +4,7 @@ import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
+import PremiumDiamond from '@/Components/PremiumDiamond';
 
 interface Genre {
     id: number;
@@ -20,6 +21,8 @@ interface EbookItem {
     has_pdf_file: boolean;
     is_in_cart: boolean;
     is_purchased: boolean;
+    is_owned?: boolean;
+    is_premium_access?: boolean;
 }
 
 interface EbookSeries {
@@ -34,6 +37,8 @@ interface EbookSeries {
     genres: Genre[];
     show_trial_button?: boolean;
     series_slug?: string;
+    free_for_premium_members?: boolean;
+    has_premium_access?: boolean;
 }
 
 interface Props {
@@ -130,6 +135,21 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                         containerClassName="mb-3 rounded-lg shadow-lg"
                                         hoverScale={false}
                                     />
+
+                                    {series.free_for_premium_members && (
+                                        <div
+                                            className="mb-3 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold"
+                                            style={{
+                                                backgroundColor: 'rgba(167,139,250,0.14)',
+                                                color: '#a78bfa',
+                                                border: '1px solid rgba(167,139,250,0.35)',
+                                                fontFamily: 'Poppins, sans-serif',
+                                            }}
+                                        >
+                                            <PremiumDiamond size={14} />
+                                            Free for Premium Member
+                                        </div>
+                                    )}
                                     
                                     {/* Trial Reading Button */}
                                     {series.show_trial_button && series.series_slug && (
@@ -238,6 +258,22 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                     {genre.name}
                                                 </span>
                                             ))}
+                                        </div>
+                                    )}
+
+                                    {series.free_for_premium_members && (
+                                        <div
+                                            className="mb-3 rounded-lg px-3 py-2 text-sm"
+                                            style={{
+                                                backgroundColor: series.has_premium_access ? 'rgba(34,197,94,0.12)' : 'rgba(167,139,250,0.10)',
+                                                color: series.has_premium_access ? '#22c55e' : '#a78bfa',
+                                                border: `1px solid ${series.has_premium_access ? 'rgba(34,197,94,0.35)' : 'rgba(167,139,250,0.3)'}`,
+                                                fontFamily: 'Poppins, sans-serif',
+                                            }}
+                                        >
+                                            {series.has_premium_access
+                                                ? 'Free with Premium. Download anytime while your membership is active.'
+                                                : 'Premium members can download every volume in this series for free.'}
                                         </div>
                                     )}
 
@@ -353,15 +389,28 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                             </p>
 
                                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                                                <p 
-                                                    className="text-xl sm:text-2xl font-bold"
-                                                    style={{ 
-                                                        fontFamily: 'Poppins, sans-serif',
-                                                        color: '#f59e0b'
-                                                    }}
-                                                >
-                                                    ¢{item.price_coins.toLocaleString()}
-                                                </p>
+                                                <div>
+                                                    <p 
+                                                        className="text-xl sm:text-2xl font-bold"
+                                                        style={{ 
+                                                            fontFamily: 'Poppins, sans-serif',
+                                                            color: item.is_premium_access ? '#a78bfa' : '#f59e0b'
+                                                        }}
+                                                    >
+                                                        {item.is_premium_access ? 'Free' : `¢${item.price_coins.toLocaleString()}`}
+                                                    </p>
+                                                    {item.is_premium_access && (
+                                                        <p
+                                                            className="text-xs font-medium"
+                                                            style={{
+                                                                fontFamily: 'Poppins, sans-serif',
+                                                                color: `${currentTheme.foreground}70`,
+                                                            }}
+                                                        >
+                                                            Limited Access
+                                                        </p>
+                                                    )}
+                                                </div>
 
                                                 {item.is_purchased ? (
                                                     <div className="flex gap-2 w-full sm:w-auto">

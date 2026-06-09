@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
 
 //  colour helpers 
 function hexToRgb(hex: string) {
@@ -41,15 +42,17 @@ interface Series {
     author?: string;
     artist?: string;
     genres: Genre[];
+    free_for_premium_members?: boolean;
 }
 
 interface Props {
     series: Series;
     items: Item[];
     genres: Genre[];
+    seriesOptions: SlugOption[];
 }
 
-function EditContent({ series, items, genres }: Props) {
+function EditContent({ series, items, genres, seriesOptions }: Props) {
     const { currentTheme } = useTheme();
     const light    = isLight(currentTheme.background);
     const fg       = currentTheme.foreground;
@@ -82,6 +85,7 @@ function EditContent({ series, items, genres }: Props) {
     //  state 
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [itemErrors, setItemErrors] = useState<Record<string, string>>({});
 
     const [seriesData, setSeriesData] = useState({
         title: series.title,
@@ -93,6 +97,7 @@ function EditContent({ series, items, genres }: Props) {
         genre_ids: series.genres.map(g => g.id),
         show_trial_button: (series as any).show_trial_button || false,
         series_slug: (series as any).series_slug || '',
+        free_for_premium_members: !!series.free_for_premium_members,
     });
 
     const [coverPreview, setCoverPreview] = useState<string>(series.cover_url);
@@ -148,6 +153,7 @@ function EditContent({ series, items, genres }: Props) {
         seriesData.genre_ids.forEach(id => data.append('genre_ids[]', id.toString()));
         data.append('show_trial_button', seriesData.show_trial_button ? '1' : '0');
         data.append('series_slug', seriesData.series_slug);
+        data.append('free_for_premium_members', seriesData.free_for_premium_members ? '1' : '0');
         data.append('_method', 'PUT');
 
         router.post(route('admin.ebookseries.update', series.id), data, {
@@ -157,6 +163,7 @@ function EditContent({ series, items, genres }: Props) {
     };
 
     const openItemForm = (item?: Item) => {
+        setItemErrors({});
         if (item) {
             setEditingItemId(item.id);
             setItemData({
@@ -194,6 +201,7 @@ function EditContent({ series, items, genres }: Props) {
     const closeItemForm = () => {
         setShowItemForm(false);
         setEditingItemId(null);
+        setItemErrors({});
         setItemData({ title: '', cover: null, summary: '', file: null, pdf_file: null, price_coins: '', order: '' });
         setItemCoverPreview(null);
         setHasExistingFile(false);
@@ -212,6 +220,7 @@ function EditContent({ series, items, genres }: Props) {
     const handleItemSubmit = (e: FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
+        setItemErrors({});
 
         const data = new FormData();
         data.append('title', itemData.title);
@@ -225,12 +234,18 @@ function EditContent({ series, items, genres }: Props) {
         if (editingItemId) {
             data.append('_method', 'PUT');
             router.post(route('admin.ebookseries.items.update', [series.id, editingItemId]), data, {
+                preserveScroll: true,
+                preserveState: false,
                 onSuccess: () => closeItemForm(),
+                onError: (errors) => setItemErrors(errors),
                 onFinish: () => setSubmitting(false),
             });
         } else {
             router.post(route('admin.ebookseries.items.store', series.id), data, {
+                preserveScroll: true,
+                preserveState: false,
                 onSuccess: () => closeItemForm(),
+                onError: (errors) => setItemErrors(errors),
                 onFinish: () => setSubmitting(false),
             });
         }
@@ -371,6 +386,38 @@ function EditContent({ series, items, genres }: Props) {
                         </div>
                     </div>
 
+                    {/* Premium Membership Access */}
+                    <div
+                        style={{
+                            padding: '1rem',
+                            borderRadius: '0.5rem',
+                            border: `1px solid ${seriesData.free_for_premium_members ? 'rgba(167,139,250,0.45)' : wa(fg, 0.15)}`,
+                            background: seriesData.free_for_premium_members
+                                ? (light ? 'rgba(124,58,237,0.08)' : 'rgba(167,139,250,0.12)')
+                                : wa(fg, 0.04),
+                        }}
+                    >
+                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', cursor: 'pointer' }}>
+                            <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: seriesData.free_for_premium_members ? '#a78bfa' : fg }}>
+                                    Free for Premium Membership
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: muted, margin: '0.25rem 0 0 0' }}>
+                                    Status: {seriesData.free_for_premium_members ? 'Free For Premium Member' : 'Paid Ebook Series'}
+                                </p>
+                                <p style={{ fontSize: '0.75rem', color: muted, margin: '0.15rem 0 0 0' }}>
+                                    When enabled, all ebook items in this series are temporarily downloadable by active Premium users without adding them to bookshelf.
+                                </p>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={seriesData.free_for_premium_members}
+                                onChange={(e) => setSeriesData(prev => ({ ...prev, free_for_premium_members: e.target.checked }))}
+                                style={{ width: '1.1rem', height: '1.1rem', accentColor: '#a78bfa', flexShrink: 0 }}
+                            />
+                        </label>
+                    </div>
+
                     {/* Trial Reading Section */}
                     <div
                         style={{
@@ -402,13 +449,18 @@ function EditContent({ series, items, genres }: Props) {
                         {seriesData.show_trial_button && (
                             <div>
                                 <TLabel>Series Slug *</TLabel>
-                                <input
-                                    type="text"
+                                <AdminSlugCombobox
                                     value={seriesData.series_slug}
-                                    onChange={(e) => setSeriesData(prev => ({ ...prev, series_slug: e.target.value }))}
+                                    onChange={(value) => setSeriesData(prev => ({ ...prev, series_slug: value }))}
+                                    options={seriesOptions}
                                     placeholder="e.g., novel-series-name"
-                                    style={inputStyle()}
                                     required={seriesData.show_trial_button}
+                                    fg={fg}
+                                    muted={muted}
+                                    border={border}
+                                    inputBg={inputBg}
+                                    panelBg={cardBg}
+                                    accent="#60a5fa"
                                 />
                                 <p style={{ fontSize: '0.75rem', color: muted, marginTop: '0.25rem' }}>
                                     The slug of the Series (on-site novel) to link to
@@ -595,6 +647,28 @@ function EditContent({ series, items, genres }: Props) {
                             </h3>
 
                             <form onSubmit={handleItemSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                {Object.keys(itemErrors).length > 0 && (
+                                    <div
+                                        style={{
+                                            padding: '0.75rem 1rem',
+                                            borderRadius: '0.5rem',
+                                            background: 'rgba(239,68,68,0.12)',
+                                            border: '1px solid rgba(239,68,68,0.35)',
+                                            color: '#f87171',
+                                            fontSize: '0.875rem',
+                                        }}
+                                    >
+                                        <strong style={{ display: 'block', marginBottom: '0.35rem' }}>
+                                            Item could not be saved.
+                                        </strong>
+                                        <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                                            {Object.entries(itemErrors).map(([field, message]) => (
+                                                <li key={field}>{message}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
                                 {/* Title */}
                                 <div>
                                     <TLabel>Title *</TLabel>
@@ -602,9 +676,10 @@ function EditContent({ series, items, genres }: Props) {
                                         type="text"
                                         value={itemData.title}
                                         onChange={(e) => setItemData(prev => ({ ...prev, title: e.target.value }))}
-                                        style={inputStyle()}
+                                        style={inputStyle(!!itemErrors.title)}
                                         required
                                     />
+                                    {itemErrors.title && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{itemErrors.title}</p>}
                                 </div>
 
                                 {/* Cover */}
@@ -614,7 +689,7 @@ function EditContent({ series, items, genres }: Props) {
                                         type="file"
                                         accept="image/*"
                                         onChange={handleItemCoverChange}
-                                        style={inputStyle()}
+                                        style={inputStyle(!!itemErrors.cover)}
                                         required={!editingItemId}
                                     />
                                     {itemCoverPreview && (
@@ -622,6 +697,7 @@ function EditContent({ series, items, genres }: Props) {
                                             <img src={itemCoverPreview} alt="Cover" style={{ width: '6rem', borderRadius: '0.375rem' }} />
                                         </div>
                                     )}
+                                    {itemErrors.cover && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{itemErrors.cover}</p>}
                                 </div>
 
                                 {/* Summary */}
@@ -631,8 +707,9 @@ function EditContent({ series, items, genres }: Props) {
                                         value={itemData.summary}
                                         onChange={(e) => setItemData(prev => ({ ...prev, summary: e.target.value }))}
                                         rows={4}
-                                        style={{ ...inputStyle(), resize: 'none' }}
+                                        style={{ ...inputStyle(!!itemErrors.summary), resize: 'none' }}
                                     />
+                                    {itemErrors.summary && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{itemErrors.summary}</p>}
                                 </div>
 
                                 {/* Ebook File */}
@@ -661,7 +738,7 @@ function EditContent({ series, items, genres }: Props) {
                                         type="file"
                                         accept=".epub"
                                         onChange={(e) => setItemData(prev => ({ ...prev, file: e.target.files?.[0] || null }))}
-                                        style={inputStyle()}
+                                        style={inputStyle(!!itemErrors.file)}
                                         required={!editingItemId}
                                     />
                                     {hasExistingFile && (
@@ -669,6 +746,7 @@ function EditContent({ series, items, genres }: Props) {
                                             Leave empty to keep current file, or choose a new file to replace it
                                         </p>
                                     )}
+                                    {itemErrors.file && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{itemErrors.file}</p>}
                                 </div>
 
                                 {/* PDF File */}
@@ -697,13 +775,14 @@ function EditContent({ series, items, genres }: Props) {
                                         type="file"
                                         accept=".pdf"
                                         onChange={(e) => setItemData(prev => ({ ...prev, pdf_file: e.target.files?.[0] || null }))}
-                                        style={inputStyle()}
+                                        style={inputStyle(!!itemErrors.pdf_file)}
                                     />
                                     {hasExistingPdfFile && (
                                         <p style={{ fontSize: '0.75rem', color: muted, marginTop: '0.25rem' }}>
                                             Leave empty to keep current PDF, or choose a new file to replace it
                                         </p>
                                     )}
+                                    {itemErrors.pdf_file && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{itemErrors.pdf_file}</p>}
                                 </div>
 
                                 {/* Price & Order */}
@@ -714,10 +793,11 @@ function EditContent({ series, items, genres }: Props) {
                                             type="number"
                                             value={itemData.price_coins}
                                             onChange={(e) => setItemData(prev => ({ ...prev, price_coins: e.target.value }))}
-                                            style={inputStyle()}
+                                            style={inputStyle(!!itemErrors.price_coins)}
                                             min="0"
                                             required
                                         />
+                                        {itemErrors.price_coins && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{itemErrors.price_coins}</p>}
                                     </div>
                                     <div>
                                         <TLabel>Order *</TLabel>
@@ -725,10 +805,11 @@ function EditContent({ series, items, genres }: Props) {
                                             type="number"
                                             value={itemData.order}
                                             onChange={(e) => setItemData(prev => ({ ...prev, order: e.target.value }))}
-                                            style={inputStyle()}
+                                            style={inputStyle(!!itemErrors.order)}
                                             min="1"
                                             required
                                         />
+                                        {itemErrors.order && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{itemErrors.order}</p>}
                                     </div>
                                 </div>
 
@@ -778,11 +859,11 @@ function EditContent({ series, items, genres }: Props) {
     );
 }
 
-export default function Edit({ series, items, genres }: Props) {
+export default function Edit({ series, items, genres, seriesOptions }: Props) {
     return (
         <AdminLayout title={`Edit ${series.title}`}>
             <Head title={`Edit ${series.title}`} />
-            <EditContent series={series} items={items} genres={genres} />
+            <EditContent series={series} items={items} genres={genres} seriesOptions={seriesOptions} />
         </AdminLayout>
     );
 }

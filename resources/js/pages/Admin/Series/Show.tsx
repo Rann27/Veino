@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import { useState, useRef, lazy, Suspense } from 'react';
 const RichTextEditor = lazy(() => import('@/Components/RichTextEditor'));
 import { useTheme } from '@/Contexts/ThemeContext';
+import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
 
 // ── colour helpers ────────────────────────────────────────────────────────────
 function hexToRgb(hex: string) {
@@ -120,9 +121,10 @@ interface Series {
 
 interface SeriesShowProps {
   series: Series;
+  ebookSeriesOptions?: SlugOption[];
 }
 
-function SeriesShowContent({ series }: SeriesShowProps) {
+function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptions = [] }: SeriesShowProps) {
   const { currentTheme } = useTheme();
   const light   = isLight(currentTheme.background);
   const fg      = currentTheme.foreground;
@@ -174,6 +176,7 @@ function SeriesShowContent({ series }: SeriesShowProps) {
   });
   const [genres, setGenres] = useState<Genre[]>([]);
   const [nativeLanguages, setNativeLanguages] = useState<NativeLanguage[]>([]);
+  const [ebookSeriesOptions, setEbookSeriesOptions] = useState<SlugOption[]>(initialEbookSeriesOptions);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
 
@@ -203,6 +206,7 @@ function SeriesShowContent({ series }: SeriesShowProps) {
       const data = await response.json();
       setGenres(data.genres);
       setNativeLanguages(data.native_languages);
+      setEbookSeriesOptions(data.ebook_series_options || initialEbookSeriesOptions);
       setShowEditModal(true);
       
       // Auto-focus on title input after modal opens
@@ -766,7 +770,19 @@ function SeriesShowContent({ series }: SeriesShowProps) {
                       <Toggle checked={editFormData.show_epub_button} onChange={v=>setEditFormData(p=>({...p,show_epub_button:v,epub_series_slug:v?p.epub_series_slug:''}))} accent="#16a34a" />
                     </div>
                     {editFormData.show_epub_button && (
-                      <TInput value={editFormData.epub_series_slug} onChange={v=>setEditFormData(p=>({...p,epub_series_slug:v}))} placeholder="epub-series-slug" {...themeProps} />
+                      <AdminSlugCombobox
+                        value={editFormData.epub_series_slug}
+                        onChange={v=>setEditFormData(p=>({...p,epub_series_slug:v}))}
+                        options={ebookSeriesOptions}
+                        placeholder="epub-series-slug"
+                        required={editFormData.show_epub_button}
+                        fg={fg}
+                        muted={muted}
+                        border={border}
+                        inputBg={cardBg}
+                        panelBg={bg}
+                        accent="#16a34a"
+                      />
                     )}
                   </div>
 

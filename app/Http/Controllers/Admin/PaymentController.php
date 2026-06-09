@@ -33,13 +33,15 @@ class PaymentController extends Controller
     public function updateMembershipPackage(Request $request, MembershipPackage $membershipPackage)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'gimmick_price' => 'nullable|integer|min:0',
-            'coin_price' => 'required|integer|min:1',
-            'is_active' => 'boolean',
+            'name'             => 'required|string|max:255',
+            'gimmick_price'    => 'nullable|integer|min:0',
+            'coin_price'       => 'required|integer|min:1',
+            'price_usd'        => 'required|numeric|min:0.01',
+            'gimmick_price_usd'=> 'nullable|numeric|min:0',
+            'is_active'        => 'boolean',
         ]);
 
-        // Auto-calculate discount percentage if gimmick_price is provided
+        // Auto-calculate coin discount percentage
         if (!empty($validated['gimmick_price']) && $validated['gimmick_price'] > $validated['coin_price']) {
             $validated['discount_percentage'] = round((($validated['gimmick_price'] - $validated['coin_price']) / $validated['gimmick_price']) * 100);
         } else {

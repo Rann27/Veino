@@ -2,6 +2,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
 
 // â”€â”€ colour helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function hexToRgb(hex: string) {
@@ -92,11 +93,12 @@ interface AddSeriesModalProps {
   onClose: () => void;
   genres: Genre[];
   nativeLanguages: NativeLanguage[];
+  ebookSeriesOptions: SlugOption[];
   fg: string; bg: string; border: string; cardBg: string; muted: string;
   accent: string; accentBg: string; light: boolean;
 }
 
-function AddSeriesModal({ onClose, genres, nativeLanguages, fg, bg, border, cardBg, muted, accent, accentBg, light }: AddSeriesModalProps) {
+function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, fg, bg, border, cardBg, muted, accent, accentBg, light }: AddSeriesModalProps) {
   const [coverType, setCoverType] = useState<'cdn'|'file'>('cdn');
   const [coverFile, setCoverFile] = useState<File|null>(null);
   const [coverPreview, setCoverPreview] = useState<string|null>(null);
@@ -105,6 +107,7 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, fg, bg, border, card
     author: '', artist: '', rating: '8.5', status: 'ongoing',
     type: 'web-novel', native_language_id: '',
     genre_ids: [] as number[], is_mature: false,
+    show_epub_button: false, epub_series_slug: '',
   });
 
   const set = (k: string, v: any) => setFormData(p => ({ ...p, [k]: v }));
@@ -136,6 +139,8 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, fg, bg, border, card
     fd.append('status', formData.status);
     fd.append('type', formData.type);
     fd.append('native_language_id', formData.native_language_id);
+    fd.append('show_epub_button', formData.show_epub_button ? '1' : '0');
+    fd.append('epub_series_slug', formData.epub_series_slug);
     formData.genre_ids.forEach(id => fd.append('genre_ids[]', id.toString()));
     fd.append('is_mature', formData.is_mature ? '1' : '0');
     router.post('/admin/series', fd, { onSuccess: onClose, forceFormData: true });
@@ -223,6 +228,36 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, fg, bg, border, card
               <div>
                 <TLabel fg={muted}>Rating (0â€“10)</TLabel>
                 <TInput type="number" value={formData.rating} onChange={v=>set('rating',v)} placeholder="8.5" {...inputProps} />
+              </div>
+
+              {/* Epub toggle */}
+              <div className="p-3 rounded-xl border" style={{ borderColor: formData.show_epub_button ? '#16a34a50' : border, backgroundColor: formData.show_epub_button ? 'rgba(22,163,74,0.07)' : panelBg }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-bold" style={{ color: formData.show_epub_button ? '#16a34a' : fg }}>Epub Download</p>
+                  <button
+                    type="button"
+                    onClick={() => set('show_epub_button', !formData.show_epub_button)}
+                    className="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none"
+                    style={{ backgroundColor: formData.show_epub_button ? '#16a34a' : 'rgba(156,163,175,0.5)' }}
+                  >
+                    <span className="inline-block rounded-full bg-white shadow transition-transform" style={{ width: 18, height: 18, transform: formData.show_epub_button ? 'translateX(22px)' : 'translateX(3px)' }} />
+                  </button>
+                </div>
+                {formData.show_epub_button && (
+                  <AdminSlugCombobox
+                    value={formData.epub_series_slug}
+                    onChange={v => set('epub_series_slug', v)}
+                    options={ebookSeriesOptions}
+                    placeholder="epub-series-slug"
+                    required={formData.show_epub_button}
+                    fg={fg}
+                    muted={muted}
+                    border={border}
+                    inputBg={cardBg}
+                    panelBg={bg}
+                    accent="#16a34a"
+                  />
+                )}
               </div>
 
               {/* Mature toggle */}
@@ -451,6 +486,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [genres, setGenres]       = useState<Genre[]>([]);
   const [nativeLangs, setNativeLangs] = useState<NativeLanguage[]>([]);
+  const [ebookSeriesOptions, setEbookSeriesOptions] = useState<SlugOption[]>([]);
   const settingsForm = useForm({ price: String(initialPrice) });
   const isFirstRender = useRef(true);
 
@@ -488,6 +524,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
       const data = await res.json();
       setGenres(data.genres);
       setNativeLangs(data.native_languages);
+      setEbookSeriesOptions(data.ebook_series_options || []);
     }
     setShowModal(true);
   };
@@ -628,6 +665,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
         <AddSeriesModal
           onClose={() => setShowModal(false)}
           genres={genres} nativeLanguages={nativeLangs}
+          ebookSeriesOptions={ebookSeriesOptions}
           bg={bg} {...themeProps}
         />
       )}

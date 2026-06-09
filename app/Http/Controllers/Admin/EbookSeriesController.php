@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\EbookSeries;
 use App\Models\EbookItem;
 use App\Models\Genre;
+use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -34,6 +35,7 @@ class EbookSeriesController extends Controller
     {
         return Inertia::render('Admin/EbookSeries/Create', [
             'genres' => Genre::all(),
+            'seriesOptions' => Series::orderBy('title')->get(['id', 'title', 'slug']),
         ]);
     }
 
@@ -53,7 +55,11 @@ class EbookSeriesController extends Controller
             'genre_ids.*' => 'exists:genres,id',
             'show_trial_button' => 'nullable|boolean',
             'series_slug' => 'nullable|string|max:255',
+            'free_for_premium_members' => 'nullable|boolean',
         ]);
+
+        $validated['free_for_premium_members'] = $request->boolean('free_for_premium_members');
+        $validated['show_trial_button'] = $request->boolean('show_trial_button');
 
         // Handle cover upload
         if ($request->hasFile('cover')) {
@@ -99,6 +105,7 @@ class EbookSeriesController extends Controller
             'series' => $series,
             'items' => $items,
             'genres' => Genre::all(),
+            'seriesOptions' => Series::orderBy('title')->get(['id', 'title', 'slug']),
         ]);
     }
 
@@ -120,7 +127,11 @@ class EbookSeriesController extends Controller
             'genre_ids.*' => 'exists:genres,id',
             'show_trial_button' => 'nullable|boolean',
             'series_slug' => 'nullable|string|max:255',
+            'free_for_premium_members' => 'nullable|boolean',
         ]);
+
+        $validated['free_for_premium_members'] = $request->boolean('free_for_premium_members');
+        $validated['show_trial_button'] = $request->boolean('show_trial_button');
 
         // Handle cover upload
         if ($request->hasFile('cover')) {
@@ -168,6 +179,9 @@ class EbookSeriesController extends Controller
             if ($item->file_path) {
                 Storage::delete($item->file_path);
             }
+            if ($item->pdf_file_path) {
+                Storage::delete($item->pdf_file_path);
+            }
         }
 
         $series->delete();
@@ -189,33 +203,42 @@ class EbookSeriesController extends Controller
             'price_coins' => 'required|integer|min:0',
             'order' => 'required|integer|min:0',
             'cover' => 'nullable|image|max:2048',
-            'file' => 'required|file|mimes:epub|max:51200', // 50MB max (required)
-            'pdf_file' => 'nullable|file|mimes:pdf|max:51200', // 50MB max
+            'file' => 'required|file|extensions:epub|max:40960', // EPUB MIME varies by browser; validate extension.
+            'pdf_file' => 'nullable|file|extensions:pdf|max:40960',
         ]);
+
+        $itemData = [
+            'ebook_series_id' => $series->id,
+            'title' => $validated['title'],
+            'summary' => $validated['summary'] ?? null,
+            'price_coins' => $validated['price_coins'],
+            'order' => $validated['order'],
+        ];
 
         // Handle cover upload
         if ($request->hasFile('cover')) {
             $path = $request->file('cover')->store('ebook-item-covers', 'public');
-            $validated['cover'] = 'storage/' . $path;
+            $itemData['cover'] = 'storage/' . $path;
         }
 
         // Handle epub file upload
         if ($request->hasFile('file')) {
             $path = $request->file('file')->store('ebook-files');
-            $validated['file_path'] = $path;
+            $itemData['file_path'] = $path;
         }
 
         // Handle PDF file upload
         if ($request->hasFile('pdf_file')) {
             $path = $request->file('pdf_file')->store('ebook-files');
-            $validated['pdf_file_path'] = $path;
+            $itemData['pdf_file_path'] = $path;
         }
 
-        $validated['ebook_series_id'] = $series->id;
+        $item = new EbookItem($itemData);
+        $item->saveOrFail();
 
-        EbookItem::create($validated);
-
-        return back()->with('success', 'Item added successfully!');
+        return redirect()->route('admin.ebookseries.edit', $series->id)
+            ->with('success', 'Item added successfully!')
+            ->with('item_saved_id', $item->id);
     }
 
     /**
@@ -232,8 +255,8 @@ class EbookSeriesController extends Controller
             'price_coins' => 'required|integer|min:0',
             'order' => 'required|integer|min:0',
             'cover' => 'nullable|image|max:2048',
-            'file' => 'nullable|file|mimes:epub|max:51200',
-            'pdf_file' => 'nullable|file|mimes:pdf|max:51200',
+            'file' => 'nullable|file|extensions:epub|max:40960',
+            'pdf_file' => 'nullable|file|extensions:pdf|max:40960',
         ]);
 
         // EPUB must always exist (either existing file or newly uploaded file)
@@ -243,13 +266,20 @@ class EbookSeriesController extends Controller
             ])->withInput();
         }
 
+        $itemData = [
+            'title' => $validated['title'],
+            'summary' => $validated['summary'] ?? null,
+            'price_coins' => $validated['price_coins'],
+            'order' => $validated['order'],
+        ];
+
         // Handle cover upload
         if ($request->hasFile('cover')) {
             if ($item->cover) {
                 Storage::disk('public')->delete(str_replace('storage/', '', $item->cover));
             }
             $path = $request->file('cover')->store('ebook-item-covers', 'public');
-            $validated['cover'] = 'storage/' . $path;
+            $itemData['cover'] = 'storage/' . $path;
         }
 
         // Handle epub file upload
@@ -258,7 +288,7 @@ class EbookSeriesController extends Controller
                 Storage::delete($item->file_path);
             }
             $path = $request->file('file')->store('ebook-files');
-            $validated['file_path'] = $path;
+            $itemData['file_path'] = $path;
         }
 
         // Handle PDF file upload
@@ -267,12 +297,15 @@ class EbookSeriesController extends Controller
                 Storage::delete($item->pdf_file_path);
             }
             $path = $request->file('pdf_file')->store('ebook-files');
-            $validated['pdf_file_path'] = $path;
+            $itemData['pdf_file_path'] = $path;
         }
 
-        $item->update($validated);
+        $item->fill($itemData);
+        $item->saveOrFail();
 
-        return back()->with('success', 'Item updated successfully!');
+        return redirect()->route('admin.ebookseries.edit', $seriesId)
+            ->with('success', 'Item updated successfully!')
+            ->with('item_saved_id', $item->id);
     }
 
     /**

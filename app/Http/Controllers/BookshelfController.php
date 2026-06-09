@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\PurchasedItem;
+use App\Models\EbookItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -56,14 +57,21 @@ class BookshelfController extends Controller
      */
     public function download($itemId)
     {
-        $userId = auth()->id();
+        $user = auth()->user();
+        $userId = $user->id;
 
         $purchase = PurchasedItem::where('user_id', $userId)
             ->where('ebook_item_id', $itemId)
-            ->with('ebookItem')
-            ->firstOrFail();
+            ->with('ebookItem.ebookSeries')
+            ->first();
 
-        $item = $purchase->ebookItem;
+        $item = $purchase
+            ? $purchase->ebookItem
+            : EbookItem::with('ebookSeries')->findOrFail($itemId);
+
+        if (!$purchase && !$item->isFreeForPremiumMember($user)) {
+            abort(403, 'You do not have access to this ebook.');
+        }
 
         if (!$item->file_path || !Storage::exists($item->file_path)) {
             return back()->with('error', 'File not available for download.');
@@ -79,14 +87,21 @@ class BookshelfController extends Controller
      */
     public function downloadPdf($itemId)
     {
-        $userId = auth()->id();
+        $user = auth()->user();
+        $userId = $user->id;
 
         $purchase = PurchasedItem::where('user_id', $userId)
             ->where('ebook_item_id', $itemId)
-            ->with('ebookItem')
-            ->firstOrFail();
+            ->with('ebookItem.ebookSeries')
+            ->first();
 
-        $item = $purchase->ebookItem;
+        $item = $purchase
+            ? $purchase->ebookItem
+            : EbookItem::with('ebookSeries')->findOrFail($itemId);
+
+        if (!$purchase && !$item->isFreeForPremiumMember($user)) {
+            abort(403, 'You do not have access to this PDF.');
+        }
 
         if (!$item->pdf_file_path || !Storage::exists($item->pdf_file_path)) {
             return back()->with('error', 'PDF file not available for download.');

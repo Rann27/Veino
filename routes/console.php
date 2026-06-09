@@ -8,9 +8,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule membership expiration check (runs daily at 00:00)
+// Schedule membership expiration check (runs every 5 minutes)
 Schedule::command('memberships:expire')
-    ->daily()
+    ->everyFiveMinutes()
     ->timezone('UTC')
     ->onSuccess(function () {
         info('Membership expiration check completed successfully');

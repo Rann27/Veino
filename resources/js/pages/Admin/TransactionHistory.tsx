@@ -261,8 +261,20 @@ function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases
                       <div style={labelStyle}>Payment Method</div>
                       <div>{getPaymentMethodBadge(purchase.payment_method)}</div>
                       {purchase.transaction_id && (
-                        <div style={{ fontSize: '11px', color: muted, marginTop: '4px', fontFamily: 'monospace' }}>
-                          {purchase.transaction_id.substring(0, 20)}...
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                          <span style={{ fontSize: '11px', color: muted, fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                            {purchase.transaction_id}
+                          </span>
+                          <button
+                            onClick={() => navigator.clipboard.writeText(purchase.transaction_id!)}
+                            title="Copy"
+                            style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: muted, lineHeight: 1 }}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: 12, height: 12 }}>
+                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                            </svg>
+                          </button>
                         </div>
                       )}
                     </div>

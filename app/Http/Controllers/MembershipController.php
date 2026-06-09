@@ -43,21 +43,28 @@ class MembershipController extends Controller
     }
 
     /**
-     * Handle membership purchase with coins
+     * Handle membership purchase (coins or real currency)
      */
     public function purchase(Request $request)
     {
         $request->validate([
-            'package_id' => 'required|exists:membership_packages,id',
-            'voucher_code' => 'nullable|string',
+            'package_id'     => 'required|exists:membership_packages,id',
+            'payment_method' => 'required|in:coins,paypal,oxapay',
+            'voucher_code'   => 'nullable|string',
         ]);
 
-        $user = Auth::user();
+        $user    = Auth::user();
         $package = MembershipPackage::findOrFail($request->package_id);
         $isInertiaRequest = $request->headers->has('X-Inertia');
-        
-        $finalPrice = $package->coin_price;
-        $voucher = null;
+
+        // Route to real-currency flow
+        if (in_array($request->payment_method, ['paypal', 'oxapay'])) {
+            return $this->purchaseWithRealCurrency($request, $user, $package, $isInertiaRequest);
+        }
+
+        // ── Coins flow ─────────────────────────────────────
+        $finalPrice    = $package->coin_price;
+        $voucher       = null;
         $discountAmount = 0;
 
         // Handle voucher if provided
@@ -225,6 +232,86 @@ class MembershipController extends Controller
     }
 
     /**
+     * Handle membership purchase via PayPal or OxaPay
+     */
+    private function purchaseWithRealCurrency(Request $request, $user, MembershipPackage $package, bool $isInertiaRequest)
+    {
+        $method = $request->payment_method;
+
+        DB::beginTransaction();
+        try {
+            // Cancel stale pending orders for same user+package+method
+            MembershipHistory::where('user_id', $user->id)
+                ->where('membership_package_id', $package->id)
+                ->where('payment_method', $method)
+                ->where('status', 'pending')
+                ->update(['status' => 'cancelled']);
+
+            $invoiceNumber = MembershipHistory::generateInvoiceNumber();
+
+            $history = MembershipHistory::create([
+                'user_id'               => $user->id,
+                'membership_package_id' => $package->id,
+                'invoice_number'        => $invoiceNumber,
+                'tier'                  => $package->tier,
+                'duration_days'         => $package->duration_days,
+                'amount_usd'            => $package->price_usd,
+                'coin_price'            => 0,
+                'payment_method'        => $method,
+                'status'                => 'pending',
+            ]);
+
+            $paymentResult = $this->createPaymentOrder($history, $package, $method);
+
+            if (!$paymentResult['success']) {
+                DB::rollBack();
+                $errorMsg = $paymentResult['error'] ?? 'Payment gateway error';
+
+                if ($isInertiaRequest) {
+                    return back()->withErrors(['membership' => $errorMsg])->with('error', $errorMsg);
+                }
+                return response()->json(['success' => false, 'error' => $errorMsg], 400);
+            }
+
+            $paymentUrl = $paymentResult['payment_url'] ?? $paymentResult['approval_url'] ?? null;
+            $orderId    = $paymentResult['order_id'] ?? null;
+
+            if ($method === 'paypal') {
+                $history->update(['paypal_order_id' => $orderId, 'payment_url' => $paymentUrl]);
+            } else {
+                $history->update(['oxapay_order_id' => $orderId, 'payment_url' => $paymentUrl]);
+            }
+
+            DB::commit();
+
+            Log::info('Membership real-currency order created', [
+                'history_id'  => $history->id,
+                'user_id'     => $user->id,
+                'method'      => $method,
+                'amount_usd'  => $package->price_usd,
+            ]);
+
+            // Redirect to status page — user sees transaction details + "Continue to Payment" button
+            return \Inertia\Inertia::location(route('membership.status', ['history' => $history->id]));
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Membership real-currency purchase failed', [
+                'user_id' => $user->id,
+                'package_id' => $package->id,
+                'method' => $method,
+                'error' => $e->getMessage(),
+            ]);
+
+            $errorMsg = $e->getMessage();
+            if ($isInertiaRequest) {
+                return back()->withErrors(['membership' => $errorMsg])->with('error', $errorMsg);
+            }
+            return response()->json(['success' => false, 'error' => $errorMsg], 500);
+        }
+    }
+
+    /**
      * Create payment order with gateway
      */
     private function createPaymentOrder($history, $package, $method)
@@ -347,7 +434,22 @@ class MembershipController extends Controller
         $user->fresh(); // Ensure we have the latest user data
 
         return Inertia::render('MembershipStatus', [
-            'history' => $history,
+            'history' => [
+                'id'             => $history->id,
+                'invoice_number' => $history->invoice_number,
+                'transaction_id' => $history->transaction_id,
+                'tier'           => $history->tier,
+                'duration_days'  => $history->duration_days,
+                'amount_usd'     => $history->amount_usd,
+                'payment_method' => $history->payment_method,
+                'payment_url'    => $history->payment_url,
+                'status'         => $history->status,
+                'starts_at'      => $history->starts_at?->toISOString(),
+                'expires_at'     => $history->expires_at?->toISOString(),
+                'completed_at'   => $history->completed_at?->toISOString(),
+                'created_at'     => $history->created_at->toISOString(),
+                'package'        => $history->package ? ['name' => $history->package->name] : null,
+            ],
             'auth' => [
                 'user' => $user
             ]
@@ -384,6 +486,11 @@ class MembershipController extends Controller
      */
     private function completePayment($history, $transactionId = null)
     {
+        // Idempotency: skip if already completed
+        if ($history->status === 'completed') {
+            return;
+        }
+
         DB::beginTransaction();
         try {
             $user = $history->user;

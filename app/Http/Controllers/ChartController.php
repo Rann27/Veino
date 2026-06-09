@@ -17,9 +17,13 @@ class ChartController extends Controller
      */
     public function index()
     {
+        $user = auth()->user();
         $chartItems = ChartItem::where('user_id', auth()->id())
             ->with(['ebookItem.ebookSeries'])
-            ->get();
+            ->get()
+            ->reject(function ($chartItem) use ($user) {
+                return $chartItem->ebookItem->isFreeForPremiumMember($user);
+            });
 
         $items = $chartItems->map(function ($chartItem) {
             $item = $chartItem->ebookItem;
@@ -52,7 +56,13 @@ class ChartController extends Controller
         ]);
 
         $userId = auth()->id();
+        $user = auth()->user();
         $itemId = $request->ebook_item_id;
+        $item = EbookItem::with('ebookSeries')->findOrFail($itemId);
+
+        if ($item->isFreeForPremiumMember($user)) {
+            return back()->with('error', 'This item is already included with your Premium membership.');
+        }
 
         // Check if already purchased
         $alreadyPurchased = PurchasedItem::where('user_id', $userId)
@@ -90,11 +100,19 @@ class ChartController extends Controller
         ]);
 
         $userId = auth()->id();
-        $items = EbookItem::where('ebook_series_id', $request->ebook_series_id)->get();
+        $user = auth()->user();
+        $items = EbookItem::with('ebookSeries')
+            ->where('ebook_series_id', $request->ebook_series_id)
+            ->get();
 
         $addedCount = 0;
 
         foreach ($items as $item) {
+            // Premium members can access these temporarily without adding to cart.
+            if ($item->isFreeForPremiumMember($user)) {
+                continue;
+            }
+
             // Skip if already purchased
             if ($item->isPurchasedBy($userId)) {
                 continue;
@@ -149,15 +167,25 @@ class ChartController extends Controller
         $user = auth()->user();
 
         $chartItems = ChartItem::where('user_id', $userId)
-            ->with('ebookItem')
+            ->with('ebookItem.ebookSeries')
             ->get();
 
         if ($chartItems->isEmpty()) {
             return back()->with('error', 'Your chart is empty!');
         }
 
+        $billableChartItems = $chartItems->reject(function ($chartItem) use ($user) {
+            return $chartItem->ebookItem->isFreeForPremiumMember($user);
+        });
+
+        if ($billableChartItems->isEmpty()) {
+            ChartItem::where('user_id', $userId)->delete();
+
+            return back()->with('success', 'All selected items are already included with your Premium membership.');
+        }
+
         // Calculate total price
-        $totalPrice = $chartItems->sum(function ($chartItem) {
+        $totalPrice = $billableChartItems->sum(function ($chartItem) {
             return $chartItem->ebookItem->price_coins;
         });
 
@@ -193,7 +221,7 @@ class ChartController extends Controller
             $transactionId = 'EBOOK-' . strtoupper(Str::random(10));
 
             // Create purchased items
-            foreach ($chartItems as $chartItem) {
+            foreach ($billableChartItems as $chartItem) {
                 // Skip if already purchased (safety check)
                 if ($chartItem->ebookItem->isPurchasedBy($userId)) {
                     continue;
@@ -225,8 +253,8 @@ class ChartController extends Controller
                 'payment_method' => 'coins',
                 'status' => 'completed',
                 'description' => $voucher 
-                    ? "{$chartItems->count()} ebook item(s) with {$discountAmount} coins discount (Transaction: {$transactionId})" 
-                    : "{$chartItems->count()} ebook item(s) (Transaction: {$transactionId})",
+                    ? "{$billableChartItems->count()} ebook item(s) with {$discountAmount} coins discount (Transaction: {$transactionId})"
+                    : "{$billableChartItems->count()} ebook item(s) (Transaction: {$transactionId})",
             ]);
 
             // Clear cart

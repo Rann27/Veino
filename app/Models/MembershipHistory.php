@@ -25,6 +25,7 @@ class MembershipHistory extends Model
         'status',
         'paypal_order_id',
         'oxapay_order_id',
+        'payment_url',
         'gateway_response',
         'starts_at',
         'expires_at',

@@ -6,6 +6,7 @@ use App\Models\Series;
 use App\Models\Chapter;
 use App\Models\ChapterPurchase;
 use App\Models\Bookmark;
+use App\Models\EbookSeries;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -26,6 +27,13 @@ class UserSeriesController extends Controller
             ->orderBy('volume')
             ->orderBy('chapter_number')
             ->get(['id', 'title', 'chapter_number', 'chapter_link', 'volume', 'is_premium', 'coin_price', 'created_at', 'views']);
+
+        $series->epub_free_for_premium_members = false;
+        if ($series->show_epub_button && $series->epub_series_slug) {
+            $series->epub_free_for_premium_members = EbookSeries::where('slug', $series->epub_series_slug)
+                ->where('free_for_premium_members', true)
+                ->exists();
+        }
 
         // Add ownership information if user is authenticated
         $isBookmarked = false;

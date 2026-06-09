@@ -15,5 +15,7 @@ class VerifyCsrfToken extends Middleware
         '/voucher/validate',
         '/payment/paypal-ipn',
         '/payment/callback/*',
+        '/payment/webhook/*',
+        '/membership/webhook/*',
     ];
 }

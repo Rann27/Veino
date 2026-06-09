@@ -91,6 +91,28 @@ class EbookItem extends Model
         return $this->purchasedItems()->where('user_id', $userId)->exists();
     }
 
+    public function isFreeForPremiumMember($user): bool
+    {
+        if (!$user || !$user->isPremiumMember()) {
+            return false;
+        }
+
+        $series = $this->relationLoaded('ebookSeries')
+            ? $this->ebookSeries
+            : $this->ebookSeries()->first();
+
+        return (bool) ($series?->free_for_premium_members);
+    }
+
+    public function isAccessibleBy($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $this->isPurchasedBy($user->id) || $this->isFreeForPremiumMember($user);
+    }
+
     public function isInCartOf($userId)
     {
         return $this->chartItems()->where('user_id', $userId)->exists();
