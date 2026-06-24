@@ -230,7 +230,7 @@ class ChartController extends Controller
                 PurchasedItem::create([
                     'user_id' => $userId,
                     'ebook_item_id' => $chartItem->ebookItem->id,
-                    'transaction_id' => $transactionId,
+                    'transaction_id' => $transactionId . '-' . $chartItem->ebookItem->id,
                     'price_paid' => $chartItem->ebookItem->price_coins,
                     'purchased_at' => now(),
                 ]);

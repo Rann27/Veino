@@ -33,7 +33,7 @@ class BookshelfController extends Controller
                 'series_id' => $series->id,
                 'series_title' => $series->title,
                 'series_slug' => $series->slug,
-                'series_cover_url' => $series->cover_url,
+                'series_cover' => $series->cover_url,
                 'items' => $items->map(function ($purchase) {
                     return [
                         'id' => $purchase->ebookItem->id,

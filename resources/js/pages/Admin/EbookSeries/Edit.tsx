@@ -595,7 +595,7 @@ function EditContent({ series, items, genres, seriesOptions }: Props) {
                     </div>
 
                     {items.length > 0 ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             {items.map(item => (
                                 <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: cardBg, border: `1px solid ${border}`, borderRadius: '0.625rem', padding: '0.75rem' }}>
                                     {/* Top row: cover + info + edit/del */}
