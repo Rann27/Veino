@@ -44,7 +44,7 @@ class OxapayService
                 'currency'    => 'USD',
                 'orderId'     => (string) $orderId,
                 'returnUrl'   => $returnUrl,
-                'lifetime'    => 30, // minutes
+                'lifetime'    => 60, // minutes (OxaPay minimum is 60)
             ];
 
             if ($callbackUrl) {

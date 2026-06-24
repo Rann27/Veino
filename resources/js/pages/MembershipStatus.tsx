@@ -3,6 +3,26 @@ import { Head, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 
+function useCountdown(expiresAt?: string) {
+    const [remaining, setRemaining] = useState<number>(() => {
+        if (!expiresAt) return 0;
+        return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+    });
+    useEffect(() => {
+        if (!expiresAt) return;
+        const id = setInterval(() => {
+            const secs = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+            setRemaining(secs);
+            if (secs <= 0) clearInterval(id);
+        }, 1000);
+        return () => clearInterval(id);
+    }, [expiresAt]);
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    return { remaining, label: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` };
+}
+
 interface MembershipHistory {
     id: number;
     invoice_number: string;
@@ -13,6 +33,7 @@ interface MembershipHistory {
     payment_method: string;
     payment_url?: string;
     status: 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
+    payment_expires_at?: string;
     starts_at?: string;
     expires_at?: string;
     completed_at?: string;
@@ -27,6 +48,7 @@ interface Props {
 function MembershipStatusContent({ history }: Props) {
     const [hasRefreshed, setHasRefreshed] = useState(false);
     const [hasOpenedPayment, setHasOpenedPayment] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
 
     // Auto-open payment gateway in new tab when first landing on pending status page
     useEffect(() => {
@@ -59,15 +81,34 @@ function MembershipStatusContent({ history }: Props) {
         }
     };
 
+    const handleCancel = () => {
+        if (!confirm('Are you sure you want to cancel this transaction?')) return;
+        setCancelling(true);
+        router.post(route('membership.purchase.cancel', history.id), {}, {
+            onFinish: () => setCancelling(false),
+        });
+    };
+
     return (
         <UserLayout>
-            <MembershipStatusInner history={history} onContinuePayment={handleContinuePayment} />
+            <MembershipStatusInner
+                history={history}
+                onContinuePayment={handleContinuePayment}
+                onCancel={handleCancel}
+                cancelling={cancelling}
+            />
         </UserLayout>
     );
 }
 
-function MembershipStatusInner({ history, onContinuePayment }: { history: MembershipHistory; onContinuePayment: () => void }) {
+function MembershipStatusInner({ history, onContinuePayment, onCancel, cancelling }: {
+    history: MembershipHistory;
+    onContinuePayment: () => void;
+    onCancel: () => void;
+    cancelling: boolean;
+}) {
     const { currentTheme } = useTheme();
+    const countdown = useCountdown(history.status === 'pending' ? history.payment_expires_at : undefined);
 
     const getStatusColor = () => {
         switch (history.status) {
@@ -203,6 +244,17 @@ function MembershipStatusInner({ history, onContinuePayment }: { history: Member
                         <p className="text-sm opacity-60" style={{ color: currentTheme.foreground }}>
                             {message.description}
                         </p>
+                        {isPending && history.payment_expires_at && (
+                            <div className="mt-4">
+                                <p className="text-xs uppercase tracking-widest mb-1 opacity-40" style={{ color: currentTheme.foreground }}>
+                                    Expires in
+                                </p>
+                                <p className="text-xl font-mono font-bold"
+                                    style={{ color: countdown.remaining < 3600 ? '#ef4444' : '#fbbf24' }}>
+                                    {countdown.label}
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Transaction details card */}
@@ -311,6 +363,23 @@ function MembershipStatusInner({ history, onContinuePayment }: { history: Member
                             >
                                 Waiting for confirmation…
                             </div>
+                        )}
+
+                        {isPending && (
+                            <button
+                                onClick={onCancel}
+                                disabled={cancelling}
+                                className="w-full py-2.5 rounded-xl font-semibold text-sm transition-all border"
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    color: '#ef4444',
+                                    borderColor: '#ef444430',
+                                    opacity: cancelling ? 0.6 : 1,
+                                    cursor: cancelling ? 'not-allowed' : 'pointer',
+                                }}
+                            >
+                                {cancelling ? 'Cancelling…' : 'Cancel Transaction'}
+                            </button>
                         )}
 
                         {isCompleted && (

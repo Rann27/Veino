@@ -18,8 +18,18 @@ class SearchController extends Controller
 
         $series = Series::where(function($q) use ($query) {
                 $q->where('title', 'LIKE', "%{$query}%")
-                  ->orWhere('alternative_title', 'LIKE', "%{$query}%");
+                  ->orWhere('alternative_title', 'LIKE', "%{$query}%")
+                  ->orWhere('author', 'LIKE', "%{$query}%");
             })
+            ->orderByRaw("
+                CASE
+                    WHEN title = ?                        THEN 0
+                    WHEN title LIKE ?                     THEN 1
+                    WHEN title LIKE ?                     THEN 2
+                    WHEN alternative_title LIKE ?         THEN 3
+                    ELSE                                       4
+                END
+            ", [$query, $query . '%', '%' . $query . '%', '%' . $query . '%'])
             ->with(['genres', 'nativeLanguage'])
             ->withCount('chapters')
             ->paginate(20);
@@ -40,8 +50,18 @@ class SearchController extends Controller
 
         $suggestions = Series::where(function($q) use ($query) {
                 $q->where('title', 'LIKE', "%{$query}%")
-                  ->orWhere('alternative_title', 'LIKE', "%{$query}%");
+                  ->orWhere('alternative_title', 'LIKE', "%{$query}%")
+                  ->orWhere('author', 'LIKE', "%{$query}%");
             })
+            ->orderByRaw("
+                CASE
+                    WHEN title = ?                THEN 0
+                    WHEN title LIKE ?             THEN 1
+                    WHEN title LIKE ?             THEN 2
+                    WHEN alternative_title LIKE ? THEN 3
+                    ELSE                               4
+                END
+            ", [$query, $query . '%', '%' . $query . '%', '%' . $query . '%'])
             ->with(['genres', 'nativeLanguage'])
             ->withCount('chapters')
             ->limit(5)

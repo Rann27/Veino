@@ -8,6 +8,11 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
+// Schedule stale payment cancellation — OxaPay invoices expire in 60 min so run every 5 min
+Schedule::command('payments:expire')
+    ->everyFiveMinutes()
+    ->timezone('UTC');
+
 // Schedule membership expiration check (runs every 5 minutes)
 Schedule::command('memberships:expire')
     ->everyFiveMinutes()

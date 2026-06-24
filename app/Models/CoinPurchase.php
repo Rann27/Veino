@@ -19,12 +19,19 @@ class CoinPurchase extends Model
         'transaction_id',
         'payment_url',
         'status',
+        'expires_at',
     ];
 
     protected $casts = [
-        'price_usd' => 'decimal:2',
+        'price_usd'  => 'decimal:2',
         'coins_amount' => 'integer',
+        'expires_at' => 'datetime',
     ];
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null && now()->isAfter($this->expires_at);
+    }
 
     public function user(): BelongsTo
     {

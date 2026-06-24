@@ -16,6 +16,7 @@ class EbookItem extends Model
         'summary',
         'file_path',
         'pdf_file_path',
+        'preview_content',
         'price_coins',
         'order',
     ];

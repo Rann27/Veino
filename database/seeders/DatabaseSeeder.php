@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             CoinPackageSeeder::class,
             MembershipPackageSeeder::class,
             EbookSeriesSeeder::class,
+            PaymentSettingSeeder::class,
         ]);
 
         // Create admin user

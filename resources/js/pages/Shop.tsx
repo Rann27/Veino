@@ -29,10 +29,31 @@ interface MembershipPackage {
     is_active: boolean;
 }
 
+interface PendingPurchase {
+    id: number;
+    coins_amount: number;
+    price_usd: string;
+    payment_method: string;
+    expires_at: string;
+    status_url: string;
+}
+
+interface PendingMembershipPurchase {
+    id: number;
+    tier: string;
+    duration_days: number;
+    amount_usd: string;
+    payment_method: string;
+    payment_expires_at: string;
+    status_url: string;
+}
+
 interface Props {
     coinPackages: CoinPackage[];
     membershipPackages: MembershipPackage[];
     activeTab?: string;
+    pendingPurchase?: PendingPurchase | null;
+    pendingMembershipPurchase?: PendingMembershipPurchase | null;
     flash?: {
         success?: string;
         error?: string;
@@ -47,11 +68,13 @@ const getOriginalCoinPrice = (coinPrice: number, discount: number) =>
 /* ═══════════════════════════════════════════════
    Main Shop Page
    ═══════════════════════════════════════════════ */
-function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, flash, errors }: Props) {
+function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, pendingPurchase, pendingMembershipPurchase, flash, errors }: Props) {
     const { currentTheme } = useTheme();
     const [activeTab, setActiveTab] = useState<'coins' | 'membership'>(
         initialTab === 'membership' ? 'membership' : 'coins'
     );
+    const [showPendingModal, setShowPendingModal] = useState(!!pendingPurchase);
+    const [showPendingMembershipModal, setShowPendingMembershipModal] = useState(!!pendingMembershipPurchase);
     const page = usePage<{ auth: { user: { coins: number } | null } }>();
 
     const switchTab = (tab: 'coins' | 'membership') => {
@@ -66,6 +89,133 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
     return (
         <>
             <Head title="Shop — Veinovel" />
+
+            {/* Pending transaction modal */}
+            {showPendingModal && pendingPurchase && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+                    onClick={() => setShowPendingModal(false)}
+                >
+                    <div
+                        className="rounded-2xl p-8 max-w-sm w-full border-2 shadow-2xl"
+                        style={{
+                            backgroundColor: currentTheme.background,
+                            borderColor: '#f59e0b80',
+                            boxShadow: '0 0 40px rgba(245,158,11,0.25)',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Icon */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
+                                <svg className="w-7 h-7" style={{ color: '#f59e0b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <h2 className="text-xl font-bold text-center mb-2" style={{ color: '#f59e0b' }}>
+                            Pending Transaction
+                        </h2>
+                        <p className="text-sm text-center mb-5 opacity-60" style={{ color: currentTheme.foreground }}>
+                            You have an unfinished payment of{' '}
+                            <span className="font-semibold" style={{ color: '#f59e0b' }}>
+                                ¢{pendingPurchase.coins_amount.toLocaleString()}
+                            </span>
+                            {' '}(${pendingPurchase.price_usd} via{' '}
+                            <span className="capitalize">{pendingPurchase.payment_method}</span>).
+                            Please complete or cancel it before starting a new one.
+                        </p>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => router.visit(pendingPurchase.status_url)}
+                                className="w-full py-3 rounded-xl font-bold transition-all"
+                                style={{ backgroundColor: '#f59e0b', color: '#fff' }}
+                            >
+                                Continue Payment
+                            </button>
+                            <button
+                                onClick={() => setShowPendingModal(false)}
+                                className="w-full py-3 rounded-xl font-semibold border transition-all"
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    color: `${currentTheme.foreground}80`,
+                                    borderColor: `${currentTheme.foreground}20`,
+                                }}
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Pending membership transaction modal */}
+            {showPendingMembershipModal && pendingMembershipPurchase && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+                    onClick={() => setShowPendingMembershipModal(false)}
+                >
+                    <div
+                        className="rounded-2xl p-8 max-w-sm w-full border-2 shadow-2xl"
+                        style={{
+                            backgroundColor: currentTheme.background,
+                            borderColor: `${SHINY_PURPLE}60`,
+                            boxShadow: `0 0 40px ${SHINY_PURPLE}25`,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-center mb-4">
+                            <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: `${SHINY_PURPLE}15` }}>
+                                <svg className="w-7 h-7" style={{ color: SHINY_PURPLE }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <h2 className="text-xl font-bold text-center mb-2" style={{ color: SHINY_PURPLE }}>
+                            Pending Membership
+                        </h2>
+                        <p className="text-sm text-center mb-5 opacity-60" style={{ color: currentTheme.foreground }}>
+                            You have an unfinished membership payment of{' '}
+                            <span className="font-semibold" style={{ color: SHINY_PURPLE }}>
+                                ${pendingMembershipPurchase.amount_usd}
+                            </span>
+                            {' '}via <span className="capitalize">{pendingMembershipPurchase.payment_method}</span>.
+                            Please complete or cancel it before starting a new one.
+                        </p>
+
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => router.visit(pendingMembershipPurchase.status_url)}
+                                className="w-full py-3 rounded-xl font-bold transition-all"
+                                style={{ background: `linear-gradient(135deg, #a78bfa, #e879f9)`, color: '#fff' }}
+                            >
+                                Continue Payment
+                            </button>
+                            <button
+                                onClick={() => setShowPendingMembershipModal(false)}
+                                className="w-full py-3 rounded-xl font-semibold border transition-all"
+                                style={{
+                                    backgroundColor: 'transparent',
+                                    color: `${currentTheme.foreground}80`,
+                                    borderColor: `${currentTheme.foreground}20`,
+                                }}
+                            >
+                                Dismiss
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="min-h-screen" style={{ backgroundColor: currentTheme.background }}>
 
                 {/* ── Hero Banner ── */}

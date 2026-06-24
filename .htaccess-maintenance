@@ -14,35 +14,28 @@
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
 
-    # ── MAINTENANCE REDIRECT ─────────────────────────────────────────────
-    # Block all public traffic EXCEPT the paths listed below.
-
-    # Always allow maintenance.html itself
-    RewriteCond %{REQUEST_URI} ^/maintenance\.html$ [OR]
-    # Allow admin panel and all sub-paths
-    RewriteCond %{REQUEST_URI} ^/admin [OR]
-    # Allow auth / login / logout
-    RewriteCond %{REQUEST_URI} ^/auth$ [OR]
-    RewriteCond %{REQUEST_URI} ^/login [OR]
-    RewriteCond %{REQUEST_URI} ^/logout [OR]
-    # Allow API & Sanctum (Inertia, session, CSRF)
-    RewriteCond %{REQUEST_URI} ^/api/ [OR]
-    RewriteCond %{REQUEST_URI} ^/sanctum/ [OR]
-    # Allow static assets
-    RewriteCond %{REQUEST_URI} ^/favicon [OR]
-    RewriteCond %{REQUEST_URI} ^/images/ [OR]
-    RewriteCond %{REQUEST_URI} ^/build/ [OR]
-    RewriteCond %{REQUEST_URI} ^/storage/
-    RewriteRule ^ - [L]
-
-    # Everything else → maintenance page
-    RewriteRule ^(.*)$ /maintenance.html [R=503,L]
-
-    # ── NORMAL LARAVEL ROUTING (for allowed paths) ───────────────────────
+    # ── NORMAL LARAVEL ROUTING (trailing slash removal, always first) ────
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # ── MAINTENANCE REDIRECT ─────────────────────────────────────────────
+    # Redirect to maintenance page UNLESS the path is in the allow list.
+    # All conditions must be true (AND logic) for the redirect to fire.
+    RewriteCond %{REQUEST_URI} !^/maintenance\.html$
+    RewriteCond %{REQUEST_URI} !^/admin
+    RewriteCond %{REQUEST_URI} !^/auth$
+    RewriteCond %{REQUEST_URI} !^/login
+    RewriteCond %{REQUEST_URI} !^/logout
+    RewriteCond %{REQUEST_URI} !^/api/
+    RewriteCond %{REQUEST_URI} !^/sanctum/
+    RewriteCond %{REQUEST_URI} !^/favicon
+    RewriteCond %{REQUEST_URI} !^/images/
+    RewriteCond %{REQUEST_URI} !^/build/
+    RewriteCond %{REQUEST_URI} !^/storage/
+    RewriteRule ^(.*)$ /maintenance.html [R=503,L]
+
+    # ── LARAVEL ROUTING (runs for all paths that passed the check above) ─
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]

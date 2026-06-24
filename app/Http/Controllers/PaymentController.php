@@ -9,6 +9,7 @@ use App\Services\PayPalService;
 use App\Services\OxapayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -43,9 +44,8 @@ class PaymentController extends Controller
 
         DB::beginTransaction();
         try {
-            // Cancel any stale pending purchases for this user+package to keep transaction history clean
+            // Cancel ALL stale pending purchases for this user to keep transaction history clean
             CoinPurchase::where('user_id', $user->id)
-                ->where('coin_package_id', $package->id)
                 ->where('status', 'pending')
                 ->update(['status' => 'cancelled']);
 
@@ -54,13 +54,17 @@ class PaymentController extends Controller
 
             // Create purchase record
             $purchase = CoinPurchase::create([
-                'user_id' => $user->id,
+                'user_id'         => $user->id,
                 'coin_package_id' => $package->id,
-                'coins_amount' => $package->coin_amount,
-                'price_usd' => $package->price_usd,
-                'payment_method' => $request->payment_method,
-                'transaction_id' => $invoiceNumber,
-                'status' => 'pending',
+                'coins_amount'    => $package->coin_amount,
+                'price_usd'       => $package->price_usd,
+                'payment_method'  => $request->payment_method,
+                'transaction_id'  => $invoiceNumber,
+                'status'          => 'pending',
+                // Match gateway lifetime: OxaPay invoices expire in 30 min, PayPal orders in ~3 hours
+                'expires_at'      => $request->payment_method === 'oxapay'
+                    ? now()->addMinutes(60)
+                    : now()->addHours(3),
             ]);
 
             // Create payment gateway order
@@ -144,10 +148,10 @@ class PaymentController extends Controller
      */
     protected function createPaymentOrder(CoinPurchase $purchase, CoinPackage $package, string $paymentMethod)
     {
-        $description = $package->name . ' - ' . number_format($package->coin_amount) . ' Coins';
-        
+        $description = 'Veinovel Coins – ' . $package->name . ' (' . number_format($package->coin_amount) . ' Coins)';
+
         if ($package->bonus_premium_days > 0) {
-            $description .= ' + ' . $package->bonus_premium_days . ' days Premium';
+            $description .= ' + ' . $package->bonus_premium_days . 'd Premium Bonus';
         }
 
         $returnUrl = route('payment.callback', [
@@ -208,22 +212,48 @@ class PaymentController extends Controller
             abort(403, 'This payment does not belong to you');
         }
 
+        // Auto-cancel if past the 24-hour window
+        if ($purchase->status === 'pending' && $purchase->isExpired()) {
+            $purchase->update(['status' => 'cancelled']);
+        }
+
         return Inertia::render('PaymentStatus', [
             'purchase' => [
-                'id' => $purchase->id,
+                'id'             => $purchase->id,
                 'transaction_id' => $purchase->transaction_id,
-                'payment_url' => $purchase->payment_url,
-                'coins_amount' => $purchase->coins_amount,
-                'price_usd' => $purchase->price_usd,
+                'payment_url'    => $purchase->payment_url,
+                'coins_amount'   => $purchase->coins_amount,
+                'price_usd'      => $purchase->price_usd,
                 'payment_method' => $purchase->payment_method,
-                'status' => $purchase->status,
-                'created_at' => $purchase->created_at->toISOString(),
-                'package' => $purchase->coinPackage ? [
-                    'name' => $purchase->coinPackage->name,
+                'status'         => $purchase->status,
+                'created_at'     => $purchase->created_at->toISOString(),
+                'expires_at'     => $purchase->expires_at?->toISOString(),
+                'package'        => $purchase->coinPackage ? [
+                    'name'               => $purchase->coinPackage->name,
                     'bonus_premium_days' => $purchase->coinPackage->bonus_premium_days,
                 ] : null,
             ],
         ]);
+    }
+
+    /**
+     * Cancel a pending purchase
+     */
+    public function cancel(CoinPurchase $purchase)
+    {
+        if ($purchase->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($purchase->status !== 'pending') {
+            return redirect()->route('payment.status', $purchase->id)
+                ->with('error', 'This transaction cannot be cancelled.');
+        }
+
+        $purchase->update(['status' => 'cancelled']);
+
+        return redirect()->route('payment.status', $purchase->id)
+            ->with('success', 'Transaction cancelled.');
     }
 
     /**
@@ -421,11 +451,10 @@ class PaymentController extends Controller
                 ], 400);
             }
 
-            $description = $coinPackage->name . ' - ' . number_format($coinPackage->coin_amount) . ' Coins';
-            
-            // Add premium bonus info to description if applicable
+            $description = 'Veinovel Coins – ' . $coinPackage->name . ' (' . number_format($coinPackage->coin_amount) . ' Coins)';
+
             if ($coinPackage->bonus_premium_days > 0) {
-                $description .= ' + ' . $coinPackage->bonus_premium_days . ' days Premium';
+                $description .= ' + ' . $coinPackage->bonus_premium_days . 'd Premium Bonus';
             }
             
             $result = $paypalService->createOrder(
@@ -752,14 +781,38 @@ class PaymentController extends Controller
 
     /**
      * PayPal IPN (Instant Payment Notification) handler
+     * Verifies authenticity by echoing the payload back to PayPal's verification endpoint.
      */
     public function handleIPN(Request $request)
     {
-        // TODO: Implement PayPal IPN verification and processing
-        // This would be used for additional security and payment verification
+        $data = $request->all();
 
-        Log::info('PayPal IPN received', $request->all());
+        $mode       = config('services.paypal.mode', 'sandbox');
+        $verifyUrl  = $mode === 'live'
+            ? 'https://ipnpb.paypal.com/cgi-bin/webscr'
+            : 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr';
 
+        $postBody = 'cmd=_notify-validate&' . http_build_query($data);
+
+        try {
+            $response = Http::timeout(30)
+                ->withHeaders(['Content-Type' => 'application/x-www-form-urlencoded'])
+                ->withBody($postBody, 'application/x-www-form-urlencoded')
+                ->post($verifyUrl);
+
+            if (!$response->successful() || trim($response->body()) !== 'VERIFIED') {
+                Log::warning('PayPal IPN verification failed', [
+                    'ip'       => $request->ip(),
+                    'response' => $response->body(),
+                ]);
+                return response('Invalid IPN', 400);
+            }
+        } catch (\Exception $e) {
+            Log::error('PayPal IPN verification exception: ' . $e->getMessage());
+            return response('Verification error', 500);
+        }
+
+        Log::info('PayPal IPN verified', $data);
         return response('OK', 200);
     }
 

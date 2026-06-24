@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Symfony\Component\HttpFoundation\Response;
 use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
@@ -17,6 +18,27 @@ class HandleInertiaRequests extends Middleware
      * @var string
      */
     protected $rootView = 'app';
+
+    /**
+     * Handle the incoming request and add cache headers to prevent
+     * browsers/CDNs from serving a cached Inertia JSON response as a full page.
+     */
+    public function handle(Request $request, \Closure $next): Response
+    {
+        $response = parent::handle($request, $next);
+
+        // Tell caches that the response varies by X-Inertia header,
+        // so HTML and JSON versions of the same URL are stored separately.
+        $response->headers->set('Vary', 'X-Inertia');
+
+        // For Inertia XHR responses (JSON), prevent them from being served
+        // as a full page when the browser navigates back to the URL.
+        if ($request->header('X-Inertia')) {
+            $response->headers->set('Cache-Control', 'no-store, private');
+        }
+
+        return $response;
+    }
 
     /**
      * Determines the current asset version.

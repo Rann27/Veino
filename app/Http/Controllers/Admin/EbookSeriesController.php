@@ -19,12 +19,26 @@ class EbookSeriesController extends Controller
      */
     public function index()
     {
-        $series = EbookSeries::with(['genres', 'items'])
+        $series = EbookSeries::withCount('items')
+            ->with(['genres'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
+        // Append price_range and cover_url for each series
+        $series->getCollection()->transform(function ($s) {
+            $s->price_range = $s->price_range;
+            $s->cover_url   = $s->cover_url;
+            return $s;
+        });
+
         return Inertia::render('Admin/EbookSeries/Index', [
             'series' => $series,
+            'stats'  => [
+                'total_series'   => EbookSeries::count(),
+                'premium_count'  => EbookSeries::where('free_for_premium_members', true)->count(),
+                'exclusive_count'=> EbookSeries::where('free_for_premium_members', false)->count(),
+                'total_volumes'  => \App\Models\EbookItem::count(),
+            ],
         ]);
     }
 
@@ -56,10 +70,12 @@ class EbookSeriesController extends Controller
             'show_trial_button' => 'nullable|boolean',
             'series_slug' => 'nullable|string|max:255',
             'free_for_premium_members' => 'nullable|boolean',
+            'is_mature' => 'nullable|boolean',
         ]);
 
         $validated['free_for_premium_members'] = $request->boolean('free_for_premium_members');
         $validated['show_trial_button'] = $request->boolean('show_trial_button');
+        $validated['is_mature'] = $request->boolean('is_mature');
 
         // Handle cover upload
         if ($request->hasFile('cover')) {
@@ -98,6 +114,7 @@ class EbookSeriesController extends Controller
                 'order' => $item->order,
                 'has_file' => !empty($item->file_path),
                 'has_pdf_file' => !empty($item->pdf_file_path),
+                'has_preview' => !empty($item->preview_content),
             ];
         });
 
@@ -128,10 +145,12 @@ class EbookSeriesController extends Controller
             'show_trial_button' => 'nullable|boolean',
             'series_slug' => 'nullable|string|max:255',
             'free_for_premium_members' => 'nullable|boolean',
+            'is_mature' => 'nullable|boolean',
         ]);
 
         $validated['free_for_premium_members'] = $request->boolean('free_for_premium_members');
         $validated['show_trial_button'] = $request->boolean('show_trial_button');
+        $validated['is_mature'] = $request->boolean('is_mature');
 
         // Handle cover upload
         if ($request->hasFile('cover')) {
@@ -330,6 +349,72 @@ class EbookSeriesController extends Controller
         $item->delete();
 
         return back()->with('success', 'Item deleted successfully!');
+    }
+
+    /**
+     * Show preview editor for an ebook item
+     */
+    public function editPreview($seriesId, $itemId)
+    {
+        $series = EbookSeries::findOrFail($seriesId);
+        $item = EbookItem::where('ebook_series_id', $seriesId)->findOrFail($itemId);
+
+        return Inertia::render('Admin/EbookSeries/PreviewEdit', [
+            'series' => $series,
+            'item' => [
+                'id' => $item->id,
+                'title' => $item->title,
+                'order' => $item->order,
+                'preview_content' => $item->preview_content ?? '',
+            ],
+        ]);
+    }
+
+    /**
+     * Save preview content for an ebook item
+     */
+    public function savePreview(Request $request, $seriesId, $itemId)
+    {
+        $item = EbookItem::where('ebook_series_id', $seriesId)->findOrFail($itemId);
+
+        $validated = $request->validate([
+            'preview_content' => 'required|string',
+        ]);
+
+        $item->update(['preview_content' => $validated['preview_content']]);
+
+        return redirect()->route('admin.ebookseries.edit', $seriesId)
+            ->with('success', 'Preview saved successfully!');
+    }
+
+    /**
+     * Remove preview content from an ebook item
+     */
+    public function destroyPreview($seriesId, $itemId)
+    {
+        $item = EbookItem::where('ebook_series_id', $seriesId)->findOrFail($itemId);
+
+        $item->update(['preview_content' => null]);
+
+        return back()->with('success', 'Preview removed successfully!');
+    }
+
+    /**
+     * Upload image for preview content (CKEditor)
+     */
+    public function uploadPreviewImage(Request $request)
+    {
+        $request->validate([
+            'upload' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
+
+        if ($request->hasFile('upload')) {
+            $path = $request->file('upload')->store('ebook-preview-images', 'public');
+
+            return response()->json(['url' => asset('storage/' . $path)]);
+        }
+
+        return response()->json(['error' => ['message' => 'Image upload failed']], 400);
     }
 
     /**

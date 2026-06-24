@@ -103,9 +103,10 @@ Route::get('/membership', function () { return redirect('/shop?tab=membership');
 
 // Membership action routes
 Route::middleware('auth')->group(function () {
-    Route::post('/membership/purchase', [MembershipController::class, 'purchase'])->name('membership.purchase');
+    Route::post('/membership/purchase', [MembershipController::class, 'purchase'])->name('membership.purchase')->middleware('throttle:5,1');
     Route::get('/membership/status/{history}', [MembershipController::class, 'status'])->name('membership.status');
-    
+    Route::post('/membership/{history}/cancel', [MembershipController::class, 'cancelPurchase'])->name('membership.purchase.cancel');
+
     // Simulation endpoint for testing (only in local environment)
     Route::get('/membership/simulate/{history}', [MembershipController::class, 'simulateSuccess'])->name('membership.simulate');
 });
@@ -138,11 +139,12 @@ Route::post('/voucher/validate', [App\Http\Controllers\VoucherController::class,
 // Ebook Shop Routes
 Route::get('/epub-novels', [EbookSeriesController::class, 'index'])->name('epub-novels.index');
 Route::get('/ebookseries/{slug}', [EbookSeriesController::class, 'show'])->name('epub-novels.show');
+Route::get('/ebookseries/{slug}/{itemId}/preview', [EbookSeriesController::class, 'showPreview'])->name('epub-novels.item-preview');
 
 // Shopping Cart Routes (requires authentication)
 Route::middleware('auth')->group(function () {
     Route::get('/request', [RequestCommissionController::class, 'index'])->name('request.index');
-    Route::post('/request', [RequestCommissionController::class, 'store'])->name('request.store');
+    Route::post('/request', [RequestCommissionController::class, 'store'])->name('request.store')->middleware('throttle:5,1');
     Route::post('/request/{requestCommission}/pay', [RequestCommissionController::class, 'pay'])->name('request.pay');
 
     Route::get('/my-chart', [ChartController::class, 'index'])->name('my-chart');
@@ -163,6 +165,7 @@ Route::middleware('auth')->group(function () {
     // New coin purchase flow
     Route::post('/payment/purchase', [PaymentController::class, 'purchase'])->name('payment.purchase')->middleware('throttle:10,1');
     Route::get('/payment/status/{purchase}', [PaymentController::class, 'status'])->name('payment.status');
+    Route::post('/payment/{purchase}/cancel', [PaymentController::class, 'cancel'])->name('payment.purchase.cancel');
     Route::get('/payment/callback/{provider}/{purchase}', [PaymentController::class, 'callback'])->name('payment.callback');
     
     // Old payment routes (deprecated but kept for backward compatibility)
@@ -295,6 +298,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/ebookseries/{series}/items', [AdminEbookSeriesController::class, 'storeItem'])->name('ebookseries.items.store');
     Route::put('/ebookseries/{series}/items/{item}', [AdminEbookSeriesController::class, 'updateItem'])->name('ebookseries.items.update');
     Route::delete('/ebookseries/{series}/items/{item}', [AdminEbookSeriesController::class, 'destroyItem'])->name('ebookseries.items.destroy');
+
+    // Ebook Item Preview
+    Route::get('/ebookseries/{series}/items/{item}/preview/edit', [AdminEbookSeriesController::class, 'editPreview'])->name('ebookseries.items.preview.edit');
+    Route::put('/ebookseries/{series}/items/{item}/preview', [AdminEbookSeriesController::class, 'savePreview'])->name('ebookseries.items.preview.save');
+    Route::delete('/ebookseries/{series}/items/{item}/preview', [AdminEbookSeriesController::class, 'destroyPreview'])->name('ebookseries.items.preview.destroy');
+    Route::post('/ebookseries/upload-preview-image', [AdminEbookSeriesController::class, 'uploadPreviewImage'])->name('ebookseries.preview.upload-image');
     
     Route::get('/monitoring/comments', [App\Http\Controllers\Admin\MonitoringController::class, 'getComments'])->name('monitoring.comments');
     Route::delete('/monitoring/comments/{id}', [App\Http\Controllers\Admin\MonitoringController::class, 'deleteComment'])->name('monitoring.comments.delete');
@@ -331,11 +340,11 @@ Route::prefix('api')->group(function () {
     Route::get('/reactions/{type}/{id}', [ReactionController::class, 'index'])->name('reactions.index');
 
     // Reactions toggle — public (anonymous via session, authenticated via DB)
-    Route::post('/reactions/toggle', [ReactionController::class, 'toggle'])->name('reactions.toggle');
+    Route::post('/reactions/toggle', [ReactionController::class, 'toggle'])->name('reactions.toggle')->middleware('throttle:30,1');
 
     // Comment actions (requires authentication)
     Route::middleware('auth')->group(function () {
-        Route::post('/comments/{type}/{id}', [CommentController::class, 'store'])->name('comments.store');
+        Route::post('/comments/{type}/{id}', [CommentController::class, 'store'])->name('comments.store')->middleware('throttle:10,1');
         Route::put('/comments/{id}', [CommentController::class, 'update'])->name('comments.update');
         Route::delete('/comments/{id}', [CommentController::class, 'destroy'])->name('comments.destroy');
     });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
@@ -19,6 +19,7 @@ interface EbookItem {
     price_coins: number;
     order: number;
     has_pdf_file: boolean;
+    has_preview: boolean;
     is_in_cart: boolean;
     is_purchased: boolean;
     is_owned?: boolean;
@@ -39,6 +40,7 @@ interface EbookSeries {
     series_slug?: string;
     free_for_premium_members?: boolean;
     has_premium_access?: boolean;
+    is_mature?: boolean;
 }
 
 interface Props {
@@ -53,9 +55,10 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
     const { flash } = usePage<any>().props;
     const [notification, setNotification] = useState<string | null>(null);
     const [isSynopsisExpanded, setIsSynopsisExpanded] = useState(false);
+    const [showAgeModal, setShowAgeModal] = useState(!!series.is_mature);
 
     // Show notification from flash or local state
-    React.useEffect(() => {
+    useEffect(() => {
         if (flash?.success) {
             setNotification(flash.success);
             setTimeout(() => setNotification(null), 3000);
@@ -96,6 +99,110 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
         <>
             <Head title={series.title} />
 
+            {/* Adult Content Warning Modal */}
+            {showAgeModal && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.85)',
+                        zIndex: 9999,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '1rem',
+                    }}
+                >
+                    <div
+                        style={{
+                            background: currentTheme.background,
+                            border: '1px solid rgba(239,68,68,0.4)',
+                            borderRadius: '1rem',
+                            padding: '2rem',
+                            maxWidth: '24rem',
+                            width: '100%',
+                            textAlign: 'center',
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: '3.5rem',
+                                height: '3.5rem',
+                                borderRadius: '50%',
+                                background: 'rgba(239,68,68,0.15)',
+                                border: '2px solid rgba(239,68,68,0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                margin: '0 auto 1.25rem',
+                                fontSize: '1.5rem',
+                                fontWeight: 900,
+                                color: '#ef4444',
+                                fontFamily: 'Poppins, sans-serif',
+                            }}
+                        >
+                            18+
+                        </div>
+                        <h2
+                            style={{
+                                fontSize: '1.25rem',
+                                fontWeight: 700,
+                                color: currentTheme.foreground,
+                                marginBottom: '0.75rem',
+                                fontFamily: 'Poppins, sans-serif',
+                            }}
+                        >
+                            Adult Content Warning
+                        </h2>
+                        <p
+                            style={{
+                                fontSize: '0.875rem',
+                                color: `${currentTheme.foreground}99`,
+                                marginBottom: '1.75rem',
+                                lineHeight: 1.6,
+                                fontFamily: 'Poppins, sans-serif',
+                            }}
+                        >
+                            This ebook series contains mature content intended for adults only (18+). By continuing, you confirm that you are of legal age to view such content.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button
+                                onClick={() => setShowAgeModal(false)}
+                                style={{
+                                    background: 'linear-gradient(135deg, #dc2626, #991b1b)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '0.5rem',
+                                    padding: '0.75rem 1.5rem',
+                                    fontWeight: 700,
+                                    fontSize: '0.9375rem',
+                                    cursor: 'pointer',
+                                    fontFamily: 'Poppins, sans-serif',
+                                }}
+                            >
+                                I am 18+ — Continue
+                            </button>
+                            <button
+                                onClick={() => window.history.back()}
+                                style={{
+                                    background: `${currentTheme.foreground}12`,
+                                    color: `${currentTheme.foreground}cc`,
+                                    border: `1px solid ${currentTheme.foreground}20`,
+                                    borderRadius: '0.5rem',
+                                    padding: '0.625rem 1.5rem',
+                                    fontWeight: 600,
+                                    fontSize: '0.875rem',
+                                    cursor: 'pointer',
+                                    fontFamily: 'Poppins, sans-serif',
+                                }}
+                            >
+                                Go Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
                 <div className="min-h-screen pb-24">
                     {/* Notification Toast */}
                     {notification && (
@@ -129,27 +236,55 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                             <div className="flex flex-col md:flex-row gap-4 md:gap-6">
                                 {/* Cover & Trial Button */}
                                 <div className="w-40 sm:w-48 md:w-58 flex-shrink-0 mx-auto md:mx-0">
-                                    <CoverImage
-                                        src={series.cover_url}
-                                        alt={series.title}
-                                        containerClassName="mb-3 rounded-lg shadow-lg"
-                                        hoverScale={false}
-                                    />
-
-                                    {series.free_for_premium_members && (
-                                        <div
-                                            className="mb-3 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold"
-                                            style={{
-                                                backgroundColor: 'rgba(167,139,250,0.14)',
-                                                color: '#a78bfa',
-                                                border: '1px solid rgba(167,139,250,0.35)',
-                                                fontFamily: 'Poppins, sans-serif',
-                                            }}
-                                        >
-                                            <PremiumDiamond size={14} />
-                                            Free for Premium Member
+                                    {/* Cover with corner badges */}
+                                    <div className="relative mb-3">
+                                        <CoverImage
+                                            src={series.cover_url}
+                                            alt={series.title}
+                                            containerClassName="rounded-lg shadow-lg"
+                                            hoverScale={false}
+                                        />
+                                        {/* Badge stack — top-right corner */}
+                                        <div style={{ position: 'absolute', top: '0.4rem', right: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-end', zIndex: 10 }}>
+                                            {series.is_mature && (
+                                                <div className="group/r18 relative">
+                                                    <div
+                                                        style={{ width: '1.75rem', height: '1.75rem', background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: '#fff', fontSize: '0.5rem', fontWeight: 900, letterSpacing: '0.04em', fontFamily: 'Poppins, sans-serif', borderRadius: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 5px rgba(0,0,0,0.5)' }}
+                                                    >
+                                                        18+
+                                                    </div>
+                                                    <div className="absolute right-0 top-full mt-1 opacity-0 group-hover/r18:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap" style={{ zIndex: 30, background: 'rgba(0,0,0,0.88)', color: '#fff', fontSize: '0.65rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontFamily: 'Poppins, sans-serif' }}>
+                                                        Adult Content (R18)
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {series.free_for_premium_members ? (
+                                                <div className="group/fpm relative">
+                                                    <div
+                                                        style={{ width: '1.75rem', height: '1.75rem', background: 'linear-gradient(135deg, #7c3aed, #a21caf)', color: '#fff', borderRadius: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 5px rgba(0,0,0,0.5)' }}
+                                                    >
+                                                        <PremiumDiamond size={12} />
+                                                    </div>
+                                                    <div className="absolute right-0 top-full mt-1 opacity-0 group-hover/fpm:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap" style={{ zIndex: 30, background: 'rgba(0,0,0,0.88)', color: '#fff', fontSize: '0.65rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontFamily: 'Poppins, sans-serif' }}>
+                                                        Free for Premium Member
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="group/excl relative">
+                                                    <div
+                                                        style={{ width: '1.75rem', height: '1.75rem', background: '#fbbf24', color: '#78350f', borderRadius: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 5px rgba(0,0,0,0.5)' }}
+                                                    >
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                                                            <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zM5 18h14v2H5z"/>
+                                                        </svg>
+                                                    </div>
+                                                    <div className="absolute right-0 top-full mt-1 opacity-0 group-hover/excl:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap" style={{ zIndex: 30, background: 'rgba(0,0,0,0.88)', color: '#fff', fontSize: '0.65rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: '0.25rem', fontFamily: 'Poppins, sans-serif' }}>
+                                                        Exclusive
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
+                                    </div>
                                     
                                     {/* Trial Reading Button */}
                                     {series.show_trial_button && series.series_slug && (
@@ -165,7 +300,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                             </svg>
-                                            Trial Reading
+                                            Or Read Here
                                         </Link>
                                     )}
                                 </div>
@@ -390,9 +525,9 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
 
                                             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                                                 <div>
-                                                    <p 
+                                                    <p
                                                         className="text-xl sm:text-2xl font-bold"
-                                                        style={{ 
+                                                        style={{
                                                             fontFamily: 'Poppins, sans-serif',
                                                             color: item.is_premium_access ? '#a78bfa' : '#f59e0b'
                                                         }}
@@ -411,6 +546,25 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                         </p>
                                                     )}
                                                 </div>
+
+                                                <div className="flex flex-col gap-2 w-full sm:w-auto">
+                                                    {item.has_preview && (
+                                                        <Link
+                                                            href={route('epub-novels.item-preview', [series.slug, item.id])}
+                                                            className="w-full sm:w-auto px-4 sm:px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 hover:opacity-80 flex items-center justify-center gap-2"
+                                                            style={{
+                                                                backgroundColor: currentTheme.foreground,
+                                                                color: currentTheme.background,
+                                                                fontFamily: 'Poppins, sans-serif',
+                                                            }}
+                                                        >
+                                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                                                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/>
+                                                            </svg>
+                                                            Read Preview
+                                                        </Link>
+                                                    )}
 
                                                 {item.is_purchased ? (
                                                     <div className="flex gap-2 w-full sm:w-auto">
@@ -470,6 +624,7 @@ function ShowContent({ series, items, chartItems = [], totalPrice = 0 }: Props) 
                                                         Add to Chart
                                                     </button>
                                                 )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

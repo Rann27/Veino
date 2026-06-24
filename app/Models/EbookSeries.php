@@ -23,6 +23,7 @@ class EbookSeries extends Model
         'show_trial_button',
         'series_slug',
         'free_for_premium_members',
+        'is_mature',
     ];
 
     protected $appends = ['cover_url', 'price_range'];
@@ -30,6 +31,7 @@ class EbookSeries extends Model
     protected $casts = [
         'show_trial_button' => 'boolean',
         'free_for_premium_members' => 'boolean',
+        'is_mature' => 'boolean',
     ];
 
     protected static function boot()

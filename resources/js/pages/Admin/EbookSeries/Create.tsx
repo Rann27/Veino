@@ -74,6 +74,7 @@ function CreateContent({ genres, seriesOptions }: Props) {
         show_trial_button: false,
         series_slug: '',
         free_for_premium_members: false,
+        is_mature: false,
     });
 
     const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -110,6 +111,7 @@ function CreateContent({ genres, seriesOptions }: Props) {
         data.append('show_trial_button', formData.show_trial_button ? '1' : '0');
         data.append('series_slug', formData.series_slug);
         data.append('free_for_premium_members', formData.free_for_premium_members ? '1' : '0');
+        data.append('is_mature', formData.is_mature ? '1' : '0');
         formData.genre_ids.forEach(id => data.append('genre_ids[]', id.toString()));
 
         router.post(route('admin.ebookseries.store'), data, {
@@ -267,6 +269,35 @@ function CreateContent({ genres, seriesOptions }: Props) {
                                 checked={formData.free_for_premium_members}
                                 onChange={(e) => setFormData(prev => ({ ...prev, free_for_premium_members: e.target.checked }))}
                                 style={{ width: '1.1rem', height: '1.1rem', accentColor: '#a78bfa', flexShrink: 0 }}
+                            />
+                        </label>
+                    </div>
+
+                    {/* Adult Content (R18) */}
+                    <div
+                        style={{
+                            padding: '1rem',
+                            borderRadius: '0.5rem',
+                            border: `1px solid ${formData.is_mature ? 'rgba(239,68,68,0.45)' : border}`,
+                            background: formData.is_mature
+                                ? (light ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.10)')
+                                : wa(fg, 0.04),
+                        }}
+                    >
+                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', cursor: 'pointer' }}>
+                            <div>
+                                <div style={{ fontSize: '0.875rem', fontWeight: 700, color: formData.is_mature ? '#f87171' : fg }}>
+                                    R18 — Adult Content
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: muted, margin: '0.25rem 0 0 0' }}>
+                                    Shows an 18+ age warning modal before users can view this series.
+                                </p>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={formData.is_mature}
+                                onChange={(e) => setFormData(prev => ({ ...prev, is_mature: e.target.checked }))}
+                                style={{ width: '1.1rem', height: '1.1rem', accentColor: '#ef4444', flexShrink: 0 }}
                             />
                         </label>
                     </div>

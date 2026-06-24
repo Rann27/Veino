@@ -240,10 +240,9 @@ class MembershipController extends Controller
 
         DB::beginTransaction();
         try {
-            // Cancel stale pending orders for same user+package+method
+            // Cancel ALL stale real-currency pending membership orders for this user
             MembershipHistory::where('user_id', $user->id)
-                ->where('membership_package_id', $package->id)
-                ->where('payment_method', $method)
+                ->whereIn('payment_method', ['paypal', 'oxapay'])
                 ->where('status', 'pending')
                 ->update(['status' => 'cancelled']);
 
@@ -259,6 +258,10 @@ class MembershipController extends Controller
                 'coin_price'            => 0,
                 'payment_method'        => $method,
                 'status'                => 'pending',
+                // Match gateway lifetime: OxaPay invoices expire in 30 min, PayPal orders in ~3 hours
+                'payment_expires_at'    => $method === 'oxapay'
+                    ? now()->addMinutes(60)
+                    : now()->addHours(3),
             ]);
 
             $paymentResult = $this->createPaymentOrder($history, $package, $method);
@@ -343,7 +346,7 @@ class MembershipController extends Controller
                 $result = $this->paypalService->createOrder(
                     $package->price_usd,
                     'USD',
-                    "Premium Membership - {$package->name}",
+                    "Veinovel Membership – {$package->name}",
                     $returnUrl,
                     $cancelUrl
                 );
@@ -378,7 +381,7 @@ class MembershipController extends Controller
                     $history->invoice_number,
                     $returnUrl,
                     route('membership.webhook', ['provider' => 'oxapay']),
-                    "Premium Membership - {$package->name}"
+                    "Veinovel Membership – {$package->name}"
                 );
             }
 
@@ -406,6 +409,11 @@ class MembershipController extends Controller
         $history = MembershipHistory::where('user_id', Auth::id())
             ->with('package')
             ->findOrFail($historyId);
+
+        // Auto-cancel if past the 24-hour payment window
+        if ($history->status === 'pending' && $history->isPaymentExpired()) {
+            $history->update(['status' => 'cancelled']);
+        }
 
         // Check payment status if still pending
         if ($history->status === 'pending') {
@@ -442,13 +450,14 @@ class MembershipController extends Controller
                 'duration_days'  => $history->duration_days,
                 'amount_usd'     => $history->amount_usd,
                 'payment_method' => $history->payment_method,
-                'payment_url'    => $history->payment_url,
-                'status'         => $history->status,
-                'starts_at'      => $history->starts_at?->toISOString(),
-                'expires_at'     => $history->expires_at?->toISOString(),
-                'completed_at'   => $history->completed_at?->toISOString(),
-                'created_at'     => $history->created_at->toISOString(),
-                'package'        => $history->package ? ['name' => $history->package->name] : null,
+                'payment_url'         => $history->payment_url,
+                'status'              => $history->status,
+                'payment_expires_at'  => $history->payment_expires_at?->toISOString(),
+                'starts_at'           => $history->starts_at?->toISOString(),
+                'expires_at'          => $history->expires_at?->toISOString(),
+                'completed_at'        => $history->completed_at?->toISOString(),
+                'created_at'          => $history->created_at->toISOString(),
+                'package'             => $history->package ? ['name' => $history->package->name] : null,
             ],
             'auth' => [
                 'user' => $user
@@ -606,6 +615,26 @@ class MembershipController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Cancel a pending membership purchase
+     */
+    public function cancelPurchase(MembershipHistory $history)
+    {
+        if ($history->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($history->status !== 'pending') {
+            return redirect()->route('membership.status', $history->id)
+                ->with('error', 'This transaction cannot be cancelled.');
+        }
+
+        $history->update(['status' => 'cancelled']);
+
+        return redirect()->route('membership.status', $history->id)
+            ->with('success', 'Transaction cancelled.');
     }
 
     /**

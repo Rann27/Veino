@@ -14,6 +14,7 @@ interface CoinPurchase {
     payment_url?: string;
     status: 'pending' | 'completed' | 'failed' | 'cancelled';
     created_at: string;
+    expires_at?: string;
     package?: {
         name: string;
         bonus_premium_days: number;
@@ -24,10 +25,33 @@ interface Props {
     purchase: CoinPurchase;
 }
 
+function useCountdown(expiresAt?: string) {
+    const [remaining, setRemaining] = useState<number>(() => {
+        if (!expiresAt) return 0;
+        return Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+    });
+
+    useEffect(() => {
+        if (!expiresAt) return;
+        const id = setInterval(() => {
+            const secs = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+            setRemaining(secs);
+            if (secs <= 0) clearInterval(id);
+        }, 1000);
+        return () => clearInterval(id);
+    }, [expiresAt]);
+
+    const h = Math.floor(remaining / 3600);
+    const m = Math.floor((remaining % 3600) / 60);
+    const s = remaining % 60;
+    return { remaining, label: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` };
+}
+
 function PaymentStatusContent({ purchase }: Props) {
     const [hasRefreshed, setHasRefreshed] = useState(false);
     const [hasOpenedPayment, setHasOpenedPayment] = useState(false);
     const [showCongrats, setShowCongrats] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
 
     const page = usePage<{ 
         flash?: { 
@@ -74,6 +98,14 @@ function PaymentStatusContent({ purchase }: Props) {
         }
     }, [purchase.status, hasRefreshed]);
 
+    const handleCancel = () => {
+        if (!confirm('Are you sure you want to cancel this transaction?')) return;
+        setCancelling(true);
+        router.post(route('payment.purchase.cancel', purchase.id), {}, {
+            onFinish: () => setCancelling(false),
+        });
+    };
+
     const handleContinuePayment = () => {
         if (purchase.payment_url) {
             window.open(purchase.payment_url, '_blank');
@@ -82,10 +114,12 @@ function PaymentStatusContent({ purchase }: Props) {
 
     return (
         <UserLayout>
-            <PaymentStatusInner 
+            <PaymentStatusInner
                 purchase={purchase}
                 hasRefreshed={hasRefreshed}
                 onContinuePayment={handleContinuePayment}
+                onCancel={handleCancel}
+                cancelling={cancelling}
                 showCongrats={showCongrats}
                 setShowCongrats={setShowCongrats}
                 premiumGranted={page.props.flash?.premium_granted}
@@ -94,9 +128,10 @@ function PaymentStatusContent({ purchase }: Props) {
     );
 }
 
-function PaymentStatusInner({ purchase, hasRefreshed, onContinuePayment, showCongrats, setShowCongrats, premiumGranted }: any) {
+function PaymentStatusInner({ purchase, hasRefreshed, onContinuePayment, onCancel, cancelling, showCongrats, setShowCongrats, premiumGranted }: any) {
     const { currentTheme } = useTheme();
     const COIN_COLOR = '#f59e0b';
+    const countdown = useCountdown(purchase.status === 'pending' ? purchase.expires_at : undefined);
 
     const getStatusColor = () => {
         switch (purchase.status) {
@@ -298,12 +333,27 @@ function PaymentStatusInner({ purchase, hasRefreshed, onContinuePayment, showCon
                         </h1>
 
                         {/* Description */}
-                        <p 
-                            className="text-lg mb-8 opacity-70"
+                        <p
+                            className="text-lg mb-4 opacity-70"
                             style={{ color: currentTheme.foreground }}
                         >
                             {message.description}
                         </p>
+
+                        {/* Countdown timer for pending */}
+                        {purchase.status === 'pending' && purchase.expires_at && (
+                            <div className="mb-6">
+                                <p className="text-xs uppercase tracking-widest mb-1 opacity-50" style={{ color: currentTheme.foreground }}>
+                                    Expires in
+                                </p>
+                                <p
+                                    className="text-2xl font-mono font-bold"
+                                    style={{ color: countdown.remaining < 3600 ? '#ef4444' : '#fbbf24' }}
+                                >
+                                    {countdown.label}
+                                </p>
+                            </div>
+                        )}
 
                         {/* Transaction Details */}
                         <div 
@@ -451,12 +501,26 @@ function PaymentStatusInner({ purchase, hasRefreshed, onContinuePayment, showCon
                                 <button
                                     onClick={onContinuePayment}
                                     className="px-8 py-4 rounded-lg font-bold text-lg transition-all shadow-lg hover:shadow-xl"
-                                    style={{
-                                        backgroundColor: COIN_COLOR,
-                                        color: '#fff'
-                                    }}
+                                    style={{ backgroundColor: COIN_COLOR, color: '#fff' }}
                                 >
                                     Continue to Payment
+                                </button>
+                            )}
+
+                            {purchase.status === 'pending' && (
+                                <button
+                                    onClick={onCancel}
+                                    disabled={cancelling}
+                                    className="px-6 py-4 rounded-lg font-semibold text-base transition-all border"
+                                    style={{
+                                        backgroundColor: 'transparent',
+                                        color: '#ef4444',
+                                        borderColor: '#ef444440',
+                                        opacity: cancelling ? 0.6 : 1,
+                                        cursor: cancelling ? 'not-allowed' : 'pointer',
+                                    }}
+                                >
+                                    {cancelling ? 'Cancelling…' : 'Cancel Transaction'}
                                 </button>
                             )}
 

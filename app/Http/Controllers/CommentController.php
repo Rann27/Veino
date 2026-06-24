@@ -5,11 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Comment;
 use App\Models\Series;
 use App\Models\Chapter;
+use HTMLPurifier;
+use HTMLPurifier_Config;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CommentController extends Controller
 {
+    private function purify(string $html): string
+    {
+        $config = HTMLPurifier_Config::createDefault();
+        $config->set('HTML.Allowed', '');
+        $config->set('Cache.SerializerPath', storage_path('app/htmlpurifier'));
+        return (new HTMLPurifier($config))->purify($html);
+    }
+
     /**
      * Get comments for a commentable item (Series or Chapter)
      */
@@ -107,7 +117,7 @@ class CommentController extends Controller
         $comment = $commentable->comments()->create([
             'user_id' => Auth::id(),
             'parent_id' => $validated['parent_id'] ?? null,
-            'content' => strip_tags($validated['content']),
+            'content' => $this->purify($validated['content']),
         ]);
 
         // Increment comments_count for series only (not for replies)
@@ -150,7 +160,7 @@ class CommentController extends Controller
         ]);
 
         $comment->update([
-            'content' => strip_tags($validated['content']),
+            'content' => $this->purify($validated['content']),
             'is_edited' => true,
             'edited_at' => now(),
         ]);

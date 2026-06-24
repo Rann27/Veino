@@ -80,6 +80,7 @@ class HomeController extends Controller
                 $series->cover_url = $series->cover_url;
                 $series->price_range = $series->price_range;
                 $series->free_for_premium_members = (bool) $series->free_for_premium_members;
+                $series->is_mature = (bool) $series->is_mature;
 
                 return $series;
             });
@@ -101,7 +102,7 @@ class HomeController extends Controller
             }
         }
 
-        // Continue Reading — last 5 distinct series the user has read
+        // Continue Reading — last 20 distinct series the user has read
         $continueReading = [];
         if (auth()->check()) {
             $continueReading = ReadingHistory::where('user_id', auth()->id())
@@ -109,7 +110,7 @@ class HomeController extends Controller
                 ->orderByDesc('last_read_at')
                 ->get()
                 ->unique('series_id')
-                ->take(5)
+                ->take(20)
                 ->map(function ($history) {
                     if (!$history->series || !$history->chapter) return null;
                     return [

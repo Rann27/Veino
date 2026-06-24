@@ -26,6 +26,7 @@ class MembershipHistory extends Model
         'paypal_order_id',
         'oxapay_order_id',
         'payment_url',
+        'payment_expires_at',
         'gateway_response',
         'starts_at',
         'expires_at',
@@ -33,16 +34,22 @@ class MembershipHistory extends Model
     ];
 
     protected $casts = [
-        'amount_usd' => 'decimal:2',
-        'coin_price' => 'integer',
-        'duration_days' => 'integer',
-        'gateway_response' => 'array',
-        'starts_at' => 'datetime',
-        'expires_at' => 'datetime',
-        'completed_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'amount_usd'         => 'decimal:2',
+        'coin_price'         => 'integer',
+        'duration_days'      => 'integer',
+        'gateway_response'   => 'array',
+        'payment_expires_at' => 'datetime',
+        'starts_at'          => 'datetime',
+        'expires_at'         => 'datetime',
+        'completed_at'       => 'datetime',
+        'created_at'         => 'datetime',
+        'updated_at'         => 'datetime',
     ];
+
+    public function isPaymentExpired(): bool
+    {
+        return $this->payment_expires_at !== null && now()->isAfter($this->payment_expires_at);
+    }
 
     /**
      * Generate unique invoice number

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
@@ -56,6 +56,7 @@ interface EpubSeries {
   cover_url?: string;
   price_range: string;
   free_for_premium_members?: boolean;
+  is_mature?: boolean;
 }
 
 interface Banner {
@@ -94,6 +95,38 @@ interface HomeProps {
   continueReading?: ContinueReadingEntry[];
 }
 
+function useDragScroll() {
+    const ref = useRef<HTMLDivElement>(null);
+    const dragging = useRef(false);
+    const startX = useRef(0);
+    const scrollLeft = useRef(0);
+    const moved = useRef(false);
+
+    const onMouseDown = (e: React.MouseEvent) => {
+        dragging.current = true;
+        moved.current = false;
+        startX.current = e.pageX - (ref.current?.offsetLeft ?? 0);
+        scrollLeft.current = ref.current?.scrollLeft ?? 0;
+        if (ref.current) ref.current.style.cursor = 'grabbing';
+    };
+    const onMouseMove = (e: React.MouseEvent) => {
+        if (!dragging.current) return;
+        const x = e.pageX - (ref.current?.offsetLeft ?? 0);
+        const walk = x - startX.current;
+        if (Math.abs(walk) > 4) moved.current = true;
+        if (ref.current) ref.current.scrollLeft = scrollLeft.current - walk;
+    };
+    const onMouseUp = () => {
+        dragging.current = false;
+        if (ref.current) ref.current.style.cursor = 'grab';
+    };
+    const onClickCapture = (e: React.MouseEvent) => {
+        if (moved.current) e.preventDefault();
+    };
+
+    return { ref, onMouseDown, onMouseMove, onMouseUp, onMouseLeave: onMouseUp, onClickCapture };
+}
+
 function HomeContent({
   heroSeries,
   featuredSeries,
@@ -107,6 +140,7 @@ function HomeContent({
 }: HomeProps) {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const { currentTheme } = useTheme();
+  const dragScroll = useDragScroll();
 
   const timeAgo = (iso: string) => {
     const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -304,11 +338,21 @@ function HomeContent({
               </h2>
             </div>
 
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+            <div
+                ref={dragScroll.ref}
+                className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide select-none"
+                style={{ scrollbarWidth: 'none', cursor: 'grab' }}
+                onMouseDown={dragScroll.onMouseDown}
+                onMouseMove={dragScroll.onMouseMove}
+                onMouseUp={dragScroll.onMouseUp}
+                onMouseLeave={dragScroll.onMouseLeave}
+                onClickCapture={dragScroll.onClickCapture}
+            >
               {continueReading.map((entry, i) => (
                 <Link
                   key={entry.series_id}
                   href={`/series/${entry.series_slug}/chapter/${entry.chapter_link}`}
+                  draggable={false}
                   className={`group flex-shrink-0 w-[140px] sm:w-[160px] animate-in fade-in-up stagger-${Math.min(i + 1, 6)}`}
                 >
                   <div
@@ -425,7 +469,7 @@ function HomeContent({
               {epubSeries.map((series) => (
                 <Link
                   key={series.id}
-                  href={`/epub-novels/${series.slug}`}
+                  href={`/ebookseries/${series.slug}`}
                   className="group"
                 >
                   <div className="relative mb-2 sm:mb-3">
@@ -436,20 +480,50 @@ function HomeContent({
                       hoverScale={true}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg pointer-events-none" />
-                    {series.free_for_premium_members && (
-                      <div
-                        className="absolute left-1.5 right-1.5 bottom-1.5 sm:left-2 sm:right-2 sm:bottom-2 flex items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] font-bold shadow-lg backdrop-blur-sm"
-                        style={{
-                          backgroundColor: 'rgba(17, 12, 36, 0.82)',
-                          color: '#f4e8ff',
-                          border: '1px solid rgba(216, 180, 254, 0.38)',
-                          fontFamily: 'Poppins, sans-serif',
-                        }}
-                      >
-                        <PremiumDiamond size={11} />
-                        <span className="truncate">Free for Premium Member</span>
-                      </div>
-                    )}
+
+                    {/* Badge stack — top-right corner, icon-only with tooltip */}
+                    <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 items-end" style={{ zIndex: 10 }}>
+                      {series.is_mature && (
+                        <div className="group/r18 relative">
+                          <div
+                            className="flex items-center justify-center rounded shadow-md"
+                            style={{ width: '1.375rem', height: '1.375rem', background: 'linear-gradient(135deg, #dc2626, #991b1b)', color: '#fff', fontSize: '0.45rem', fontWeight: 900, letterSpacing: '0.04em', fontFamily: 'Poppins, sans-serif' }}
+                          >
+                            18+
+                          </div>
+                          <div className="absolute right-0 top-full mt-1 opacity-0 group-hover/r18:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap" style={{ zIndex: 30, background: 'rgba(0,0,0,0.88)', color: '#fff', fontSize: '0.6rem', fontWeight: 600, padding: '0.18rem 0.45rem', borderRadius: '0.2rem', fontFamily: 'Poppins, sans-serif' }}>
+                            Adult Content (R18)
+                          </div>
+                        </div>
+                      )}
+                      {series.free_for_premium_members ? (
+                        <div className="group/fpm relative">
+                          <div
+                            className="flex items-center justify-center rounded shadow-md"
+                            style={{ width: '1.375rem', height: '1.375rem', background: 'linear-gradient(135deg, #7c3aed, #a21caf)', color: '#fff' }}
+                          >
+                            <PremiumDiamond size={9} />
+                          </div>
+                          <div className="absolute right-0 top-full mt-1 opacity-0 group-hover/fpm:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap" style={{ zIndex: 30, background: 'rgba(0,0,0,0.88)', color: '#fff', fontSize: '0.6rem', fontWeight: 600, padding: '0.18rem 0.45rem', borderRadius: '0.2rem', fontFamily: 'Poppins, sans-serif' }}>
+                            Free for Premium Member
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="group/excl relative">
+                          <div
+                            className="flex items-center justify-center rounded shadow-md"
+                            style={{ width: '1.375rem', height: '1.375rem', background: '#fbbf24', color: '#78350f' }}
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zM5 18h14v2H5z"/>
+                            </svg>
+                          </div>
+                          <div className="absolute right-0 top-full mt-1 opacity-0 group-hover/excl:opacity-100 pointer-events-none transition-opacity duration-150 whitespace-nowrap" style={{ zIndex: 30, background: 'rgba(0,0,0,0.88)', color: '#fff', fontSize: '0.6rem', fontWeight: 600, padding: '0.18rem 0.45rem', borderRadius: '0.2rem', fontFamily: 'Poppins, sans-serif' }}>
+                            Exclusive
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <h3
