@@ -9,6 +9,7 @@ use App\Models\Genre;
 use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 
@@ -43,6 +44,25 @@ class EbookSeriesController extends Controller
     }
 
     /**
+     * Return on-site series info as JSON for the "Fetch Info" feature
+     */
+    public function seriesInfo(string $slug)
+    {
+        $series = Series::with('genres')->where('slug', $slug)->firstOrFail();
+
+        return response()->json([
+            'title'             => $series->title,
+            'alternative_title' => $series->alternative_title ?? '',
+            'synopsis'          => $series->synopsis ?? '',
+            'author'            => $series->author ?? '',
+            'artist'            => $series->artist ?? '',
+            'cover_url'         => $series->cover_url ?? null,
+            'slug'              => $series->slug,
+            'genre_ids'         => $series->genres->pluck('id')->values()->toArray(),
+        ]);
+    }
+
+    /**
      * Show the form for creating a new ebook series
      */
     public function create()
@@ -64,7 +84,7 @@ class EbookSeriesController extends Controller
             'synopsis' => 'nullable|string',
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
-            'cover' => 'nullable|image|max:2048',
+            'cover' => 'nullable|image|max:10240',
             'genre_ids' => 'nullable|array',
             'genre_ids.*' => 'exists:genres,id',
             'show_trial_button' => 'nullable|boolean',
@@ -81,6 +101,15 @@ class EbookSeriesController extends Controller
         if ($request->hasFile('cover')) {
             $path = $request->file('cover')->store('ebook-covers', 'public');
             $validated['cover'] = 'storage/' . $path;
+        } elseif ($request->filled('fetched_cover_url')) {
+            // Download cover from on-site series URL
+            $response = Http::timeout(15)->get($request->fetched_cover_url);
+            if ($response->successful()) {
+                $ext  = pathinfo(parse_url($request->fetched_cover_url, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
+                $name = 'ebook-covers/' . Str::random(20) . '.' . $ext;
+                Storage::disk('public')->put($name, $response->body());
+                $validated['cover'] = 'storage/' . $name;
+            }
         }
 
         // Generate slug
@@ -139,7 +168,7 @@ class EbookSeriesController extends Controller
             'synopsis' => 'nullable|string',
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
-            'cover' => 'nullable|image|max:2048',
+            'cover' => 'nullable|image|max:10240',
             'genre_ids' => 'nullable|array',
             'genre_ids.*' => 'exists:genres,id',
             'show_trial_button' => 'nullable|boolean',
@@ -221,7 +250,7 @@ class EbookSeriesController extends Controller
             'summary' => 'nullable|string',
             'price_coins' => 'required|integer|min:0',
             'order' => 'required|integer|min:0',
-            'cover' => 'nullable|image|max:2048',
+            'cover' => 'nullable|image|max:10240',
             'file' => 'required|file|extensions:epub|max:40960', // EPUB MIME varies by browser; validate extension.
             'pdf_file' => 'nullable|file|extensions:pdf|max:40960',
         ]);
@@ -273,7 +302,7 @@ class EbookSeriesController extends Controller
             'summary' => 'nullable|string',
             'price_coins' => 'required|integer|min:0',
             'order' => 'required|integer|min:0',
-            'cover' => 'nullable|image|max:2048',
+            'cover' => 'nullable|image|max:10240',
             'file' => 'nullable|file|extensions:epub|max:40960',
             'pdf_file' => 'nullable|file|extensions:pdf|max:40960',
         ]);

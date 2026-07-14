@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
@@ -121,11 +121,24 @@ interface Series {
     is_mature?: boolean;
 }
 
+interface SeriesMark {
+    id: number;
+    chapter_id: number;
+    chapter_title: string;
+    chapter_number: number;
+    chapter_link: string;
+    chapter_volume?: number;
+    paragraph_index: number;
+    paragraph_preview: string;
+    created_at: string;
+}
+
 interface Props {
     series: Series;
     chapters: Chapter[];
     relatedSeries: Series[];
     isBookmarked?: boolean;
+    seriesMarks?: SeriesMark[];
     auth?: {
         user?: {
             id: number;
@@ -176,7 +189,7 @@ const sanitizeContent = (html: string): string => {
         .replace(/color:\s*[^;"]+;?/gi, ''); // Remove any remaining color declarations
 };
 
-function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false, auth }: Props) {
+function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false, seriesMarks = [], auth }: Props) {
     const { currentTheme } = useTheme();
     const [showAllChapters, setShowAllChapters] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -194,6 +207,31 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+
+    // Marks state
+    const [marks, setMarks] = useState<SeriesMark[]>(seriesMarks);
+    const [marksExpanded, setMarksExpanded] = useState(false);
+
+    const handleDeleteMark = async (id: number) => {
+        const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+        await fetch(route('marks.destroy', id), {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+        });
+        setMarks(prev => prev.filter(m => m.id !== id));
+    };
+
+    // Group marks by chapter
+    const marksGrouped = useMemo(() => {
+        const map = new Map<number, { chapter_title: string; chapter_link: string; chapter_number: number; chapter_volume?: number; items: SeriesMark[] }>();
+        marks.forEach(m => {
+            if (!map.has(m.chapter_id)) {
+                map.set(m.chapter_id, { chapter_title: m.chapter_title, chapter_link: m.chapter_link, chapter_number: m.chapter_number, chapter_volume: m.chapter_volume, items: [] });
+            }
+            map.get(m.chapter_id)!.items.push(m);
+        });
+        return Array.from(map.values());
+    }, [marks]);
 
     // Check age verification on mount
     useEffect(() => {
@@ -744,6 +782,99 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                         </div>
                     </div>
                 </div>
+
+                {/* ─── Marks Section ─── */}
+                {marks.length > 0 && (
+                    <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-4">
+                        <div
+                            className="rounded-2xl overflow-hidden"
+                            style={{
+                                backgroundColor: `${currentTheme.foreground}04`,
+                                border: `1px solid rgba(251,191,36,0.2)`,
+                            }}
+                        >
+                            {/* Header */}
+                            <button
+                                className="w-full flex items-center justify-between px-5 py-4 transition-opacity hover:opacity-80"
+                                onClick={() => setMarksExpanded(e => !e)}
+                                style={{ borderBottom: marksExpanded ? `1px solid rgba(251,191,36,0.12)` : 'none' }}
+                            >
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-1 h-6 rounded-full" style={{ background: 'linear-gradient(to bottom,#f59e0b,#fbbf2480)' }} />
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#f59e0b' }}>
+                                        <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                                    </svg>
+                                    <h2 className="text-base font-bold" style={{ color: currentTheme.foreground }}>My Marks</h2>
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#f59e0b' }}>
+                                        {marks.length}
+                                    </span>
+                                </div>
+                                <svg
+                                    className={`w-4 h-4 transition-transform duration-200 ${marksExpanded ? 'rotate-180' : ''}`}
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: `${currentTheme.foreground}50` }}
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {/* Marks list — collapsible */}
+                            {marksExpanded && (
+                                <div className="py-2">
+                                    {marksGrouped.map(group => (
+                                        <div key={group.chapter_link}>
+                                            {/* Chapter label */}
+                                            <div className="px-5 py-2 sticky top-0" style={{ backgroundColor: `${currentTheme.background}f0` }}>
+                                                <Link
+                                                    href={route('chapters.show', [series.slug, group.chapter_link])}
+                                                    className="text-xs font-bold hover:underline"
+                                                    style={{ color: SHINY_PURPLE }}
+                                                >
+                                                    {group.chapter_volume ? `Vol ${group.chapter_volume} ` : ''}Ch {group.chapter_number} — {group.chapter_title}
+                                                </Link>
+                                            </div>
+                                            {group.items.map(m => (
+                                                <div
+                                                    key={m.id}
+                                                    className="flex items-start gap-3 px-5 py-3 group"
+                                                    style={{ borderTop: `1px solid ${currentTheme.foreground}06` }}
+                                                >
+                                                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0 opacity-60" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#fbbf24' }}>
+                                                        <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
+                                                    </svg>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm leading-relaxed line-clamp-3" style={{ color: currentTheme.foreground }}>
+                                                            {m.paragraph_preview || <span style={{ color: `${currentTheme.foreground}50` }}>(no preview)</span>}
+                                                        </p>
+                                                        <p className="text-[10px] mt-0.5" style={{ color: `${currentTheme.foreground}50` }}>
+                                                            Paragraph {m.paragraph_index + 1}
+                                                        </p>
+                                                    </div>
+                                                    <Link
+                                                        href={route('chapters.show', [series.slug, m.chapter_link])}
+                                                        className="flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
+                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE }}
+                                                    >
+                                                        Go
+                                                    </Link>
+                                                    <button
+                                                        onClick={() => handleDeleteMark(m.id)}
+                                                        className="flex-shrink-0 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        style={{ color: '#ef4444' }}
+                                                        title="Remove mark"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
 
                 {/* ─── Two Column: Chapters + Related ─── */}
                 <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-6">

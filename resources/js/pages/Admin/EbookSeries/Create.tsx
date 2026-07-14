@@ -1,10 +1,9 @@
-﻿import React, { useState, FormEvent } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
 
-//  colour helpers 
 function hexToRgb(hex: string) {
     const h = hex.replace('#', '');
     const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
@@ -31,15 +30,15 @@ interface Props {
 
 function CreateContent({ genres, seriesOptions }: Props) {
     const { currentTheme } = useTheme();
-    const light    = isLight(currentTheme.background);
-    const fg       = currentTheme.foreground;
-    const muted    = wa(fg, 0.45);
-    const border   = wa(fg, 0.12);
-    const cardBg   = light ? wa(fg, 0.03) : wa(fg, 0.06);
-    const inputBg  = light ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
-    const accent   = light ? '#b45309' : '#fbbf24';
+    const light   = isLight(currentTheme.background);
+    const fg      = currentTheme.foreground;
+    const muted   = wa(fg, 0.45);
+    const border  = wa(fg, 0.12);
+    const cardBg    = light ? wa(fg, 0.03) : wa(fg, 0.06);
+    const panelBg   = light ? '#ffffff' : '#1a1a2e';
+    const inputBg   = light ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
+    const accent    = light ? '#b45309' : '#fbbf24';
 
-    //  themed helpers 
     const TLabel = ({ children }: { children: React.ReactNode }) => (
         <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: fg, marginBottom: '0.5rem' }}>
             {children}
@@ -47,21 +46,17 @@ function CreateContent({ genres, seriesOptions }: Props) {
     );
 
     const inputStyle = (hasError?: boolean): React.CSSProperties => ({
-        width: '100%',
-        padding: '0.5rem 1rem',
-        borderRadius: '0.5rem',
+        width: '100%', padding: '0.5rem 1rem', borderRadius: '0.5rem',
         border: `1px solid ${hasError ? '#ef4444' : border}`,
-        background: inputBg,
-        color: fg,
-        outline: 'none',
-        boxSizing: 'border-box',
-        fontFamily: 'inherit',
-        fontSize: '0.875rem',
+        background: inputBg, color: fg, outline: 'none',
+        boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '0.875rem',
     });
 
-    //  state 
-    const [submitting, setSubmitting] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [submitting, setSubmitting]   = useState(false);
+    const [errors, setErrors]           = useState<Record<string, string>>({});
+    const [fetching, setFetching]       = useState(false);
+    const [fetchSlug, setFetchSlug]     = useState('');
+    const [fetchedCoverUrl, setFetchedCoverUrl] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         title: '',
@@ -84,6 +79,7 @@ function CreateContent({ genres, seriesOptions }: Props) {
         if (file) {
             setFormData(prev => ({ ...prev, cover: file }));
             setCoverPreview(URL.createObjectURL(file));
+            setFetchedCoverUrl(null);
         }
     };
 
@@ -96,6 +92,37 @@ function CreateContent({ genres, seriesOptions }: Props) {
         }));
     };
 
+    const handleFetchInfo = async () => {
+        if (!fetchSlug) return;
+        setFetching(true);
+        try {
+            const res = await fetch(route('admin.ebookseries.series-info', fetchSlug));
+            if (!res.ok) { alert('Series not found.'); return; }
+            const data = await res.json();
+
+            setFormData(prev => ({
+                ...prev,
+                title:             data.title ?? prev.title,
+                alternative_title: data.alternative_title ?? prev.alternative_title,
+                synopsis:          data.synopsis ?? prev.synopsis,
+                author:            data.author ?? prev.author,
+                artist:            data.artist ?? prev.artist,
+                genre_ids:         data.genre_ids ?? prev.genre_ids,
+                show_trial_button: true,
+                series_slug:       data.slug,
+            }));
+
+            if (data.cover_url) {
+                setFetchedCoverUrl(data.cover_url);
+                setCoverPreview(data.cover_url);
+            }
+        } catch {
+            alert('Failed to fetch series info.');
+        } finally {
+            setFetching(false);
+        }
+    };
+
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         setSubmitting(true);
@@ -104,7 +131,11 @@ function CreateContent({ genres, seriesOptions }: Props) {
         const data = new FormData();
         data.append('title', formData.title);
         data.append('alternative_title', formData.alternative_title);
-        if (formData.cover) data.append('cover', formData.cover);
+        if (formData.cover) {
+            data.append('cover', formData.cover);
+        } else if (fetchedCoverUrl) {
+            data.append('fetched_cover_url', fetchedCoverUrl);
+        }
         data.append('synopsis', formData.synopsis);
         data.append('author', formData.author);
         data.append('artist', formData.artist);
@@ -128,16 +159,73 @@ function CreateContent({ genres, seriesOptions }: Props) {
                     Create New Ebook Series
                 </h1>
 
+                {/* ── Fetch Info From Series ───────────────────────────── */}
+                <div style={{
+                    background: light ? 'rgba(59,130,246,0.06)' : 'rgba(59,130,246,0.10)',
+                    border: `1px solid rgba(59,130,246,0.30)`,
+                    borderRadius: '0.75rem',
+                    padding: '1.25rem 1.5rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.5">
+                            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#60a5fa' }}>
+                            Fetch Info From Series
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: muted, marginLeft: '0.25rem' }}>
+                            — Auto-fill form dari on-site series
+                        </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                        <div style={{ flex: 1 }}>
+                            <AdminSlugCombobox
+                                value={fetchSlug}
+                                onChange={setFetchSlug}
+                                options={seriesOptions}
+                                placeholder="Pilih series..."
+                                fg={fg}
+                                muted={muted}
+                                border={border}
+                                inputBg={inputBg}
+                                panelBg={panelBg}
+                                accent="#60a5fa"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleFetchInfo}
+                            disabled={!fetchSlug || fetching}
+                            style={{
+                                background: fetchSlug && !fetching ? '#3b82f6' : wa(fg, 0.12),
+                                color: fetchSlug && !fetching ? '#fff' : muted,
+                                border: 'none',
+                                padding: '0.5rem 1.25rem',
+                                borderRadius: '0.5rem',
+                                fontWeight: 700,
+                                fontSize: '0.875rem',
+                                cursor: fetchSlug && !fetching ? 'pointer' : 'not-allowed',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                                transition: 'all 0.15s',
+                            }}
+                        >
+                            {fetching ? 'Fetching…' : 'Fetch Info'}
+                        </button>
+                    </div>
+                </div>
+
                 <form
                     onSubmit={handleSubmit}
                     style={{
-                        background: cardBg,
-                        border: `1px solid ${border}`,
-                        borderRadius: '0.75rem',
-                        padding: '1.75rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '1.5rem',
+                        background: cardBg, border: `1px solid ${border}`,
+                        borderRadius: '0.75rem', padding: '1.75rem',
+                        display: 'flex', flexDirection: 'column', gap: '1.5rem',
                     }}
                 >
                     {/* Title */}
@@ -166,17 +254,21 @@ function CreateContent({ genres, seriesOptions }: Props) {
 
                     {/* Cover */}
                     <div>
-                        <TLabel>Cover Image *</TLabel>
+                        <TLabel>Cover Image</TLabel>
                         <input
                             type="file"
                             accept="image/*"
                             onChange={handleCoverChange}
                             style={inputStyle(!!errors.cover)}
-                            required
                         />
                         {coverPreview && (
-                            <div style={{ marginTop: '0.5rem' }}>
-                                <img src={coverPreview} alt="Cover preview" style={{ width: '8rem', borderRadius: '0.5rem' }} />
+                            <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <img src={coverPreview} alt="Cover preview" style={{ width: '5rem', borderRadius: '0.5rem' }} />
+                                {fetchedCoverUrl && !formData.cover && (
+                                    <span style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
+                                        ✓ Cover dari series (akan di-download otomatis)
+                                    </span>
+                                )}
                             </div>
                         )}
                         {errors.cover && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{errors.cover}</p>}
@@ -227,11 +319,8 @@ function CreateContent({ genres, seriesOptions }: Props) {
                                     type="button"
                                     onClick={() => toggleGenre(genre.id)}
                                     style={{
-                                        padding: '0.375rem 1rem',
-                                        borderRadius: '9999px',
-                                        fontSize: '0.875rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
+                                        padding: '0.375rem 1rem', borderRadius: '9999px',
+                                        fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
                                         transition: 'all 0.15s',
                                         border: `1px solid ${formData.genre_ids.includes(genre.id) ? accent : border}`,
                                         background: formData.genre_ids.includes(genre.id) ? accent : wa(fg, 0.05),
@@ -245,16 +334,13 @@ function CreateContent({ genres, seriesOptions }: Props) {
                     </div>
 
                     {/* Premium Membership Access */}
-                    <div
-                        style={{
-                            padding: '1rem',
-                            borderRadius: '0.5rem',
-                            border: `1px solid ${formData.free_for_premium_members ? 'rgba(167,139,250,0.45)' : border}`,
-                            background: formData.free_for_premium_members
-                                ? (light ? 'rgba(124,58,237,0.08)' : 'rgba(167,139,250,0.12)')
-                                : wa(fg, 0.04),
-                        }}
-                    >
+                    <div style={{
+                        padding: '1rem', borderRadius: '0.5rem',
+                        border: `1px solid ${formData.free_for_premium_members ? 'rgba(167,139,250,0.45)' : border}`,
+                        background: formData.free_for_premium_members
+                            ? (light ? 'rgba(124,58,237,0.08)' : 'rgba(167,139,250,0.12)')
+                            : wa(fg, 0.04),
+                    }}>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', cursor: 'pointer' }}>
                             <div>
                                 <div style={{ fontSize: '0.875rem', fontWeight: 700, color: formData.free_for_premium_members ? '#a78bfa' : fg }}>
@@ -274,16 +360,13 @@ function CreateContent({ genres, seriesOptions }: Props) {
                     </div>
 
                     {/* Adult Content (R18) */}
-                    <div
-                        style={{
-                            padding: '1rem',
-                            borderRadius: '0.5rem',
-                            border: `1px solid ${formData.is_mature ? 'rgba(239,68,68,0.45)' : border}`,
-                            background: formData.is_mature
-                                ? (light ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.10)')
-                                : wa(fg, 0.04),
-                        }}
-                    >
+                    <div style={{
+                        padding: '1rem', borderRadius: '0.5rem',
+                        border: `1px solid ${formData.is_mature ? 'rgba(239,68,68,0.45)' : border}`,
+                        background: formData.is_mature
+                            ? (light ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.10)')
+                            : wa(fg, 0.04),
+                    }}>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', cursor: 'pointer' }}>
                             <div>
                                 <div style={{ fontSize: '0.875rem', fontWeight: 700, color: formData.is_mature ? '#f87171' : fg }}>
@@ -303,19 +386,14 @@ function CreateContent({ genres, seriesOptions }: Props) {
                     </div>
 
                     {/* Trial Reading Link */}
-                    <div
-                        style={{
-                            padding: '1rem',
-                            borderRadius: '0.5rem',
-                            border: `1px solid ${formData.show_trial_button ? 'rgba(59,130,246,0.45)' : border}`,
-                            background: formData.show_trial_button
-                                ? (light ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.12)')
-                                : wa(fg, 0.04),
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.85rem',
-                        }}
-                    >
+                    <div style={{
+                        padding: '1rem', borderRadius: '0.5rem',
+                        border: `1px solid ${formData.show_trial_button ? 'rgba(59,130,246,0.45)' : border}`,
+                        background: formData.show_trial_button
+                            ? (light ? 'rgba(59,130,246,0.08)' : 'rgba(59,130,246,0.12)')
+                            : wa(fg, 0.04),
+                        display: 'flex', flexDirection: 'column', gap: '0.85rem',
+                    }}>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', cursor: 'pointer' }}>
                             <div>
                                 <div style={{ fontSize: '0.875rem', fontWeight: 700, color: formData.show_trial_button ? '#60a5fa' : fg }}>
@@ -350,7 +428,7 @@ function CreateContent({ genres, seriesOptions }: Props) {
                                     muted={muted}
                                     border={border}
                                     inputBg={inputBg}
-                                    panelBg={cardBg}
+                                    panelBg={panelBg}
                                     accent="#60a5fa"
                                 />
                                 {errors.series_slug && <p style={{ color: '#ef4444', fontSize: '0.8125rem', marginTop: '0.25rem' }}>{errors.series_slug}</p>}
@@ -364,15 +442,11 @@ function CreateContent({ genres, seriesOptions }: Props) {
                             type="submit"
                             disabled={submitting}
                             style={{
-                                background: accent,
-                                color: light ? '#fff' : '#000',
-                                border: 'none',
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
+                                background: accent, color: light ? '#fff' : '#000',
+                                border: 'none', padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem', fontWeight: 600,
                                 cursor: submitting ? 'not-allowed' : 'pointer',
-                                opacity: submitting ? 0.5 : 1,
-                                fontSize: '0.9375rem',
+                                opacity: submitting ? 0.5 : 1, fontSize: '0.9375rem',
                             }}
                         >
                             {submitting ? 'Creating...' : 'Create Series'}
@@ -381,22 +455,16 @@ function CreateContent({ genres, seriesOptions }: Props) {
                         <a
                             href={route('admin.ebookseries.index')}
                             style={{
-                                background: wa(fg, 0.07),
-                                color: fg,
-                                border: `1px solid ${border}`,
-                                padding: '0.75rem 1.5rem',
-                                borderRadius: '0.5rem',
-                                fontWeight: 600,
-                                textDecoration: 'none',
-                                display: 'inline-block',
-                                fontSize: '0.9375rem',
+                                background: wa(fg, 0.07), color: fg,
+                                border: `1px solid ${border}`, padding: '0.75rem 1.5rem',
+                                borderRadius: '0.5rem', fontWeight: 600,
+                                textDecoration: 'none', display: 'inline-block', fontSize: '0.9375rem',
                             }}
                         >
                             Cancel
                         </a>
                     </div>
                 </form>
-
             </div>
         </div>
     );

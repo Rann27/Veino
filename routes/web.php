@@ -28,6 +28,7 @@ use App\Http\Controllers\BookshelfController;
 use App\Http\Controllers\Admin\EbookSeriesController as AdminEbookSeriesController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\RequestCommissionController;
+use App\Http\Controllers\MarkController;
 use Illuminate\Support\Facades\Auth;
 
 // Authentication Routes — Combined Auth Page (named 'login' for Laravel auth middleware redirects)
@@ -127,6 +128,13 @@ Route::get('/series/{slug}', [UserSeriesController::class, 'show'])->name('serie
 Route::get('/series/{slug}/chapter/{chapter}', [UserChapterController::class, 'show'])->name('chapters.show');
 Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController::class, 'purchase'])
     ->name('chapters.purchase')->middleware('auth');
+
+// Mark (paragraph marks) — auth required
+Route::middleware('auth')->group(function () {
+    Route::post('/series/{slug}/chapter/{chapter}/marks', [MarkController::class, 'store'])->name('marks.store');
+    Route::get('/series/{slug}/marks', [MarkController::class, 'forSeries'])->name('marks.for-series');
+    Route::delete('/marks/{mark}', [MarkController::class, 'destroy'])->name('marks.destroy');
+});
 
 // Blog Routes
 Route::get('/blog/{blog}', [App\Http\Controllers\BlogController::class, 'show'])->name('blog.show');
@@ -286,6 +294,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/misc/delete-banner', [App\Http\Controllers\Admin\MiscController::class, 'deleteBanner'])->name('misc.delete-banner');
     
     // Ebook Series Management
+    Route::get('/ebookseries/series-info/{slug}', [AdminEbookSeriesController::class, 'seriesInfo'])->name('ebookseries.series-info');
     Route::get('/ebookseries', [AdminEbookSeriesController::class, 'index'])->name('ebookseries.index');
     Route::get('/ebookseries/create', [AdminEbookSeriesController::class, 'create'])->name('ebookseries.create');
     Route::post('/ebookseries', [AdminEbookSeriesController::class, 'store'])->name('ebookseries.store');

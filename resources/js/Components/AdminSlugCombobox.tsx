@@ -99,7 +99,8 @@ export default function AdminSlugCombobox({
                         borderRadius: '0.75rem',
                         border: `1px solid ${border}`,
                         background: panelBg,
-                        boxShadow: '0 18px 45px rgba(0,0,0,0.28)',
+                        backdropFilter: 'none',
+                        boxShadow: '0 18px 45px rgba(0,0,0,0.55)',
                         padding: '0.35rem',
                     }}
                 >

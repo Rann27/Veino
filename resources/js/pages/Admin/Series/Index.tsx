@@ -1,10 +1,10 @@
-﻿import AdminLayout from '@/Layouts/AdminLayout';
+import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
 
-// â”€â”€ colour helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── colour helpers ─────────────────────────────────────────────────────────
 function hexToRgb(hex: string) {
   const h = hex.replace('#', '');
   return { r: parseInt(h.substring(0,2),16), g: parseInt(h.substring(2,4),16), b: parseInt(h.substring(4,6),16) };
@@ -12,7 +12,7 @@ function hexToRgb(hex: string) {
 function isLight(hex: string) { const {r,g,b}=hexToRgb(hex); return (r*.299+g*.587+b*.114)/255>.5; }
 function wa(hex: string, a: number) { try { const {r,g,b}=hexToRgb(hex); return `rgba(${r},${g},${b},${a})`; } catch { return `rgba(0,0,0,${a})`; } }
 
-// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── types ───────────────────────────────────────────────────────────────────
 interface Genre { id: number; name: string; }
 interface NativeLanguage { id: number; name: string; }
 interface Series {
@@ -21,7 +21,7 @@ interface Series {
   slug: string; author?: string; rating: number;
   views: number; chapters_count: number;
   native_language: NativeLanguage; genres: Genre[];
-  created_at: string;
+  created_at: string; is_mature?: boolean;
 }
 interface SeriesIndexProps {
   series: Series[]; currentPage: number; totalPages: number;
@@ -29,10 +29,9 @@ interface SeriesIndexProps {
   premiumChapterPrice: number;
 }
 
-// â”€â”€ view formatter â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const fmtViews = (n: number) => n >= 1_000_000 ? (n/1_000_000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
 
-// â”€â”€ themed input / select helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── themed helpers ───────────────────────────────────────────────────────────
 function TInput({ value, onChange, placeholder, type='text', required=false, fg, border, cardBg, accent }:
   { value: string; onChange: (v:string)=>void; placeholder?: string; type?: string; required?: boolean; fg: string; border: string; cardBg: string; accent: string }) {
   return (
@@ -86,9 +85,9 @@ function TLabel({ children, fg }: { children: React.ReactNode; fg: string }) {
   return <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: fg }}>{children}</label>;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════════
 // Add Series Modal
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════════
 interface AddSeriesModalProps {
   onClose: () => void;
   genres: Genre[];
@@ -116,12 +115,7 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null;
     setCoverFile(f);
-    if (f) {
-      const url = URL.createObjectURL(f);
-      setCoverPreview(url);
-    } else {
-      setCoverPreview(null);
-    }
+    setCoverPreview(f ? URL.createObjectURL(f) : null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -152,7 +146,6 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
       <div className="relative w-full max-w-4xl my-8 rounded-2xl shadow-2xl overflow-hidden" style={{ backgroundColor: bg }}>
-        {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: border }}>
           <div>
             <h2 className="text-lg font-bold" style={{ color: fg }}>Add New Series</h2>
@@ -169,16 +162,12 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
 
         <form onSubmit={handleSubmit}>
           <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 max-h-[75vh] overflow-y-auto">
-            {/* â”€â”€ Left: Cover Preview â”€â”€ */}
+            {/* Cover */}
             <div className="lg:col-span-1 space-y-4">
-              {/* Cover preview box */}
               <div className="aspect-[2/3] rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center" style={{ borderColor: border, backgroundColor: panelBg }}>
                 {(coverType === 'cdn' && formData.cover_url) || coverPreview ? (
-                  <img
-                    src={coverPreview || formData.cover_url}
-                    alt="preview" className="w-full h-full object-cover"
-                    onError={e => { (e.target as HTMLImageElement).style.display='none'; }}
-                  />
+                  <img src={coverPreview || formData.cover_url} alt="preview" className="w-full h-full object-cover"
+                    onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
                 ) : (
                   <div className="flex flex-col items-center gap-2" style={{ color: muted }}>
                     <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -189,7 +178,6 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
                 )}
               </div>
 
-              {/* Cover type toggle */}
               <div className="flex gap-1 p-1 rounded-xl" style={{ backgroundColor: panelBg }}>
                 {(['cdn', 'file'] as const).map(t => (
                   <button key={t} type="button" onClick={() => { setCoverType(t); setCoverPreview(null); setCoverFile(null); }}
@@ -208,38 +196,31 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
               ) : (
                 <div>
                   <TLabel fg={muted}>Upload File</TLabel>
-                  <label
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-colors"
+                  <label className="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-dashed cursor-pointer transition-colors"
                     style={{ borderColor: border, backgroundColor: panelBg }}
                     onDragOver={e => e.preventDefault()}
-                    onDrop={e => { e.preventDefault(); const f=e.dataTransfer.files[0]; if(f){ setCoverFile(f); setCoverPreview(URL.createObjectURL(f)); } }}
-                  >
+                    onDrop={e => { e.preventDefault(); const f=e.dataTransfer.files[0]; if(f){ setCoverFile(f); setCoverPreview(URL.createObjectURL(f)); } }}>
                     <svg className="w-6 h-6" style={{ color: muted }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
                     </svg>
                     <span className="text-xs" style={{ color: muted }}>{coverFile ? coverFile.name : 'Drop or click to upload'}</span>
                     <input type="file" className="hidden" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={handleFileChange} />
                   </label>
-                  <p className="text-[10px] mt-1.5" style={{ color: muted }}>Max 2MB Â· JPG, PNG, WebP</p>
+                  <p className="text-[10px] mt-1.5" style={{ color: muted }}>Max 2MB · JPG, PNG, WebP</p>
                 </div>
               )}
 
-              {/* Rating */}
               <div>
-                <TLabel fg={muted}>Rating (0â€“10)</TLabel>
+                <TLabel fg={muted}>Rating (0–10)</TLabel>
                 <TInput type="number" value={formData.rating} onChange={v=>set('rating',v)} placeholder="8.5" {...inputProps} />
               </div>
 
-              {/* Epub toggle */}
               <div className="p-3 rounded-xl border" style={{ borderColor: formData.show_epub_button ? '#16a34a50' : border, backgroundColor: formData.show_epub_button ? 'rgba(22,163,74,0.07)' : panelBg }}>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-bold" style={{ color: formData.show_epub_button ? '#16a34a' : fg }}>Epub Download</p>
-                  <button
-                    type="button"
-                    onClick={() => set('show_epub_button', !formData.show_epub_button)}
+                  <button type="button" onClick={() => set('show_epub_button', !formData.show_epub_button)}
                     className="relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none"
-                    style={{ backgroundColor: formData.show_epub_button ? '#16a34a' : 'rgba(156,163,175,0.5)' }}
-                  >
+                    style={{ backgroundColor: formData.show_epub_button ? '#16a34a' : 'rgba(156,163,175,0.5)' }}>
                     <span className="inline-block rounded-full bg-white shadow transition-transform" style={{ width: 18, height: 18, transform: formData.show_epub_button ? 'translateX(22px)' : 'translateX(3px)' }} />
                   </button>
                 </div>
@@ -250,55 +231,30 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
                     options={ebookSeriesOptions}
                     placeholder="epub-series-slug"
                     required={formData.show_epub_button}
-                    fg={fg}
-                    muted={muted}
-                    border={border}
-                    inputBg={cardBg}
-                    panelBg={bg}
-                    accent="#16a34a"
+                    fg={fg} muted={muted} border={border} inputBg={cardBg} panelBg={bg} accent="#16a34a"
                   />
                 )}
               </div>
 
-              {/* Mature toggle */}
-              <label
-                className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer"
-                style={{ borderColor: formData.is_mature ? '#ef444460' : border, backgroundColor: formData.is_mature ? 'rgba(239,68,68,0.07)' : panelBg }}
-              >
+              <label className="flex items-start gap-3 p-3 rounded-xl border cursor-pointer"
+                style={{ borderColor: formData.is_mature ? '#ef444460' : border, backgroundColor: formData.is_mature ? 'rgba(239,68,68,0.07)' : panelBg }}>
                 <input type="checkbox" checked={formData.is_mature} onChange={e=>set('is_mature',e.target.checked)} className="mt-0.5 h-4 w-4 rounded" />
                 <div>
-                  <p className="text-xs font-bold" style={{ color: formData.is_mature ? '#dc2626' : fg }}>ðŸ”ž Mature Content</p>
+                  <p className="text-xs font-bold" style={{ color: formData.is_mature ? '#dc2626' : fg }}>🔞 Mature Content</p>
                   <p className="text-[10px] mt-0.5" style={{ color: muted }}>Shows age-gate warning to users</p>
                 </div>
               </label>
             </div>
 
-            {/* â”€â”€ Right: Form Fields â”€â”€ */}
+            {/* Fields */}
             <div className="lg:col-span-2 space-y-4">
-              <div>
-                <TLabel fg={muted}>Title *</TLabel>
-                <TInput value={formData.title} onChange={v=>set('title',v)} placeholder="Enter series title" required {...inputProps} />
-              </div>
-              <div>
-                <TLabel fg={muted}>Alternative Title</TLabel>
-                <TInput value={formData.alternative_title} onChange={v=>set('alternative_title',v)} placeholder="Original / alternative title" {...inputProps} />
-              </div>
-              <div>
-                <TLabel fg={muted}>Synopsis</TLabel>
-                <TTextarea value={formData.synopsis} onChange={v=>set('synopsis',v)} placeholder="Enter series synopsis..." rows={5} {...inputProps} />
-              </div>
-
+              <div><TLabel fg={muted}>Title *</TLabel><TInput value={formData.title} onChange={v=>set('title',v)} placeholder="Enter series title" required {...inputProps} /></div>
+              <div><TLabel fg={muted}>Alternative Title</TLabel><TInput value={formData.alternative_title} onChange={v=>set('alternative_title',v)} placeholder="Original / alternative title" {...inputProps} /></div>
+              <div><TLabel fg={muted}>Synopsis</TLabel><TTextarea value={formData.synopsis} onChange={v=>set('synopsis',v)} placeholder="Enter series synopsis..." rows={5} {...inputProps} /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <TLabel fg={muted}>Author</TLabel>
-                  <TInput value={formData.author} onChange={v=>set('author',v)} placeholder="Author name" {...inputProps} />
-                </div>
-                <div>
-                  <TLabel fg={muted}>Artist</TLabel>
-                  <TInput value={formData.artist} onChange={v=>set('artist',v)} placeholder="Artist / Illustrator" {...inputProps} />
-                </div>
+                <div><TLabel fg={muted}>Author</TLabel><TInput value={formData.author} onChange={v=>set('author',v)} placeholder="Author name" {...inputProps} /></div>
+                <div><TLabel fg={muted}>Artist</TLabel><TInput value={formData.artist} onChange={v=>set('artist',v)} placeholder="Artist / Illustrator" {...inputProps} /></div>
               </div>
-
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <TLabel fg={muted}>Status *</TLabel>
@@ -323,8 +279,6 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
                   </TSelect>
                 </div>
               </div>
-
-              {/* Genres */}
               <div>
                 <TLabel fg={muted}>Genres *</TLabel>
                 <div className="p-3 rounded-xl border" style={{ borderColor: border, backgroundColor: panelBg }}>
@@ -345,7 +299,6 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
             </div>
           </div>
 
-          {/* Footer */}
           <div className="flex justify-end gap-3 px-6 py-4 border-t" style={{ borderColor: border }}>
             <button type="button" onClick={onClose}
               className="px-5 py-2 rounded-xl text-sm font-semibold transition-colors"
@@ -366,12 +319,27 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════════
 // Series Card
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════════
+function CoverFallback({ fg, muted }: { fg: string; muted: string }) {
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-1.5"
+      style={{ background: `linear-gradient(135deg, ${wa(fg,0.06)} 0%, ${wa(fg,0.03)} 100%)` }}>
+      <svg className="w-7 h-7" style={{ color: wa(fg,0.25) }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+      </svg>
+      <span className="text-[9px] font-semibold text-center leading-tight px-1" style={{ color: muted }}>
+        No Cover
+      </span>
+    </div>
+  );
+}
+
 function SeriesCard({ item, fg, border, cardBg, muted, accent, accentBg, light }:
   { item: Series; fg: string; border: string; cardBg: string; muted: string; accent: string; accentBg: string; light: boolean }) {
   const [hovered, setHovered] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const statusColors: Record<string, { color: string; bg: string }> = {
     ongoing:  { color: '#16a34a', bg: 'rgba(22,163,74,0.12)' },
@@ -379,6 +347,7 @@ function SeriesCard({ item, fg, border, cardBg, muted, accent, accentBg, light }
     hiatus:   { color: '#d97706', bg: 'rgba(217,119,6,0.12)' },
   };
   const sc = statusColors[item.status] ?? { color: muted, bg: wa(fg, 0.06) };
+  const showCover = item.cover_url && !imgFailed;
 
   return (
     <Link href={`/admin/series/${item.slug}`}>
@@ -393,19 +362,20 @@ function SeriesCard({ item, fg, border, cardBg, muted, accent, accentBg, light }
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Cover image â€” 2:3 ratio */}
-        <div className="relative aspect-[2/3] overflow-hidden" style={{ backgroundColor: wa(fg, 0.06) }}>
-          {item.cover_url ? (
-            <img src={item.cover_url} alt={item.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        {/* Cover — 2:3 ratio */}
+        <div className="relative aspect-[2/3] overflow-hidden">
+          {showCover ? (
+            <img
+              src={item.cover_url}
+              alt={item.title}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              onError={() => setImgFailed(true)}
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <svg className="w-8 h-8" style={{ color: wa(fg, 0.2) }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-              </svg>
-            </div>
+            <CoverFallback fg={fg} muted={muted} />
           )}
 
-          {/* Type badge top-left */}
+          {/* Type badge */}
           <div className="absolute top-1.5 left-1.5">
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
               style={{ backgroundColor: item.type==='light-novel' ? 'rgba(37,99,235,0.85)' : 'rgba(124,58,237,0.85)', color: '#fff' }}>
@@ -414,29 +384,39 @@ function SeriesCard({ item, fg, border, cardBg, muted, accent, accentBg, light }
           </div>
 
           {/* Mature badge */}
-          {(item as any).is_mature && (
+          {item.is_mature && (
             <div className="absolute top-1.5 right-1.5">
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(220,38,38,0.85)', color: '#fff' }}>18+</span>
             </div>
           )}
 
-          {/* Bottom overlay with stats */}
-          <div className="absolute inset-x-0 bottom-0 px-2 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
-            <div className="flex items-center justify-between text-white">
-              <div className="flex items-center gap-1">
-                <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
-                </svg>
-                <span className="text-[10px] font-semibold">{item.chapters_count} ch</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                </svg>
-                <span className="text-[10px] font-semibold">{fmtViews(item.views)}</span>
+          {/* Stats overlay — only when cover present */}
+          {showCover && (
+            <div className="absolute inset-x-0 bottom-0 px-2 py-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)' }}>
+              <div className="flex items-center justify-between text-white">
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                  </svg>
+                  <span className="text-[10px] font-semibold">{item.chapters_count} ch</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <svg className="w-3 h-3 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                  <span className="text-[10px] font-semibold">{fmtViews(item.views)}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Stats for no-cover cards */}
+          {!showCover && (
+            <div className="absolute bottom-0 inset-x-0 px-2 pb-1.5 flex items-center justify-between">
+              <span className="text-[9px] font-semibold" style={{ color: muted }}>{item.chapters_count} ch</span>
+              <span className="text-[9px] font-semibold" style={{ color: muted }}>{fmtViews(item.views)}</span>
+            </div>
+          )}
         </div>
 
         {/* Card body */}
@@ -460,63 +440,111 @@ function SeriesCard({ item, fg, border, cardBg, muted, accent, accentBg, light }
   );
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ── Skeleton card for loading state ─────────────────────────────────────────
+function SkeletonCard({ cardBg, fg }: { cardBg: string; fg: string }) {
+  return (
+    <div className="rounded-2xl overflow-hidden border animate-pulse" style={{ backgroundColor: cardBg, borderColor: wa(fg,0.08) }}>
+      <div className="aspect-[2/3]" style={{ backgroundColor: wa(fg,0.08) }} />
+      <div className="p-2.5 space-y-2">
+        <div className="h-2.5 rounded" style={{ backgroundColor: wa(fg,0.1), width: '85%' }} />
+        <div className="h-2.5 rounded" style={{ backgroundColor: wa(fg,0.07), width: '60%' }} />
+        <div className="flex justify-between mt-1">
+          <div className="h-4 w-14 rounded-full" style={{ backgroundColor: wa(fg,0.08) }} />
+          <div className="h-4 w-14 rounded-full" style={{ backgroundColor: wa(fg,0.08) }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // Main Page
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════════════════════════════════
 function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, search: initialSearch, type: initialType, sort: initialSort, total, premiumChapterPrice: initialPrice }: SeriesIndexProps) {
   const { currentTheme } = useTheme();
-  const light = isLight(currentTheme.background);
-  const fg      = currentTheme.foreground;
-  const bg      = currentTheme.background;
-  const muted   = wa(fg, 0.45);
-  const border  = wa(fg, 0.1);
-  const cardBg  = light ? wa(fg, 0.03) : wa(fg, 0.06);
-  const accent  = light ? '#b45309' : '#fbbf24';
+  const light    = isLight(currentTheme.background);
+  const fg       = currentTheme.foreground;
+  const bg       = currentTheme.background;
+  const muted    = wa(fg, 0.45);
+  const border   = wa(fg, 0.1);
+  const cardBg   = light ? wa(fg, 0.03) : wa(fg, 0.06);
+  const accent   = light ? '#b45309' : '#fbbf24';
   const accentBg = light ? 'rgba(217,119,6,0.1)' : 'rgba(251,191,36,0.15)';
-  const panelBg = light ? wa(fg, 0.03) : wa(fg, 0.06);
+  const panelBg  = light ? wa(fg, 0.03) : wa(fg, 0.06);
 
-  const [series, setSeries]       = useState<Series[]>(initialSeries);
-  const [search, setSearch]       = useState(initialSearch);
-  const [type, setType]           = useState(initialType);
-  const [sort, setSort]           = useState(initialSort);
-  const [loading, setLoading]     = useState(false);
-  const [page, setPage]           = useState(currentPage);
-  const [hasMoreState, setHasMore]= useState(hasMore);
-  const [showModal, setShowModal] = useState(false);
+  const [series, setSeries]         = useState<Series[]>(initialSeries);
+  const [total_, setTotal]          = useState(total);
+  const [search, setSearch]         = useState(initialSearch);
+  const [type, setType]             = useState(initialType);
+  const [sort, setSort]             = useState(initialSort);
+  const [loading, setLoading]       = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage]             = useState(currentPage);
+  const [hasMoreState, setHasMore]  = useState(hasMore);
+  const [showModal, setShowModal]   = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [genres, setGenres]       = useState<Genre[]>([]);
+  const [genres, setGenres]         = useState<Genre[]>([]);
   const [nativeLangs, setNativeLangs] = useState<NativeLanguage[]>([]);
   const [ebookSeriesOptions, setEbookSeriesOptions] = useState<SlugOption[]>([]);
   const settingsForm = useForm({ price: String(initialPrice) });
+
+  // Request ID — prevents stale responses from overwriting newer results
+  const requestId = useRef(0);
   const isFirstRender = useRef(true);
 
-  // Shared fetch function
-  const fetchSeries = (params: { search: string; type: string; sort: string; page: number }, append = false) => {
+  // Filter/sort fetch — REPLACES series list
+  const fetchFiltered = useCallback((params: { search: string; type: string; sort: string }) => {
+    const myId = ++requestId.current;
     setLoading(true);
-    router.get('/admin/series', params, {
+    setLoadingMore(false); // cancel any lingering loadMore state
+    router.get('/admin/series', { ...params, page: 1 }, {
       preserveState: true,
+      preserveScroll: false,
+      replace: true,
       onSuccess: (p: any) => {
-        const newSeries = p.props.series as Series[];
-        setSeries(prev => append ? [...prev, ...newSeries] : newSeries);
-        setPage(params.page);
-        setHasMore(p.props.hasMore);
-        setLoading(false);
+        if (requestId.current !== myId) return;
+        setSeries(p.props.series ?? []);
+        setPage(1);
+        setHasMore(p.props.hasMore ?? false);
+        setTotal(p.props.total ?? 0);
       },
       onError: () => setLoading(false),
+      onFinish: () => setLoading(false), // always reset — no requestId check
+    });
+  }, []);
+
+  // Load more fetch — APPENDS to series list
+  const loadMore = () => {
+    if (!hasMoreState || loadingMore || loading) return;
+    const nextPage = page + 1;
+    const myId = ++requestId.current;
+    setLoadingMore(true);
+    router.get('/admin/series', { search, type, sort, page: nextPage }, {
+      preserveState: true,
+      preserveScroll: true,
+      replace: true,
+      onSuccess: (p: any) => {
+        if (requestId.current !== myId) return;
+        const incoming: Series[] = p.props.series ?? [];
+        setSeries(prev => {
+          const existingIds = new Set(prev.map(s => s.id));
+          return [...prev, ...incoming.filter(s => !existingIds.has(s.id))];
+        });
+        setPage(nextPage);
+        setHasMore(p.props.hasMore ?? false);
+      },
+      onError: () => setLoadingMore(false),
+      onFinish: () => setLoadingMore(false), // always reset — no requestId check
     });
   };
 
-  // Auto-fetch on search/type/sort change (debounced for search, immediate for dropdowns)
+  // Debounced search / immediate filter change
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
-    const tid = setTimeout(() => fetchSeries({ search, type, sort, page: 1 }), search !== initialSearch ? 400 : 0);
+    const delay = search !== initialSearch ? 400 : 0;
+    const tid = setTimeout(() => fetchFiltered({ search, type, sort }), delay);
     return () => clearTimeout(tid);
   }, [search, type, sort]);
-
-  const loadMore = () => {
-    if (!hasMoreState || loading) return;
-    fetchSeries({ search, type, sort, page: page + 1 }, true);
-  };
 
   const openModal = async () => {
     if (genres.length === 0) {
@@ -530,29 +558,28 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
   };
 
   const themeProps = { fg, border, cardBg, muted, accent, accentBg, light };
+  const anyLoading = loading || loadingMore;
 
   return (
     <div>
-      {/* â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: fg }}>Series Management</h1>
           <p className="text-sm mt-1" style={{ color: muted }}>
-            {loading ? 'Loadingâ€¦' : `${total} series total`}
+            {loading
+              ? <span className="inline-flex items-center gap-1.5"><span className="inline-block w-3 h-3 border-2 rounded-full animate-spin" style={{ borderColor: `${accent}40`, borderTopColor: accent }} />Loading…</span>
+              : `${total_} series total`
+            }
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Settings button */}
           <button
-            onClick={() => {
-              settingsForm.setData('price', String(initialPrice));
-              setShowSettingsModal(true);
-            }}
+            onClick={() => { settingsForm.setData('price', String(initialPrice)); setShowSettingsModal(true); }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border"
             style={{ backgroundColor: cardBg, color: fg, borderColor: border }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = accent)}
             onMouseLeave={e => (e.currentTarget.style.borderColor = border)}
-            title="Chapter Price Settings"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
@@ -560,8 +587,6 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
             </svg>
             Settings
           </button>
-
-          {/* Add New Series button */}
           <button
             onClick={openModal}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all"
@@ -577,11 +602,10 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
         </div>
       </div>
 
-      {/* â”€â”€ Filters row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
-        {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
             <svg className="w-4 h-4" style={{ color: muted }} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
@@ -594,7 +618,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
           <input
             type="text" value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search series by titleâ€¦"
+            placeholder="Search series by title…"
             className="w-full pl-9 pr-9 py-2.5 rounded-xl text-sm outline-none"
             style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
             onFocus={e => { e.currentTarget.style.borderColor = accent; }}
@@ -602,7 +626,6 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
           />
         </div>
 
-        {/* Type filter */}
         <div className="flex items-center gap-1 p-1 rounded-xl" style={{ backgroundColor: panelBg, border: `1px solid ${border}` }}>
           {[{label:'All Types', value:''},{label:'Web Novel', value:'web-novel'},{label:'Light Novel', value:'light-novel'}].map(opt => (
             <button key={opt.value} onClick={() => setType(opt.value)}
@@ -613,7 +636,6 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
           ))}
         </div>
 
-        {/* Sort */}
         <div className="flex items-center gap-1 p-1 rounded-xl" style={{ backgroundColor: panelBg, border: `1px solid ${border}` }}>
           {[{label:'Newest', value:'newest'},{label:'Oldest', value:'oldest'},{label:'Views', value:'views'},{label:'Chapters', value:'chapters'}].map(opt => (
             <button key={opt.value} onClick={() => setSort(opt.value)}
@@ -625,7 +647,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
         </div>
       </div>
 
-      {/* â”€â”€ Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Grid */}
       {series.length === 0 && !loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3" style={{ color: muted }}>
           <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
@@ -634,33 +656,60 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
           <p className="text-sm font-medium">{search || type ? 'No series match your filters' : 'No series yet'}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3">
-          {series.map(item => (
-            <SeriesCard key={item.id} item={item} {...themeProps} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3">
+            {/* Existing series — faded while filter is loading */}
+            {series.map(item => (
+              <div key={item.id} style={{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                <SeriesCard item={item} {...themeProps} />
+              </div>
+            ))}
+            {/* Skeleton placeholders while loading more */}
+            {loadingMore && Array.from({ length: 10 }).map((_, i) => (
+              <SkeletonCard key={`sk-${i}`} cardBg={cardBg} fg={fg} />
+            ))}
+          </div>
+
+          {/* Load More */}
+          {(hasMoreState || loadingMore) && (
+            <div className="mt-8 flex flex-col items-center gap-2">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore || loading}
+                className="flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-semibold border transition-all"
+                style={{
+                  color: loadingMore ? muted : fg,
+                  borderColor: loadingMore ? border : border,
+                  backgroundColor: cardBg,
+                  cursor: loadingMore || loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                }}
+                onMouseEnter={e => { if (!loadingMore && !loading) e.currentTarget.style.borderColor = accent; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = border; }}
+              >
+                {loadingMore ? (
+                  <>
+                    <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: `${accent}40`, borderTopColor: accent }} />
+                    Loading more…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                    Load More
+                  </>
+                )}
+              </button>
+              <p className="text-xs" style={{ color: muted }}>
+                Showing {series.length} of {total_}
+              </p>
+            </div>
+          )}
+        </>
       )}
 
-      {/* â”€â”€ Load More â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      {hasMoreState && (
-        <div className="mt-8 flex justify-center">
-          <button
-            onClick={loadMore} disabled={loading}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold border transition-all"
-            style={{ color: fg, borderColor: border, backgroundColor: cardBg }}
-            onMouseEnter={e=>(e.currentTarget.style.borderColor=accent)}
-            onMouseLeave={e=>(e.currentTarget.style.borderColor=border)}
-          >
-            {loading ? (
-              <><div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: `${accent}40`, borderTopColor: accent }} />Loadingâ€¦</>
-            ) : (
-              <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>Load More</>
-            )}
-          </button>
-        </div>
-      )}
-
-      {/* â”€â”€ Add Series Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* Add Series Modal */}
       {showModal && (
         <AddSeriesModal
           onClose={() => setShowModal(false)}
@@ -682,52 +731,32 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 </svg>
               </button>
             </div>
-
             <form onSubmit={e => {
               e.preventDefault();
-              settingsForm.post(route('admin.settings.chapter-price'), {
-                onSuccess: () => setShowSettingsModal(false),
-              });
+              settingsForm.post(route('admin.settings.chapter-price'), { onSuccess: () => setShowSettingsModal(false) });
             }} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5" style={{ color: fg }}>
-                  🪙 Premium Chapter Unlock Price (coins)
-                </label>
-                <p className="text-xs mb-3 opacity-60" style={{ color: fg }}>
-                  This price applies globally to all premium chapters.
-                </p>
-                <input
-                  type="number"
-                  min={1}
-                  max={9999}
-                  required
+                <label className="block text-sm font-medium mb-1.5" style={{ color: fg }}>🪙 Premium Chapter Unlock Price (coins)</label>
+                <p className="text-xs mb-3 opacity-60" style={{ color: fg }}>This price applies globally to all premium chapters.</p>
+                <input type="number" min={1} max={9999} required
                   value={settingsForm.data.price}
                   onChange={e => settingsForm.setData('price', e.target.value)}
-                  className="block w-full px-3 py-2.5 rounded-xl text-sm outline-none transition text-center text-2xl font-bold"
+                  className="block w-full px-3 py-2.5 rounded-xl outline-none transition text-center text-2xl font-bold"
                   style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
                   onFocus={e => { e.currentTarget.style.borderColor = accent; }}
                   onBlur={e => { e.currentTarget.style.borderColor = border; }}
                 />
-                {settingsForm.errors.price && (
-                  <p className="mt-1 text-xs text-red-500">{settingsForm.errors.price}</p>
-                )}
+                {settingsForm.errors.price && <p className="mt-1 text-xs text-red-500">{settingsForm.errors.price}</p>}
               </div>
-
               <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowSettingsModal(false)}
+                <button type="button" onClick={() => setShowSettingsModal(false)}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                  style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
-                >
+                  style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}>
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={settingsForm.processing}
+                <button type="submit" disabled={settingsForm.processing}
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
-                  style={{ backgroundColor: accent, color: bg }}
-                >
+                  style={{ backgroundColor: accent, color: bg }}>
                   {settingsForm.processing ? 'Saving…' : 'Save Price'}
                 </button>
               </div>

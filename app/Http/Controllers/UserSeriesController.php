@@ -7,6 +7,7 @@ use App\Models\Chapter;
 use App\Models\ChapterPurchase;
 use App\Models\Bookmark;
 use App\Models\EbookSeries;
+use App\Models\Mark;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -75,11 +76,35 @@ class UserSeriesController extends Controller
                 ->get()
         );
 
+        // Fetch marks for this series (grouped by chapter)
+        $seriesMarks = [];
+        if (Auth::check()) {
+            $seriesMarks = Mark::where('user_id', Auth::id())
+                ->where('series_id', $series->id)
+                ->with('chapter:id,title,chapter_number,chapter_link,volume')
+                ->orderBy('chapter_id')
+                ->orderBy('paragraph_index')
+                ->get()
+                ->map(fn($m) => [
+                    'id'                => $m->id,
+                    'chapter_id'        => $m->chapter_id,
+                    'chapter_title'     => $m->chapter->title,
+                    'chapter_number'    => $m->chapter->chapter_number,
+                    'chapter_link'      => $m->chapter->chapter_link,
+                    'chapter_volume'    => $m->chapter->volume,
+                    'paragraph_index'   => $m->paragraph_index,
+                    'paragraph_preview' => $m->paragraph_preview,
+                    'created_at'        => $m->created_at->toISOString(),
+                ])
+                ->toArray();
+        }
+
         return Inertia::render('Series/Show', [
-            'series' => $series,
-            'chapters' => $chapters,
+            'series'      => $series,
+            'chapters'    => $chapters,
             'relatedSeries' => $relatedSeries,
-            'isBookmarked' => $isBookmarked,
+            'isBookmarked'  => $isBookmarked,
+            'seriesMarks'   => $seriesMarks,
         ]);
     }
 }

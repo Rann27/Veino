@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Chapter;
 use App\Models\ChapterPurchase;
+use App\Models\Mark;
 use App\Models\PaymentSetting;
 use App\Models\Series;
 use App\Models\Transaction;
@@ -96,6 +97,12 @@ class UserChapterController extends Controller
                 'title' => $nextChapter->title,
             ] : null,
             'allChapters' => $allChapters,
+            'marks' => $user
+                ? Mark::where('user_id', $user->id)
+                    ->where('chapter_id', $chapter->id)
+                    ->get(['id', 'paragraph_index', 'paragraph_preview'])
+                    ->toArray()
+                : [],
         ]);
     }
 

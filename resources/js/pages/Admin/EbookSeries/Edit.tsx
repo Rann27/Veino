@@ -130,6 +130,7 @@ function EditContent({ series, items, genres, seriesOptions }: Props) {
     const muted   = wa(fg, 0.45);
     const border  = wa(fg, 0.12);
     const cardBg  = light ? wa(fg, 0.03) : wa(fg, 0.06);
+    const panelBg = light ? '#ffffff' : '#1a1a2e';
     const inputBg = light ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
     const accent  = light ? '#b45309' : '#fbbf24';
 
@@ -561,7 +562,7 @@ function EditContent({ series, items, genres, seriesOptions }: Props) {
                                                     options={seriesOptions}
                                                     placeholder="e.g., novel-series-name"
                                                     required={seriesData.show_trial_button}
-                                                    fg={fg} muted={muted} border={border} inputBg={inputBg} panelBg={cardBg} accent="#60a5fa"
+                                                    fg={fg} muted={muted} border={border} inputBg={inputBg} panelBg={panelBg} accent="#60a5fa"
                                                 />
                                                 {errors.series_slug && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.2rem' }}>{errors.series_slug}</p>}
                                             </div>
