@@ -15,6 +15,26 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600|poppins:400,500,600,700,800" rel="stylesheet" />
 
+        <!-- Google Analytics 4 — set GA_MEASUREMENT_ID in .env to enable -->
+        @if(config('analytics.ga_measurement_id') && !(config('analytics.exclude_admins') && Auth::check() && Auth::user()->role === 'admin'))
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('analytics.ga_measurement_id') }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '{{ config('analytics.ga_measurement_id') }}');
+
+            // Inertia navigates client-side, so gtag must be told about each new page.
+            document.addEventListener('inertia:navigate', function () {
+                gtag('event', 'page_view', {
+                    page_path: window.location.pathname + window.location.search,
+                    page_location: window.location.href,
+                    page_title: document.title,
+                });
+            });
+        </script>
+        @endif
+
         <!-- Google AdSense -->
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6459699146085990"
              crossorigin="anonymous"></script>

@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\CheckMembershipExpiration::class,
+            \App\Http\Middleware\TrackPageView::class,
         ]);
         
         // Use custom CSRF token verification

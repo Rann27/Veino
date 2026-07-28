@@ -286,7 +286,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
         // Monitoring (Comments & Reactions)
     Route::get('/monitoring', [App\Http\Controllers\Admin\MonitoringController::class, 'index'])->name('monitoring.index');
-    
+
+    // Analytics (Visitor Traffic)
+    Route::get('/analytics', [App\Http\Controllers\Admin\AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::get('/analytics/data', [App\Http\Controllers\Admin\AnalyticsController::class, 'data'])->name('analytics.data');
+    Route::get('/analytics/realtime', [App\Http\Controllers\Admin\AnalyticsController::class, 'realtime'])->name('analytics.realtime');
+    Route::get('/analytics/export', [App\Http\Controllers\Admin\AnalyticsController::class, 'export'])->name('analytics.export');
+
     // Homepage Configuration (Hero & Featured Series)
     Route::get('/misc', [App\Http\Controllers\Admin\MiscController::class, 'index'])->name('misc.index');
     Route::put('/misc', [App\Http\Controllers\Admin\MiscController::class, 'update'])->name('misc.update');
@@ -314,6 +320,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/ebookseries/{series}/items/{item}/preview', [AdminEbookSeriesController::class, 'destroyPreview'])->name('ebookseries.items.preview.destroy');
     Route::post('/ebookseries/upload-preview-image', [AdminEbookSeriesController::class, 'uploadPreviewImage'])->name('ebookseries.preview.upload-image');
     
+    Route::get('/monitoring/stats', [App\Http\Controllers\Admin\MonitoringController::class, 'stats'])->name('monitoring.stats');
     Route::get('/monitoring/comments', [App\Http\Controllers\Admin\MonitoringController::class, 'getComments'])->name('monitoring.comments');
     Route::delete('/monitoring/comments/{id}', [App\Http\Controllers\Admin\MonitoringController::class, 'deleteComment'])->name('monitoring.comments.delete');
     Route::get('/monitoring/reactions', [App\Http\Controllers\Admin\MonitoringController::class, 'getReactions'])->name('monitoring.reactions');

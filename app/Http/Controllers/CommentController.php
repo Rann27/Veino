@@ -196,10 +196,15 @@ class CommentController extends Controller
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
-        // Decrement comments_count for series only (not for replies)
+        // Decrement comments_count for series only (not for replies).
+        // comments_count is UNSIGNED, so decrementing a counter that has already
+        // drifted to 0 aborts the request with an out-of-range error — guard it.
         $commentable = $comment->commentable;
         if ($commentable instanceof Series && !$comment->parent_id) {
-            $commentable->decrement('comments_count');
+            \Illuminate\Support\Facades\DB::table('series')
+                ->where('id', $commentable->id)
+                ->where('comments_count', '>', 0)
+                ->decrement('comments_count');
         }
 
         $comment->delete();

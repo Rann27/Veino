@@ -23,3 +23,11 @@ Schedule::command('memberships:expire')
     ->onFailure(function () {
         error('Membership expiration check failed');
     });
+
+// Roll yesterday's (and today's partial) page views into the permanent daily table
+Schedule::command('analytics:rollup --days=3')
+    ->hourly();
+
+// Drop raw page views past the retention window, keeping the daily rollups
+Schedule::command('analytics:prune')
+    ->dailyAt('03:30');
