@@ -6,6 +6,7 @@ import { useToast } from '@/Contexts/ToastContext';
 import CommentSectionSkeleton from '@/Components/CommentSectionSkeleton';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import InTextAd from '@/Components/Ads/InTextAd';
+import { markChapterVisited, saveScrollPosition, getScrollPosition, clearScrollPosition } from '@/lib/reading';
 import InterstitialAd from '@/Components/Ads/InterstitialAd';
 import axios from 'axios';
 const ReaderSettingsModal = lazy(() => import('@/Components/ReaderSettingsModal'));
@@ -304,15 +305,77 @@ function ChapterShowContent({
         return () => { window.removeEventListener('scroll', handleScroll); clearTimeout(hideDelayTimerRef.current!); };
     }, []);
 
-    // ── reading progress ───────────────────────────────────────────────────
+    // ── reading progress + resume position ─────────────────────────────────
     useEffect(() => {
+        let saveTimer: ReturnType<typeof setTimeout> | undefined;
+
         const update = () => {
             const d = document.documentElement.scrollHeight - window.innerHeight;
-            setReadingProgress(d > 0 ? Math.round((window.scrollY / d) * 100) : 0);
+            const percent = d > 0 ? Math.round((window.scrollY / d) * 100) : 0;
+            setReadingProgress(percent);
+
+            // Debounced: scroll fires far too often to persist on every tick.
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                // Near either end there is nothing worth resuming to.
+                if (percent > 3 && percent < 97) {
+                    saveScrollPosition(chapter.id, percent);
+                } else {
+                    clearScrollPosition(chapter.id);
+                }
+            }, 600);
         };
+
         window.addEventListener('scroll', update, { passive: true });
-        return () => window.removeEventListener('scroll', update);
-    }, []);
+        return () => { window.removeEventListener('scroll', update); clearTimeout(saveTimer); };
+    }, [chapter.id]);
+
+    // Opening a chapter marks it visited, so the series list can grey it out
+    // even for guests, who have no reading_history row.
+    useEffect(() => {
+        markChapterVisited(series.id, chapter.id);
+    }, [series.id, chapter.id]);
+
+    // ── offer to resume ────────────────────────────────────────────────────
+    // Offered, never automatic: yanking the page down before the reader has got
+    // their bearings is more disorienting than starting from the top.
+    const [resumeAt, setResumeAt] = useState<number | null>(null);
+
+    useEffect(() => {
+        // A deep link to a mark wins — that is a more specific intent.
+        if (window.location.hash.startsWith('#mark-')) return;
+
+        const saved = getScrollPosition(chapter.id);
+        if (saved === null || saved <= 3) return;
+
+        // Wait for images before offering. The position is a percentage of page
+        // height, and a chapter full of illustrations grows as they load — jump
+        // too early and the reader lands in the wrong place.
+        const offer = () => setResumeAt(saved);
+
+        if (document.readyState === 'complete') {
+            offer();
+            return;
+        }
+
+        window.addEventListener('load', offer, { once: true });
+        return () => window.removeEventListener('load', offer);
+    }, [chapter.id]);
+
+    // Auto-dismiss: an unanswered prompt should not hover over the page forever.
+    useEffect(() => {
+        if (resumeAt === null) return;
+
+        const timer = setTimeout(() => setResumeAt(null), 12000);
+        return () => clearTimeout(timer);
+    }, [resumeAt]);
+
+    const jumpToSaved = () => {
+        if (resumeAt === null) return;
+        const d = document.documentElement.scrollHeight - window.innerHeight;
+        window.scrollTo({ top: (d * resumeAt) / 100, behavior: 'smooth' });
+        setResumeAt(null);
+    };
 
     // ── close toolbar on scroll / outside click ────────────────────────────
     useEffect(() => {
@@ -564,6 +627,38 @@ function ChapterShowContent({
             {/* Reading Progress Bar */}
             <div className="reading-progress-bar" style={{ width: `${readingProgress}%`, top: 'auto', bottom: showNavbar ? '64px' : '0' }} />
 
+            {/* Resume prompt — offered, not forced. Sits clear of the bottom bar. */}
+            {resumeAt !== null && (
+                <div
+                    className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2.5 rounded-full shadow-xl"
+                    style={{
+                        bottom: showNavbar ? '80px' : '18px',
+                        backgroundColor: currentTheme.background,
+                        border: `1px solid ${currentTheme.foreground}20`,
+                        maxWidth: 'calc(100vw - 24px)',
+                    }}
+                >
+                    <span className="text-xs whitespace-nowrap" style={{ color: `${currentTheme.foreground}99` }}>
+                        Continue from {resumeAt}%?
+                    </span>
+                    <button
+                        onClick={jumpToSaved}
+                        className="text-xs font-bold px-3 py-1 rounded-full transition-opacity hover:opacity-80"
+                        style={{ backgroundColor: currentTheme.foreground, color: currentTheme.background }}
+                    >
+                        Resume
+                    </button>
+                    <button
+                        onClick={() => { clearScrollPosition(chapter.id); setResumeAt(null); }}
+                        aria-label="Dismiss"
+                        className="text-base leading-none px-1 transition-opacity hover:opacity-70"
+                        style={{ color: `${currentTheme.foreground}66` }}
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
+
             {/* Sticky Back Button */}
             <div className={`fixed top-3 left-3 sm:top-4 sm:left-4 z-50 transition-all duration-500 ease-in-out ${showNavbar ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
                 <Link href={route('series.show', series.slug)}
@@ -635,7 +730,7 @@ function ChapterShowContent({
 
                         {/* Prev chapter */}
                         {prevChapter ? (
-                            <Link href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
+                            <Link prefetch href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
                                 className="order-1 h-full flex items-center justify-center rounded transition-all reading-bar-btn"
                                 style={{ color: currentTheme.foreground }} title={`Previous: ${prevChapter.title}`}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -708,7 +803,7 @@ function ChapterShowContent({
 
                         {/* Next chapter */}
                         {nextChapter ? (
-                            <Link href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
+                            <Link prefetch href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
                                 className={`${isAuthenticated ? 'order-5' : 'order-4'} h-full flex items-center justify-center rounded transition-all reading-bar-btn`}
                                 style={{ color: currentTheme.foreground }} title={`Next: ${nextChapter.title}`}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -767,7 +862,10 @@ function ChapterShowContent({
                     >
                         <style>{`
                             .reader-content * { font-family: ${readerSettings.fontFamily} !important; font-size: inherit !important; }
-                            .reader-content img { max-width: 100%; height: auto; }
+                            /* Illustrations are always centred, whatever the source paragraph's alignment. */
+                            .reader-content img { display: block; max-width: 100%; height: auto; margin: 1.25rem auto; border-radius: 0.375rem; }
+                            .reader-content figure { margin: 1.5rem auto; text-align: center; }
+                            .reader-content figure img { margin: 0 auto; }
                             .reader-content strong, .reader-content b { font-weight: bold !important; }
                             .reader-content em, .reader-content i { font-style: italic !important; }
                             .reader-content u { text-decoration: underline !important; }
@@ -785,7 +883,7 @@ function ChapterShowContent({
                     <div className="mt-14 pt-8" style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                             {prevChapter ? (
-                                <Link href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
+                                <Link prefetch href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
                                     className="w-full sm:w-auto px-6 py-3 rounded-xl transition-all hover:opacity-80 text-center text-sm font-medium"
                                     style={{ backgroundColor: `${currentTheme.foreground}08`, color: currentTheme.foreground, border: `1px solid ${currentTheme.foreground}10` }}>
                                     ← Previous Chapter
@@ -797,7 +895,7 @@ function ChapterShowContent({
                                 Back to Series
                             </Link>
                             {nextChapter ? (
-                                <Link href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
+                                <Link prefetch href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
                                     className="w-full sm:w-auto px-6 py-3 rounded-xl transition-all hover:opacity-90 hover:shadow-lg text-center text-sm font-semibold"
                                     style={{ backgroundColor: currentTheme.foreground, color: currentTheme.background }}>
                                     Next Chapter →

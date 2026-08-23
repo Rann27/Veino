@@ -177,7 +177,12 @@ class BatchController extends Controller
 
                 $volume        = isset($item['volume']) && $item['volume'] !== '' ? (float) $item['volume'] : null;
                 $chapterNumber = (float) $item['chapter_number'];
-                $chapterLink   = $this->buildChapterLink($volume, $chapterNumber);
+
+                // Renumbering changes the URL; anything else must leave it alone,
+                // which is also what keeps older dotted links intact.
+                $chapterLink = $chapter->hasSameNumbering($volume, $chapterNumber)
+                    ? $chapter->chapter_link
+                    : $this->buildChapterLink($volume, $chapterNumber);
 
                 $chapter->update([
                     'title'          => $item['title'],
@@ -196,12 +201,7 @@ class BatchController extends Controller
 
     private function buildChapterLink(?float $volume, float $chapterNumber): string
     {
-        $num = rtrim(rtrim(number_format($chapterNumber, 2, '.', ''), '0'), '.');
-        if ($volume !== null) {
-            $vol = rtrim(rtrim(number_format($volume, 2, '.', ''), '0'), '.');
-            return "v{$vol}c{$num}";
-        }
-        return $num;
+        return Chapter::buildLink($volume, $chapterNumber);
     }
 
     private function sanitize(string $content): string
@@ -209,14 +209,26 @@ class BatchController extends Controller
         $config = HTMLPurifier_Config::createDefault();
         $config->set('HTML.DefinitionID', 'batch-chapter');
         $config->set('HTML.DefinitionRev', 1);
+        // Mirrors ChapterController's allow-list. `img` matters here: chapters
+        // imported from .docx carry their extracted illustrations, and without
+        // it HTMLPurifier would silently strip every one of them.
         $config->set('HTML.Allowed',
-            'p,br,strong,em,b,i,u,s,sup,sub,' .
+            // `p[style]` keeps the paragraph alignment DocxParser reads out of
+            // the .docx — a bare `p` silently dropped every centred line.
+            'p[style|class],br,strong,em,b,i,u,s,sup,sub,' .
             'h1,h2,h3,h4,h5,h6,' .
             'ul,ol,li,' .
+            'img[src|alt|title|width|height|style|class],' .
+            'a[href|title|target],' .
             'blockquote,code,pre,' .
-            'span[style|class],' .
+            'span[style|class],div[style|class],' .
             'hr'
         );
+        $config->set('URI.AllowedSchemes', [
+            'http' => true,
+            'https' => true,
+            'data' => true,
+        ]);
         $config->set('AutoFormat.RemoveEmpty', false);
         $config->set('AutoFormat.AutoParagraph', false);
 

@@ -4,6 +4,7 @@ import React from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import axios from 'axios';
+import { appendFile } from '@/lib/upload';
 
 interface Series { id: number; title: string; slug: string; cover_url?: string | null; }
 interface BannerData { image_path: string; image_url: string; link_url: string; alt: string; }
@@ -394,7 +395,7 @@ function MiscContent() {
     const handleFileUpload = async (index: number, file: File) => {
         setUploadingIndex(index);
         const formData = new FormData();
-        formData.append('image', file);
+        appendFile(formData, 'image', file);
         try {
             const res = await axios.post('/admin/misc/upload-banner', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
             const newBanners = [...banners];

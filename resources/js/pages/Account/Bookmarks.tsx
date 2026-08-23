@@ -28,7 +28,8 @@ const STATUS_COLORS: Record<string, { text: string; bg: string }> = {
 };
 
 function getTimeAgo(dateString: string) {
-    const diff = Math.floor((Date.now() - new Date(dateString).getTime()) / 3600000);
+    // Clamped: a future timestamp must not render as a negative age.
+    const diff = Math.max(0, Math.floor((Date.now() - new Date(dateString).getTime()) / 3600000));
     if (diff < 1) return 'Just now';
     if (diff < 24) return `${diff}h ago`;
     if (diff < 48) return 'Yesterday';

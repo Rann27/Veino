@@ -25,6 +25,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class TrackPageView
 {
+    /** File types that are never a page view. */
+    private const ASSET_PATTERN = '/\.(css|js|mjs|map|png|jpe?g|gif|webp|avif|svg|ico|bmp|woff2?|ttf|otf|eot|mp4|webm|ogg|mp3|wav|pdf|epub|zip|rar|7z|gz|txt|xml|json|csv|wasm)$/i';
+
     /** Substrings that identify non-human traffic. */
     private const BOT_PATTERN = '/bot|crawl|spider|slurp|curl|wget|python-requests|httpclient|headless|lighthouse|pingdom|uptime|monitor|scrapy|facebookexternalhit|preview|fetcher|archive\.org|semrush|ahrefs|mj12|dotbot|petalbot|bytespider|gptbot|claudebot|ccbot|perplexity/i';
 
@@ -75,8 +78,11 @@ class TrackPageView
             return false;
         }
 
-        // Asset-ish requests that slipped through.
-        if (pathinfo(trim($request->path(), '/'), PATHINFO_EXTENSION)) {
+        // Asset requests that slipped through. Matched against a known list
+        // rather than "has a dot", because chapter URLs legitimately end in
+        // things like `v1c12.5` — treating ".5" as a file extension silently
+        // excluded every decimal chapter from analytics.
+        if (preg_match(self::ASSET_PATTERN, $request->path())) {
             return false;
         }
 

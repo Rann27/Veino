@@ -123,21 +123,21 @@ function BlogShowContent({ blog }: Props) {
                                     margin-top: 0.5rem;
                                     font-style: italic;
                                 }
-                                /* Side-image layout from CKEditor */
-                                .prose .image-style-side {
-                                    float: right;
-                                    margin-left: 1.5rem;
-                                    margin-bottom: 1rem;
-                                    max-width: 50%;
+                                /* CKEditor's side and inline layouts are deliberately
+                                   neutralised: every image is centred, no exceptions. */
+                                .prose .image-style-side,
+                                .prose .image-style-inline {
+                                    float: none;
+                                    margin: 1.5rem auto;
+                                    max-width: 100%;
+                                    text-align: center;
                                 }
-                                .prose .image-style-side img {
-                                    margin: 0;
-                                }
+                                .prose .image-style-side img,
                                 .prose .image-style-inline img {
-                                    display: inline;
-                                    margin: 0 0.25rem;
-                                    vertical-align: middle;
-                                    border-radius: 0.25rem;
+                                    display: block;
+                                    margin: 0 auto;
+                                    vertical-align: baseline;
+                                    border-radius: 0.5rem;
                                 }
                                 /* Clearfix for float images */
                                 .prose::after {

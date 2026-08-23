@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
+import { appendFile } from '@/lib/upload';
 
 function hexToRgb(hex: string) {
     const h = hex.replace('#', '');
@@ -200,7 +201,7 @@ function EditContent({ series, items, genres, seriesOptions }: Props) {
         const data = new FormData();
         data.append('title', seriesData.title);
         data.append('alternative_title', seriesData.alternative_title);
-        if (seriesData.cover) data.append('cover', seriesData.cover);
+        if (seriesData.cover) appendFile(data, 'cover', seriesData.cover);
         data.append('synopsis', seriesData.synopsis);
         data.append('author', seriesData.author);
         data.append('artist', seriesData.artist);
@@ -248,10 +249,10 @@ function EditContent({ series, items, genres, seriesOptions }: Props) {
         e.preventDefault(); setSubmitting(true); setItemErrors({});
         const data = new FormData();
         data.append('title', itemData.title);
-        if (itemData.cover) data.append('cover', itemData.cover);
+        if (itemData.cover) appendFile(data, 'cover', itemData.cover);
         data.append('summary', itemData.summary);
-        if (itemData.file) data.append('file', itemData.file);
-        if (itemData.pdf_file) data.append('pdf_file', itemData.pdf_file);
+        if (itemData.file) appendFile(data, 'file', itemData.file);
+        if (itemData.pdf_file) appendFile(data, 'pdf_file', itemData.pdf_file);
         data.append('price_coins', itemData.price_coins);
         data.append('order', itemData.order);
         if (editingItemId) {

@@ -4,6 +4,7 @@ import { useState, useRef, lazy, Suspense } from 'react';
 const RichTextEditor = lazy(() => import('@/Components/RichTextEditor'));
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
+import { appendFile } from '@/lib/upload';
 
 // ── colour helpers ────────────────────────────────────────────────────────────
 function hexToRgb(hex: string) {
@@ -274,7 +275,7 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
     if (coverType === 'cdn') {
       submitData.append('cover_url', editFormData.cover_url);
     } else if (coverFile) {
-      submitData.append('cover_file', coverFile);
+      appendFile(submitData, 'cover_file', coverFile);
     }
     
     submitData.append('synopsis', editFormData.synopsis);

@@ -10,6 +10,7 @@ import EyeIcon from '@/Components/Icons/EyeIcon';
 import BookmarkIcon from '@/Components/Icons/BookmarkIcon';
 import CommentIcon from '@/Components/Icons/CommentIcon';
 import PremiumDiamond from '@/Components/PremiumDiamond';
+import { getVisitedChapters } from '@/lib/reading';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -75,6 +76,29 @@ const ChevronRightIcon = ({ size = 16, color = 'currentColor' }) => (
     </svg>
 );
 
+// Conventional sort-direction glyphs: an arrow plus bars that grow or shrink.
+// Plain up/down arrows read as ambiguous here — "Latest" puts the newest
+// chapter at the top, which an upward arrow would seem to contradict.
+const SortAscIcon = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 16l3 3 3-3"/>
+        <path d="M7 19V5"/>
+        <line x1="13" y1="7" x2="16" y2="7"/>
+        <line x1="13" y1="12" x2="18" y2="12"/>
+        <line x1="13" y1="17" x2="20" y2="17"/>
+    </svg>
+);
+
+const SortDescIcon = ({ size = 16, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 8l3-3 3 3"/>
+        <path d="M7 5v14"/>
+        <line x1="13" y1="7" x2="20" y2="7"/>
+        <line x1="13" y1="12" x2="18" y2="12"/>
+        <line x1="13" y1="17" x2="16" y2="17"/>
+    </svg>
+);
+
 interface Genre {
     id: number;
     name: string;
@@ -96,6 +120,24 @@ interface Chapter {
     coin_price: number;
     created_at: string;
     views: number;
+    has_images?: boolean;
+}
+
+/** Marks a chapter that carries illustrations. */
+function IllustrationIcon({ color }: { color: string }) {
+    return (
+        <svg
+            width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+            className="flex-shrink-0"
+            role="img" aria-label="Contains illustrations"
+        >
+            <title>Contains illustrations</title>
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+        </svg>
+    );
 }
 
 interface Series {
@@ -133,12 +175,22 @@ interface SeriesMark {
     created_at: string;
 }
 
+interface LastRead {
+    chapter_link: string;
+    chapter_number: number;
+    volume?: number | null;
+    title?: string | null;
+}
+
 interface Props {
     series: Series;
     chapters: Chapter[];
     relatedSeries: Series[];
     isBookmarked?: boolean;
     seriesMarks?: SeriesMark[];
+    firstChapter?: string | null;
+    readChapterIds?: number[];
+    lastRead?: LastRead | null;
     auth?: {
         user?: {
             id: number;
@@ -189,8 +241,30 @@ const sanitizeContent = (html: string): string => {
         .replace(/color:\s*[^;"]+;?/gi, ''); // Remove any remaining color declarations
 };
 
-function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = false, seriesMarks = [], auth }: Props) {
+function SeriesShowContent({
+    series, chapters, relatedSeries, isBookmarked = false, seriesMarks = [], auth,
+    firstChapter = null, readChapterIds = [], lastRead = null,
+}: Props) {
     const { currentTheme } = useTheme();
+
+    // Server data covers signed-in readers across devices; localStorage covers
+    // guests and reflects this device instantly. Merging gives both.
+    const [visited, setVisited] = useState<Set<number>>(() => new Set(readChapterIds));
+
+    // `readChapterIds` is deliberately not a dependency. It arrives as a prop
+    // array, and the destructuring default would mint a fresh one on every
+    // render — pairing that with a Set, which is never reference-equal, is a
+    // render loop waiting to happen. The server list cannot change without a
+    // page visit anyway.
+    useEffect(() => {
+        setVisited(new Set([...readChapterIds, ...getVisitedChapters(series.id)]));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [series.id]);
+
+    const resumeLink = lastRead?.chapter_link ?? firstChapter ?? chapters[0]?.chapter_link ?? '1';
+    const resumeLabel = lastRead
+        ? (lastRead.volume ? `Vol ${lastRead.volume} · Ch ${lastRead.chapter_number}` : `Chapter ${lastRead.chapter_number}`)
+        : null;
     const [showAllChapters, setShowAllChapters] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [bookmarked, setBookmarked] = useState(isBookmarked);
@@ -290,14 +364,27 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
     }, []);
 
     // Filter chapters by search query
-    const filteredChapters = chapters.filter(chapter => {
-        if (!searchQuery) return true;
-        const chapterDisplay = chapter.volume 
-            ? `Volume ${chapter.volume}`
-            : `Chapter ${chapter.chapter_number}`;
-        return chapterDisplay.toLowerCase().includes(searchQuery.toLowerCase()) ||
-               chapter.chapter_number.toString().includes(searchQuery);
-    });
+    // Memoised: this runs on every keystroke, and a long series is hundreds of
+    // rows. Matches the chapter title as well as its numbering — searching for
+    // "Prologue" or a character's name used to return nothing, because only the
+    // generated "Chapter N" label was ever compared.
+    const filteredChapters = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+
+        if (!query) return chapters;
+
+        return chapters.filter(chapter => {
+            const label = chapter.volume
+                ? `volume ${chapter.volume}`
+                : `chapter ${chapter.chapter_number}`;
+
+            return (chapter.title ?? '').toLowerCase().includes(query)
+                || label.includes(query)
+                || chapter.chapter_number.toString().includes(query)
+                // Lets readers paste a link fragment like "v1c12-5" straight in.
+                || (chapter.chapter_link ?? '').toLowerCase().includes(query);
+        });
+    }, [chapters, searchQuery]);
 
     // Sort chapters
     const sortedChapters = [...filteredChapters].sort((a, b) => {
@@ -583,18 +670,31 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
 
                                 {/* Action Buttons - Below Cover */}
                                 <div className="w-full sm:w-52 md:w-56 mt-4 flex flex-col gap-2.5">
+                                    {/* One button, two states. The height is fixed so
+                                        it never jumps between them, and the second
+                                        line fills that space when there is progress
+                                        to show. */}
                                     <Link
-                                        href={route('chapters.show', [series.slug, '1'])}
-                                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold transition-all hover:opacity-90 hover:shadow-lg text-sm"
+                                        href={route('chapters.show', [series.slug, resumeLink])}
+                                        prefetch
+                                        className="flex flex-col items-center justify-center gap-0.5 px-4 rounded-xl font-semibold transition-all hover:opacity-90 hover:shadow-lg text-sm"
                                         style={{
+                                            height: '52px',
                                             backgroundColor: currentTheme.foreground,
                                             color: currentTheme.background,
                                         }}
                                     >
-                                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                            <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
-                                        </svg>
-                                        Read First Chapter
+                                        <span className="inline-flex items-center gap-2 leading-none">
+                                            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zm0 13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z" />
+                                            </svg>
+                                            {lastRead ? 'Continue Reading' : 'Read First Chapter'}
+                                        </span>
+                                        {resumeLabel && (
+                                            <span className="text-[10.5px] font-medium leading-none opacity-70">
+                                                {resumeLabel}
+                                            </span>
+                                        )}
                                     </Link>
 
                                     {series.show_epub_button && series.epub_series_slug && (
@@ -914,15 +1014,18 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                 {filteredChapters.length}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            {/* Search */}
-                                            <div className="relative">
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                            {/* Search — takes whatever the sort toggle leaves
+                                                over on mobile, where the row is full width.
+                                                On desktop it keeps its fixed size so the
+                                                control cluster stays right-aligned. */}
+                                            <div className="relative flex-1 min-w-0 sm:flex-none">
                                                 <input
                                                     type="text"
                                                     placeholder="Search chapter..."
                                                     value={searchQuery}
                                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                                    className="px-3 py-1.5 pr-8 rounded-lg text-xs w-36 focus:outline-none"
+                                                    className="px-3 py-1.5 pr-8 rounded-lg text-xs w-full sm:w-36 focus:outline-none"
                                                     style={{
                                                         backgroundColor: `${currentTheme.foreground}06`,
                                                         border: `1px solid ${currentTheme.foreground}10`,
@@ -958,26 +1061,42 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     ))}
                                                 </div>
                                             )}
-                                            {/* Sort */}
-                                            <select
-                                                value={sortOrder}
-                                                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
-                                                className="rounded-lg text-xs"
-                                                style={{
-                                                    backgroundColor: `${currentTheme.foreground}06`,
-                                                    border: `1px solid ${currentTheme.foreground}10`,
-                                                    color: currentTheme.foreground,
-                                                    padding: '6px 2rem 6px 10px',
-                                                    appearance: 'none' as any,
-                                                    colorScheme: (() => { try { const h = currentTheme.background.replace(/^#/, ''); return (parseInt(h.slice(0,2),16)*.299+parseInt(h.slice(2,4),16)*.587+parseInt(h.slice(4,6),16)*.114) > 128 ? 'light' : 'dark'; } catch { return 'dark'; } })() as any,
-                                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='${encodeURIComponent(currentTheme.foreground)}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E")`,
-                                                    backgroundRepeat: 'no-repeat',
-                                                    backgroundPosition: 'right 8px center',
-                                                }}
+                                            {/* Sort order — a two-state toggle rather than a
+                                                dropdown, matching the view-mode control. The
+                                                choice is binary, so hiding one option behind a
+                                                menu costs a tap for no benefit.
+                                                "Ascending/Descending" were replaced with what
+                                                the reader actually wants: start from the First
+                                                chapter, or from the Latest. */}
+                                            <div
+                                                className="flex rounded-lg overflow-hidden flex-shrink-0"
+                                                style={{ border: `1px solid ${currentTheme.foreground}10` }}
+                                                role="group"
+                                                aria-label="Chapter order"
                                             >
-                                                <option value="asc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Ascending</option>
-                                                <option value="desc" style={{ background: currentTheme.background, color: currentTheme.foreground }}>Descending</option>
-                                            </select>
+                                                {([
+                                                    { value: 'asc' as const, label: 'First', Icon: SortAscIcon, hint: 'Oldest chapter first' },
+                                                    { value: 'desc' as const, label: 'Latest', Icon: SortDescIcon, hint: 'Newest chapter first' },
+                                                ]).map(({ value, label, Icon, hint }) => {
+                                                    const active = sortOrder === value;
+                                                    return (
+                                                        <button
+                                                            key={value}
+                                                            onClick={() => setSortOrder(value)}
+                                                            title={hint}
+                                                            aria-pressed={active}
+                                                            className="px-2.5 py-1.5 text-xs transition-colors flex items-center gap-1.5"
+                                                            style={{
+                                                                backgroundColor: active ? currentTheme.foreground : 'transparent',
+                                                                color: active ? currentTheme.background : `${currentTheme.foreground}60`,
+                                                            }}
+                                                        >
+                                                            <Icon size={12} color={active ? currentTheme.background : `${currentTheme.foreground}60`} />
+                                                            {label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1030,9 +1149,17 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                     {/* Info */}
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 mb-0.5">
-                                                            <p className="text-sm font-medium truncate" style={{ color: currentTheme.foreground }}>
+                                                            {/* Visited chapters read back like a followed link. */}
+                                                            <p
+                                                                className="text-sm truncate"
+                                                                style={{
+                                                                    color: visited.has(chapter.id) ? `${currentTheme.foreground}66` : currentTheme.foreground,
+                                                                    fontWeight: visited.has(chapter.id) ? 400 : 500,
+                                                                }}
+                                                            >
                                                                 {chapter.title || (chapter.volume ? `Volume ${chapter.volume}` : `Chapter ${chapter.chapter_number}`)}
                                                             </p>
+                                                            {!!chapter.has_images && <IllustrationIcon color={`${currentTheme.foreground}70`} />}
                                                         </div>
                                                         <div className="flex items-center gap-2 flex-wrap">
                                                             <span className="text-xs flex items-center gap-1" style={{ color: `${currentTheme.foreground}45` }}>
@@ -1094,9 +1221,16 @@ function SeriesShowContent({ series, chapters, relatedSeries, isBookmarked = fal
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <p className="text-xs font-semibold truncate" style={{ color: currentTheme.foreground }}>
+                                                        <p
+                                                            className="text-xs truncate"
+                                                            style={{
+                                                                color: visited.has(chapter.id) ? `${currentTheme.foreground}66` : currentTheme.foreground,
+                                                                fontWeight: visited.has(chapter.id) ? 500 : 600,
+                                                            }}
+                                                        >
                                                             {chapter.title || (chapter.volume ? `Vol ${chapter.volume}` : `Ch ${chapter.chapter_number}`)}
                                                         </p>
+                                                        {!!chapter.has_images && <IllustrationIcon color={`${currentTheme.foreground}70`} />}
                                                         {chapter.is_premium && <PremiumDiamond size={12} />}
                                                         {chapter.is_owned && (
                                                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>

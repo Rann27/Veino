@@ -3,6 +3,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
+import { appendFile } from '@/lib/upload';
 
 // ── colour helpers ─────────────────────────────────────────────────────────
 function hexToRgb(hex: string) {
@@ -125,7 +126,7 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
     fd.append('alternative_title', formData.alternative_title);
     fd.append('cover_type', coverType);
     if (coverType === 'cdn') fd.append('cover_url', formData.cover_url);
-    else if (coverFile) fd.append('cover_file', coverFile);
+    else if (coverFile) appendFile(fd, 'cover_file', coverFile);
     fd.append('synopsis', formData.synopsis);
     fd.append('author', formData.author);
     fd.append('artist', formData.artist);

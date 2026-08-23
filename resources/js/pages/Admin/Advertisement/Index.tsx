@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { appendFile } from '@/lib/upload';
 
 interface Advertisement {
   id: number;
@@ -111,8 +112,8 @@ function AdvertisementContent({ advertisements, filters }: AdvertisementIndexPro
     const submitData = new FormData();
     submitData.append('advertiser_name', formData.advertiser_name);
     submitData.append('unit_type', formData.unit_type);
-    if (formData.file_desktop) submitData.append('file_desktop', formData.file_desktop);
-    if (formData.file_mobile) submitData.append('file_mobile', formData.file_mobile);
+    if (formData.file_desktop) appendFile(submitData, 'file_desktop', formData.file_desktop);
+    if (formData.file_mobile) appendFile(submitData, 'file_mobile', formData.file_mobile);
     submitData.append('link_url', formData.link_url);
     if (formData.link_caption) submitData.append('link_caption', formData.link_caption);
     submitData.append('expired_at', formData.expired_at);

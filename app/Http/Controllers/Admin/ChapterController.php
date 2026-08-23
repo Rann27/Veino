@@ -131,10 +131,7 @@ class ChapterController extends Controller
                             $validated['chapter_number'] = $maxChapterInVolume ? $maxChapterInVolume + 1 : 1;
                         }
                         
-                        // Generate chapter_link for volume format: v{vol}c{num}
-                        $vol = rtrim(rtrim(number_format($validated['volume'], 2, '.', ''), '0'), '.');
-                        $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
-                        $validated['chapter_link'] = "v{$vol}c{$num}";
+                        $validated['chapter_link'] = Chapter::buildLink($validated['volume'], $validated['chapter_number']);
                     } else {
                         // Traditional webnovel style - no volume, auto-increment chapter
                         $validated['volume'] = null;
@@ -148,9 +145,7 @@ class ChapterController extends Controller
                             $validated['chapter_number'] = $maxChapterNumber ? $maxChapterNumber + 1 : 1;
                         }
                         
-                        // Generate chapter_link for non-volume format: just the number
-                        $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
-                        $validated['chapter_link'] = $num;
+                        $validated['chapter_link'] = Chapter::buildLink(null, $validated['chapter_number']);
                     }
                     
                     // Remove the use_volume flag before creating
@@ -205,20 +200,22 @@ class ChapterController extends Controller
                 $validated['chapter_number'] = $chapter->chapter_number; // Keep existing
             }
             
-            // Generate chapter_link for volume format: v{vol}c{num}
-            $vol = rtrim(rtrim(number_format($validated['volume'], 2, '.', ''), '0'), '.');
-            $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
-            $validated['chapter_link'] = "v{$vol}c{$num}";
+            $validated['chapter_link'] = Chapter::buildLink($validated['volume'], $validated['chapter_number']);
         } else {
             // No volume - traditional webnovel style
             $validated['volume'] = null;
             if (empty($validated['chapter_number'])) {
                 $validated['chapter_number'] = $chapter->chapter_number; // Keep existing
             }
-            
-            // Generate chapter_link for non-volume format: just the number
-            $num = rtrim(rtrim(number_format($validated['chapter_number'], 2, '.', ''), '0'), '.');
-            $validated['chapter_link'] = $num;
+
+            $validated['chapter_link'] = Chapter::buildLink(null, $validated['chapter_number']);
+        }
+
+        // A chapter published before links used hyphens keeps its old URL. Only
+        // an actual renumbering may change the link — editing a title or the
+        // body must never silently move a page readers have bookmarked.
+        if ($chapter->hasSameNumbering($validated['volume'], $validated['chapter_number'])) {
+            $validated['chapter_link'] = $chapter->chapter_link;
         }
 
         // Remove the use_volume flag before updating

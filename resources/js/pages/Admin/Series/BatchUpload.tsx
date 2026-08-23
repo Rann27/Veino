@@ -367,12 +367,14 @@ function BatchUploadContent({ series }: Props) {
                                                         </button>
                                                     </td>
                                                     <td className="px-3 py-2">
-                                                        <input type="number" step="0.01" min="0" placeholder="Auto"
+                                                        {/* Chapters step by 0.1 — enough for side stories like 12.5 */}
+                                                        <input type="number" step="0.1" min="0" placeholder="Auto"
                                                             value={row.chapter_number} onChange={e => updateRow(i, 'chapter_number', e.target.value)}
                                                             className={`w-20 ${inputCls}`} style={inputStyle} />
                                                     </td>
                                                     <td className="px-3 py-2">
-                                                        <input type="number" step="0.01" min="0" placeholder="—"
+                                                        {/* Volumes are whole numbers */}
+                                                        <input type="number" step="1" min="0" placeholder="—"
                                                             value={row.volume} onChange={e => updateRow(i, 'volume', e.target.value)}
                                                             className={`w-16 ${inputCls}`} style={inputStyle} />
                                                     </td>
@@ -452,12 +454,12 @@ function BatchUploadContent({ series }: Props) {
                                             <tr key={c.id} className="border-t transition-colors"
                                                 style={{ borderColor: border, backgroundColor: c._dirty ? 'rgba(124,58,237,0.05)' : 'transparent' }}>
                                                 <td className="px-3 py-2">
-                                                    <input type="number" step="0.01" min="0" placeholder="—"
+                                                    <input type="number" step="1" min="0" placeholder="—"
                                                         value={c._volume} onChange={e => updateCreated(c.id, '_volume', e.target.value)}
                                                         className={`w-16 ${inputCls}`} style={inputStyle} />
                                                 </td>
                                                 <td className="px-3 py-2">
-                                                    <input type="number" step="0.01" min="0"
+                                                    <input type="number" step="0.1" min="0"
                                                         value={c._number} onChange={e => updateCreated(c.id, '_number', e.target.value)}
                                                         className={`w-20 ${inputCls}`} style={inputStyle} />
                                                 </td>

@@ -3,6 +3,7 @@ import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
+import { appendFile } from '@/lib/upload';
 
 function hexToRgb(hex: string) {
     const h = hex.replace('#', '');
@@ -132,7 +133,7 @@ function CreateContent({ genres, seriesOptions }: Props) {
         data.append('title', formData.title);
         data.append('alternative_title', formData.alternative_title);
         if (formData.cover) {
-            data.append('cover', formData.cover);
+            appendFile(data, 'cover', formData.cover);
         } else if (fetchedCoverUrl) {
             data.append('fetched_cover_url', fetchedCoverUrl);
         }

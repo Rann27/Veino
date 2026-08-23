@@ -23,6 +23,54 @@ class Chapter extends Model
         'views',
     ];
 
+    /**
+     * Builds the URL segment for a chapter: `v2c12-5`, or `12-5` without volumes.
+     *
+     * The decimal separator is a hyphen, not a dot, because a dot in the last
+     * path segment makes the URL look like a filename to everything in front of
+     * the app — CDNs route it as a static asset, and anything inferring a file
+     * type from the path reads ".5" as an extension.
+     *
+     * Chapters created before this keep their dotted links: lookups match the
+     * stored string exactly, so both spellings resolve and nothing needs
+     * rewriting.
+     */
+    public static function buildLink(float|int|string|null $volume, float|int|string $chapterNumber): string
+    {
+        $number = self::formatLinkSegment($chapterNumber);
+
+        if ($volume === null || $volume === '') {
+            return $number;
+        }
+
+        return 'v'.self::formatLinkSegment($volume).'c'.$number;
+    }
+
+    /**
+     * True when an edit leaves the volume and chapter number untouched.
+     *
+     * Callers use this to keep an existing `chapter_link` as-is, so editing a
+     * title never moves a URL readers may have bookmarked — and so chapters
+     * published with the old dotted links are not quietly renamed.
+     */
+    public function hasSameNumbering(float|int|string|null $volume, float|int|string $number): bool
+    {
+        $sameVolume = ($volume === null || $volume === '')
+            ? $this->volume === null
+            : ($this->volume !== null && abs((float) $volume - (float) $this->volume) < 0.0001);
+
+        return $sameVolume
+            && abs((float) $number - (float) $this->chapter_number) < 0.0001;
+    }
+
+    /** Trims trailing zeros, then swaps the decimal point for a hyphen. */
+    private static function formatLinkSegment(float|int|string $value): string
+    {
+        $text = rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+
+        return str_replace('.', '-', $text);
+    }
+
     protected $casts = [
         'is_premium' => 'boolean',
         'is_published' => 'boolean',
