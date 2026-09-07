@@ -132,19 +132,20 @@ class MembershipPurchase extends Model
     protected function activateUserMembership(): bool
     {
         $user = $this->user;
-        
-        // If user has active membership of same or higher tier, extend it
-        if ($user->hasActiveMembership() && $user->membership_tier === $this->tier) {
-            // Extend existing membership
-            $user->membership_expires_at = Carbon::parse($user->membership_expires_at)
-                ->addDays($this->duration_days);
-        } else {
-            // New membership or upgrade
-            $user->membership_tier = $this->tier;
-            $user->membership_expires_at = $this->expires_at;
+        $tier = $this->tier;
+
+        // A Premium order placed before the buyer upgraded can still land here
+        // afterwards — the checkout guard only covers new purchases. Settling it
+        // as 'premium' would demote a paying Exclusive member, so the days go to
+        // the tier they actually hold. Never worse for them than what they paid.
+        if ($tier === 'premium' && $user->hasExclusiveMembership()) {
+            $tier = 'exclusive';
         }
-        
-        return $user->save();
+
+        // Delegated to the model so coin purchases and gateway payments settle
+        // identically — including the half-carry-over when tiers change, which
+        // this path used to skip, silently voiding the buyer's unused days.
+        return $user->grantMembership($tier, $this->duration_days);
     }
 
     /**

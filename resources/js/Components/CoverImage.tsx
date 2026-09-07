@@ -10,6 +10,14 @@ interface CoverImageProps {
     hoverScale?: boolean;
     /** Aspect ratio class, e.g. "aspect-[2/3]" (default: "aspect-[2/3]") */
     aspectClass?: string;
+    /**
+     * Load immediately at high priority instead of lazily.
+     *
+     * Set this on the image that is the page's Largest Contentful Paint — the
+     * hero cover. Lazy-loading an above-the-fold image delays the very metric
+     * it is meant to help, because the browser only queues it after layout.
+     */
+    priority?: boolean;
 }
 
 export default function CoverImage({
@@ -19,6 +27,7 @@ export default function CoverImage({
     containerClassName = '',
     hoverScale = true,
     aspectClass = 'aspect-[2/3]',
+    priority = false,
 }: CoverImageProps) {
     const { currentTheme } = useTheme();
     const [loaded, setLoaded] = useState(false);
@@ -71,7 +80,9 @@ export default function CoverImage({
                     ref={imgRef}
                     src={src}
                     alt={alt}
-                    loading="lazy"
+                    loading={priority ? 'eager' : 'lazy'}
+                    fetchPriority={priority ? 'high' : 'auto'}
+                    decoding={priority ? 'sync' : 'async'}
                     onLoad={() => setLoaded(true)}
                     onError={() => setError(true)}
                     className={[

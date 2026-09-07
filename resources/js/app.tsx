@@ -15,6 +15,12 @@ createInertiaApp({
         root.render(<App {...props} />);
     },
     progress: {
-        color: '#4B5563',
+        // Brand purple rather than the old #4B5563, which was all but invisible
+        // against the dark themes — leaving slower navigations looking frozen.
+        color: '#a78bfa',
+        // Nothing flashes on navigations that resolve quickly; the bar only
+        // appears once a visit is slow enough to be worth reporting.
+        delay: 200,
+        showSpinner: false,
     },
 });

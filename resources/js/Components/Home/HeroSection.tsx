@@ -234,7 +234,9 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                       boxShadow: `0 30px 70px ${currentTheme.foreground}20, 0 0 0 1px ${currentTheme.foreground}08`,
                     }}
                   >
+                    {/* Always the visible hero slide, so always the LCP candidate. */}
                     <CoverImage
+                      priority
                       src={series.cover_url}
                       alt={series.title}
                       containerClassName="w-52 xl:w-60 2xl:w-64"

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
+import { asTier, TierIcon, TIER_LABEL, TIER_COLOR, TIER_GRADIENT, TIER_GLOW } from '@/lib/tier';
 
 function useCountdown(expiresAt?: string) {
     const [remaining, setRemaining] = useState<number>(() => {
@@ -39,6 +40,7 @@ interface MembershipHistory {
     completed_at?: string;
     created_at: string;
     package?: { name: string };
+    charged_usd?: number;
 }
 
 interface Props {
@@ -109,10 +111,18 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
 }) {
     const { currentTheme } = useTheme();
     const countdown = useCountdown(history.status === 'pending' ? history.payment_expires_at : undefined);
+    // The receipt wears the tier that was actually bought.
+    const tier = asTier(history.tier);
+    const accent = TIER_COLOR[tier];
+    const exclusive = tier === 'exclusive';
+    // amount_usd is the list price; PayPal bills the grossed-up total.
+    const listUsd = parseFloat(history.amount_usd);
+    const chargedUsd = history.charged_usd ?? listUsd;
+    const feeUsd = Math.round((chargedUsd - listUsd) * 100) / 100;
 
     const getStatusColor = () => {
         switch (history.status) {
-            case 'completed': return SHINY_PURPLE;
+            case 'completed': return accent;
             case 'pending':   return '#fbbf24';
             case 'failed':
             case 'cancelled': return '#ef4444';
@@ -132,8 +142,8 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
                                 <stop offset="100%" style={{ stopColor: '#a78bfa' }} />
                             </linearGradient>
                         </defs>
-                        <circle cx="12" cy="12" r="10" fill={`${SHINY_PURPLE}20`} />
-                        <path d="M9 12l2 2 4-4" stroke={SHINY_PURPLE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="12" cy="12" r="10" fill={`${accent}20`} />
+                        <path d="M9 12l2 2 4-4" stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 );
             case 'pending':
@@ -159,7 +169,9 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
             case 'completed':
                 return {
                     title: 'Payment Successful!',
-                    description: 'Your Premium Membership has been activated. Enjoy unlimited access!',
+                    description: exclusive
+                        ? 'Premium Exclusive is active. Every premium chapter and every EPUB volume is yours.'
+                        : 'Your Premium Membership has been activated. Enjoy unlimited access!',
                 };
             case 'pending':
                 return {
@@ -203,6 +215,7 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
         return method;
     };
 
+
     return (
         <>
             <Head title="Transaction Status" />
@@ -212,8 +225,16 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
                 style={{ backgroundColor: currentTheme.background }}
             >
                 <div
-                    className="max-w-lg w-full rounded-2xl p-8 border shadow-2xl"
-                    style={{
+                    className={`max-w-lg w-full rounded-2xl p-8 border shadow-2xl${exclusive && (isPending || isCompleted) ? ' tier-neon' : ''}`}
+                    style={exclusive && (isPending || isCompleted) ? {
+                        backgroundColor: `${currentTheme.background}F0`,
+                        border: '2px solid transparent',
+                        backgroundImage: `linear-gradient(${currentTheme.background}, ${currentTheme.background}), ${TIER_GRADIENT.exclusive}`,
+                        backgroundOrigin: 'border-box',
+                        backgroundClip: 'padding-box, border-box',
+                        backgroundSize: 'auto, 300% 300%',
+                        boxShadow: TIER_GLOW.exclusive,
+                    } : {
                         backgroundColor: `${currentTheme.background}F0`,
                         borderColor: isPending ? `${SHINY_PURPLE}30` : isCompleted ? `${SHINY_PURPLE}40` : `${currentTheme.foreground}20`,
                         boxShadow: isPending || isCompleted ? `0 0 40px ${SHINY_PURPLE}15` : undefined,
@@ -224,9 +245,9 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
                         className="h-1 rounded-full mb-8 -mx-8 -mt-8 rounded-t-2xl"
                         style={{
                             background: isCompleted
-                                ? `linear-gradient(90deg, #a78bfa, #e879f9, #a78bfa)`
+                                ? (exclusive ? TIER_GRADIENT.exclusive : `linear-gradient(90deg, #a78bfa, #e879f9, #a78bfa)`)
                                 : isPending
-                                    ? `linear-gradient(90deg, ${SHINY_PURPLE}60, #e879f930, ${SHINY_PURPLE}60)`
+                                    ? (exclusive ? TIER_GRADIENT.exclusive : `linear-gradient(90deg, ${SHINY_PURPLE}60, #e879f930, ${SHINY_PURPLE}60)`)
                                     : `${currentTheme.foreground}20`,
                         }}
                     />
@@ -268,7 +289,8 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
 
                         {history.package?.name && (
                             <Row label="Package" style={{ color: currentTheme.foreground }}>
-                                <span className="font-semibold" style={{ color: SHINY_PURPLE }}>
+                                <span className="font-semibold inline-flex items-center gap-1.5" style={{ color: accent }}>
+                                    <TierIcon tier={tier} size={13} />
                                     {history.package.name}
                                 </span>
                             </Row>
@@ -276,13 +298,28 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
 
                         <Row label="Duration" style={{ color: currentTheme.foreground }}>
                             <span className="font-semibold" style={{ color: currentTheme.foreground }}>
-                                ✦ {getDurationLabel(history.duration_days)} Premium
+                                {getDurationLabel(history.duration_days)} {TIER_LABEL[tier]}
                             </span>
                         </Row>
 
-                        <Row label="Amount Paid" style={{ color: currentTheme.foreground }}>
-                            <span className="font-bold text-base" style={{ color: SHINY_PURPLE }}>
-                                ${history.amount_usd}
+                        {feeUsd > 0 && (
+                            <>
+                                <Row label="Subtotal" style={{ color: currentTheme.foreground }}>
+                                    <span className="font-semibold" style={{ color: currentTheme.foreground }}>
+                                        ${listUsd.toFixed(2)}
+                                    </span>
+                                </Row>
+                                <Row label="PayPal fee" style={{ color: currentTheme.foreground }}>
+                                    <span className="font-semibold" style={{ color: currentTheme.foreground }}>
+                                        +${feeUsd.toFixed(2)}
+                                    </span>
+                                </Row>
+                            </>
+                        )}
+
+                        <Row label={feeUsd > 0 ? 'Total Charged' : 'Amount Paid'} style={{ color: currentTheme.foreground }}>
+                            <span className="font-bold text-base" style={{ color: accent }}>
+                                ${chargedUsd.toFixed(2)}
                             </span>
                         </Row>
 
@@ -345,11 +382,12 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
                         {isPending && history.payment_url && (
                             <button
                                 onClick={onContinuePayment}
-                                className="w-full py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 hover:scale-[1.01] active:scale-[0.99]"
+                                className={`w-full py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 hover:scale-[1.01] active:scale-[0.99]${exclusive ? ' tier-neon' : ''}`}
                                 style={{
-                                    background: `linear-gradient(135deg, #a78bfa, #e879f9)`,
-                                    color: 'white',
-                                    boxShadow: `0 4px 20px ${SHINY_PURPLE}40`,
+                                    background: exclusive ? TIER_GRADIENT.exclusive : `linear-gradient(135deg, #a78bfa, #e879f9)`,
+                                    backgroundSize: exclusive ? '300% 300%' : undefined,
+                                    color: exclusive ? '#3b2a00' : 'white',
+                                    boxShadow: `0 4px 20px ${accent}40`,
                                 }}
                             >
                                 Continue to Payment →
@@ -359,7 +397,7 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
                         {isPending && !history.payment_url && (
                             <div
                                 className="w-full py-3 rounded-xl text-center text-sm font-medium animate-pulse"
-                                style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}
+                                style={{ backgroundColor: `${accent}15`, color: accent }}
                             >
                                 Waiting for confirmation…
                             </div>
@@ -385,11 +423,12 @@ function MembershipStatusInner({ history, onContinuePayment, onCancel, cancellin
                         {isCompleted && (
                             <button
                                 onClick={() => window.location.href = '/'}
-                                className="w-full py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 hover:scale-[1.01]"
+                                className={`w-full py-3 rounded-xl font-bold text-sm transition-all hover:opacity-90 hover:scale-[1.01]${exclusive ? ' tier-neon' : ''}`}
                                 style={{
-                                    background: `linear-gradient(135deg, #a78bfa, #e879f9)`,
-                                    color: 'white',
-                                    boxShadow: `0 4px 20px ${SHINY_PURPLE}40`,
+                                    background: exclusive ? TIER_GRADIENT.exclusive : `linear-gradient(135deg, #a78bfa, #e879f9)`,
+                                    backgroundSize: exclusive ? '300% 300%' : undefined,
+                                    color: exclusive ? '#3b2a00' : 'white',
+                                    boxShadow: `0 4px 20px ${accent}40`,
                                 }}
                             >
                                 Start Reading ✦

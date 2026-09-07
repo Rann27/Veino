@@ -83,6 +83,11 @@ class UserSeriesController extends Controller
 
         [$readChapterIds, $lastRead] = $this->readingProgress($series, $chapters);
 
+        // Expiry of any challenge-earned access, so premium rows can show how
+        // long the reader still has. One query for the whole list.
+        $temporaryAccess = app(\App\Services\ChapterUnlockService::class)
+            ->activeAccessMap(Auth::user(), $chapters->pluck('id')->all());
+
         // Fetch marks for this series (grouped by chapter)
         $seriesMarks = [];
         if (Auth::check()) {
@@ -115,6 +120,7 @@ class UserSeriesController extends Controller
             'firstChapter'  => $firstChapter?->chapter_link,
             'readChapterIds' => $readChapterIds,
             'lastRead'      => $lastRead,
+            'temporaryAccess' => $temporaryAccess,
         ]);
     }
 

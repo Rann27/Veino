@@ -31,3 +31,9 @@ Schedule::command('analytics:rollup --days=3')
 // Drop raw page views past the retention window, keeping the daily rollups
 Schedule::command('analytics:prune')
     ->dailyAt('03:30');
+
+// Storage manager quarantine: files sit for a retention window before they are
+// really gone, so this is what finally reclaims the space.
+Schedule::command('storage:purge-trash')
+    ->dailyAt('03:30')
+    ->timezone('UTC');

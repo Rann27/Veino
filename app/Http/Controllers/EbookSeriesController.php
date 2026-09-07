@@ -127,7 +127,12 @@ class EbookSeriesController extends Controller
 
         // Add status for each item (in cart, purchased, etc)
         $user = auth()->user();
-        $hasPremiumSeriesAccess = $user && $series->free_for_premium_members && $user->isPremiumMember();
+        // Exclusive members get every series, including the ones not flagged
+        // free_for_premium_members — mirror the rule the download guard uses so
+        // the page never shows a price the checkout would refuse to charge.
+        $hasPremiumSeriesAccess = $user
+            && $user->isPremiumMember()
+            && ($series->free_for_premium_members || $user->hasExclusiveMembership());
 
         $items = $series->items->map(function ($item) use ($userId, $hasPremiumSeriesAccess) {
             $isPurchased = $userId ? $item->isPurchasedBy($userId) : false;

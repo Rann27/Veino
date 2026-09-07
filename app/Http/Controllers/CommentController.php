@@ -67,6 +67,8 @@ class CommentController extends Controller
         $userId = Auth::id();
         $comments->each(function ($comment) use ($userId) {
             $comment->user->is_premium = $comment->user->isPremiumMember();
+            // Tier slug too, so the UI can tell Exclusive apart from Premium.
+            $comment->user->tier = $comment->user->isPremiumMember() ? $comment->user->membership_tier : null;
 
             if ($userId) {
                 $comment->user_reaction = $comment->reactions()
@@ -76,6 +78,7 @@ class CommentController extends Controller
 
             $comment->replies->each(function ($reply) use ($userId) {
                 $reply->user->is_premium = $reply->user->isPremiumMember();
+                $reply->user->tier = $reply->user->isPremiumMember() ? $reply->user->membership_tier : null;
 
                 if ($userId) {
                     $reply->user_reaction = $reply->reactions()

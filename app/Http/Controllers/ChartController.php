@@ -236,8 +236,13 @@ class ChartController extends Controller
                 ]);
             }
 
-            // Deduct coins (with discount applied)
-            $user->decrement('coins', $finalPrice);
+            // Deduct coins (with discount applied). Guarded rather than a bare
+            // decrement: the balance check above runs outside the transaction,
+            // so two carts checked out at once could each pass it and drive the
+            // balance negative.
+            if (! $user->deductCoins($finalPrice)) {
+                throw new \RuntimeException('insufficient_coins');
+            }
 
             // Record voucher usage
             if ($voucher) {
@@ -265,6 +270,14 @@ class ChartController extends Controller
             // Return JSON success instead of redirect (for Inertia handling)
             return back()->with('success', 'Purchase successful! Items added to your bookshelf.');
 
+        } catch (\RuntimeException $e) {
+            DB::rollback();
+
+            if ($e->getMessage() !== 'insufficient_coins') {
+                throw $e;
+            }
+
+            return back()->with('error', 'Not enough coins — your balance changed while the purchase was going through.');
         } catch (\Exception $e) {
             DB::rollback();
             \Log::error('Ebook checkout failed', [
@@ -272,7 +285,8 @@ class ChartController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return back()->with('error', 'Purchase failed: ' . $e->getMessage());
+            // Generic on purpose: the raw message can carry SQL and schema detail.
+            return back()->with('error', 'Purchase could not be completed. Your coins have not been deducted — please try again.');
         }
     }
 }

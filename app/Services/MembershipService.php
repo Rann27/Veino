@@ -143,7 +143,9 @@ class MembershipService
      */
     public function expireExpiredMemberships(): int
     {
-        $expiredUsers = User::where('membership_tier', 'premium')
+        // Every paid tier expires, not just 'premium' — scoping this to one
+        // tier would leave Exclusive memberships active forever.
+        $expiredUsers = User::whereIn('membership_tier', User::PAID_TIERS)
             ->where('membership_expires_at', '<=', now())
             ->get();
         
@@ -169,9 +171,14 @@ class MembershipService
      * @param int $days
      * @return bool
      */
-    public function grantPremium(User $user, int $days): bool
+    public function grantPremium(User $user, int $days, string $tier = 'premium'): bool
     {
-        return $user->grantMembership('premium', $days);
+        // The tier is a parameter, not a constant: this used to hardcode
+        // 'premium', so buying Premium Exclusive granted plain Premium.
+        return $user->grantMembership(
+            in_array($tier, User::PAID_TIERS, true) ? $tier : 'premium',
+            $days
+        );
     }
 
     /**

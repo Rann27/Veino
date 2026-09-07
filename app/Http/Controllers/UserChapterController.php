@@ -15,7 +15,7 @@ use Inertia\Inertia;
 
 class UserChapterController extends Controller
 {
-    public function show($seriesSlug, $chapterLink)
+    public function show(Request $request, $seriesSlug, $chapterLink)
     {
         $series = Series::where('slug', $seriesSlug)->firstOrFail();
         
@@ -39,6 +39,9 @@ class UserChapterController extends Controller
             );
         }
         
+        $unlock = app(\App\Services\ChapterUnlockService::class);
+        $temporaryAccess = null;
+
         if ($chapter->is_premium) {
             if (!$user) {
                 $canAccess = false;
@@ -51,8 +54,13 @@ class UserChapterController extends Controller
                     ->where('chapter_id', $chapter->id)
                     ->exists();
 
-                // Access granted if premium member OR has coin purchase
-                $canAccess = $isPremiumMember || $hasCoinPurchase;
+                // Time-limited access earned through the shortlink challenge
+                $temporaryAccess = \App\Models\ChapterTemporaryAccess::where('user_id', $user->id)
+                    ->where('chapter_id', $chapter->id)
+                    ->active()
+                    ->first();
+
+                $canAccess = $isPremiumMember || $hasCoinPurchase || $temporaryAccess !== null;
             }
         }
 
@@ -88,6 +96,17 @@ class UserChapterController extends Controller
             'canAccess' => $canAccess,
             'isPremiumMember' => $isPremiumMember,
             'hasCoinPurchase' => $hasCoinPurchase,
+            'challenge' => [
+                'available' => $unlock->availableFor($user, $chapter),
+                'days' => $unlock->accessDays(),
+                'daily_limit' => $unlock->dailyLimit(),
+                'used_today' => $user ? $unlock->grantsToday($user) : 0,
+                // Surfaced on purpose: if sandbox is ever left on in production
+                // the button says so, rather than quietly giving chapters away.
+                'sandbox' => $unlock->sandbox(),
+            ],
+            'temporaryAccessExpiresAt' => $temporaryAccess?->expires_at?->toIso8601String(),
+            'justUnlocked' => $request->boolean('unlocked'),
             'prevChapter' => $prevChapter ? [
                 'chapter_link' => $prevChapter->chapter_link,
                 'title' => $prevChapter->title,
@@ -142,39 +161,49 @@ class UserChapterController extends Controller
         }
 
         // Process purchase atomically — lockForUpdate prevents double-purchase on concurrent requests
-        DB::transaction(function () use ($user, $chapter, $price) {
-            $alreadyPurchased = ChapterPurchase::where('user_id', $user->id)
-                ->where('chapter_id', $chapter->id)
-                ->lockForUpdate()
-                ->exists();
+        try {
+            DB::transaction(function () use ($user, $chapter, $price) {
+                $alreadyPurchased = ChapterPurchase::where('user_id', $user->id)
+                    ->where('chapter_id', $chapter->id)
+                    ->lockForUpdate()
+                    ->exists();
 
-            if ($alreadyPurchased) {
-                return; // silently skip inside transaction
+                if ($alreadyPurchased) {
+                    return; // silently skip inside transaction
+                }
+
+                // Guarded: returns false if a concurrent request already spent the
+                // balance, rather than letting both purchases through.
+                if (! $user->deductCoins($price)) {
+                    throw new \RuntimeException('insufficient_coins');
+                }
+
+                // Record chapter purchase
+                ChapterPurchase::create([
+                    'user_id'    => $user->id,
+                    'chapter_id' => $chapter->id,
+                    'coin_price' => $price,
+                ]);
+
+                // Record transaction
+                Transaction::create([
+                    'user_id'        => $user->id,
+                    'type'           => 'chapter_purchase',
+                    'amount'         => 0,
+                    'coins_spent'    => $price,
+                    'payment_method' => 'coins',
+                    'status'         => 'completed',
+                    'chapter_id'     => $chapter->id,
+                    'description'    => "Unlocked chapter: {$chapter->title}",
+                    ]);
+            });
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() !== 'insufficient_coins') {
+                throw $e;
             }
 
-            // Deduct coins
-            $user->deductCoins($price);
-            $user->save();
-
-            // Record chapter purchase
-            ChapterPurchase::create([
-                'user_id'    => $user->id,
-                'chapter_id' => $chapter->id,
-                'coin_price' => $price,
-            ]);
-
-            // Record transaction
-            Transaction::create([
-                'user_id'        => $user->id,
-                'type'           => 'chapter_purchase',
-                'amount'         => 0,
-                'coins_spent'    => $price,
-                'payment_method' => 'coins',
-                'status'         => 'completed',
-                'chapter_id'     => $chapter->id,
-                'description'    => "Unlocked chapter: {$chapter->title}",
-            ]);
-        });
+            return back()->with('error', 'Not enough coins — your balance changed while the purchase was going through.');
+        }
 
         return redirect()->route('chapters.show', [$seriesSlug, $chapterLink])
             ->with('success', "Chapter unlocked! {$price} coins spent.");

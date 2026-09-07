@@ -6,6 +6,7 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import { useToast } from '@/Contexts/ToastContext';
 import CoverImage from '@/Components/CoverImage';
 import EmptyState from '@/Components/EmptyState';
+import { csrfHeaders } from '@/lib/csrf';
 
 interface ChartItem {
     chart_item_id: number;
@@ -61,7 +62,7 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    ...csrfHeaders(),
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({

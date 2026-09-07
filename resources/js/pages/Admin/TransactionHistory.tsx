@@ -1,6 +1,6 @@
 ﻿import AdminLayout from '@/Layouts/AdminLayout';
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, router } from '@inertiajs/react';
+import { useMemo, useState } from 'react';
 import { useTheme } from '@/Contexts/ThemeContext';
 
 interface User {
@@ -73,6 +73,7 @@ interface EbookPurchase {
 
 interface PaginatedData<T> {
   data: T[];
+  links: { url: string | null; label: string; active: boolean }[];
   current_page: number;
   last_page: number;
   per_page: number;
@@ -80,6 +81,7 @@ interface PaginatedData<T> {
 }
 
 interface TransactionHistoryProps {
+  sorts: Record<'coin' | 'membership' | 'ebook', { key: string; dir: 'asc' | 'desc' }>;
   coinPurchases: PaginatedData<CoinPurchase>;
   membershipPurchases: PaginatedData<MembershipPurchase>;
   ebookPurchases: PaginatedData<EbookPurchase>;
@@ -99,7 +101,10 @@ function wa(hex: string, a: number) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases }: TransactionHistoryProps) {
+type SortState = { key: string; dir: 'asc' | 'desc' };
+type Column = { key: string; label: string; align?: 'left' | 'right'; sortable?: boolean };
+
+function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases, sorts }: TransactionHistoryProps) {
   const { currentTheme } = useTheme();
   const light   = isLight(currentTheme.background);
   const fg      = currentTheme.foreground;
@@ -109,6 +114,70 @@ function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases
   const panelBg = light ? wa(fg, 0.06) : wa(fg, 0.09);
 
   const [activeTab, setActiveTab] = useState<'coins' | 'membership' | 'ebook'>('coins');
+  // Server tab keys differ from the UI ones by a single letter.
+  const serverTab = activeTab === 'coins' ? 'coin' : activeTab;
+  const sortKey = sorts[serverTab]?.key ?? 'date';
+  const sortDir = sorts[serverTab]?.dir ?? 'desc';
+
+  // Moving to a new column starts at the direction that column is usually read
+  // in — newest first, biggest first, A→Z — rather than always ascending.
+  const FIRST_DIR: Record<string, 'asc' | 'desc'> = {
+    user: 'asc', item: 'asc', quantity: 'desc', amount: 'desc',
+    method: 'asc', status: 'asc', date: 'desc',
+  };
+
+  // Reloads with the new ordering rather than reshuffling the rows in place —
+  // that is what makes "highest amount" mean highest overall, not highest here.
+  const toggleSort = (key: string) => {
+    const dir = key === sortKey ? (sortDir === 'asc' ? 'desc' : 'asc') : (FIRST_DIR[key] ?? 'asc');
+    router.get(window.location.pathname,
+      { ...Object.fromEntries(new URLSearchParams(window.location.search)), [`${serverTab}_sort`]: key, [`${serverTab}_dir`]: dir },
+      { preserveState: false, preserveScroll: true });
+  };
+
+  // Status sorts by how far along a payment is, not alphabetically — "cancelled"
+  // landing before "completed" would tell an admin nothing useful.
+  const STATUS_ORDER: Record<string, number> = {
+    completed: 0, pending: 1, failed: 2, cancelled: 3, refunded: 4,
+  };
+
+  const paginator = activeTab === 'coins' ? coinPurchases
+    : activeTab === 'membership' ? membershipPurchases
+    : ebookPurchases;
+
+  const rows = paginator.data as any[];
+
+  const columns = useMemo<Column[]>(() => {
+    const user: Column = { key: 'user', label: 'User' };
+    const date: Column = { key: 'date', label: 'Date' };
+
+    if (activeTab === 'coins') {
+      return [user,
+        { key: 'item', label: 'Package' },
+        { key: 'quantity', label: 'Coins', align: 'right' },
+        { key: 'amount', label: 'Amount', align: 'right' },
+        { key: 'method', label: 'Method' },
+        { key: 'status', label: 'Status' },
+        date];
+    }
+
+    if (activeTab === 'membership') {
+      return [user,
+        { key: 'item', label: 'Package' },
+        { key: 'quantity', label: 'Duration', align: 'right' },
+        { key: 'amount', label: 'Amount', align: 'right' },
+        { key: 'method', label: 'Method' },
+        { key: 'status', label: 'Status' },
+        date];
+    }
+
+    return [user,
+      { key: 'item', label: 'Item' },
+      { key: 'amount', label: 'Paid', align: 'right' },
+      date];
+  }, [activeTab]);
+
+  const cellStyle: React.CSSProperties = { padding: '12px', verticalAlign: 'top', color: fg };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -162,17 +231,6 @@ function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases
     { id: 'ebook' as const, label: 'Ebook Purchases', count: ebookPurchases.total, icon: '' },
   ];
 
-  const cardStyle = {
-    border: `1px solid ${border}`,
-    borderRadius: '10px',
-    padding: '20px',
-    background: cardBg,
-    transition: 'box-shadow 0.2s',
-  };
-
-  const labelStyle = { fontSize: '11px', fontWeight: 600 as const, color: muted, textTransform: 'uppercase' as const, marginBottom: '4px', letterSpacing: '0.05em' };
-  const valueStyle = { fontSize: '13px', fontWeight: 600 as const, color: fg };
-
   return (
     <div style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: '12px', overflow: 'hidden' }}>
       {/* Tabs */}
@@ -216,216 +274,136 @@ function TransactionContent({ coinPurchases, membershipPurchases, ebookPurchases
         </nav>
       </div>
 
-      {/* Coin Purchases Tab */}
-      {activeTab === 'coins' && (
-        <div style={{ padding: '24px' }}>
-          {coinPurchases.data.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {coinPurchases.data.map((purchase) => (
-                <div key={purchase.id} style={cardStyle}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: 600, color: fg }}>
-                          {purchase.user.display_name || purchase.user.name}
-                        </h3>
-                        {getStatusBadge(purchase.status)}
-                      </div>
-                      <p style={{ fontSize: '13px', color: muted }}>{purchase.user.email}</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '24px', fontWeight: 700, color: '#d97706' }}>
-                        ${formatAmount(purchase.price_usd)}
-                      </div>
-                      <div style={{ fontSize: '11px', color: muted, marginTop: '4px' }}>
-                        {formatDate(purchase.created_at)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ paddingTop: '16px', borderTop: `1px solid ${border}` }}>
-                    <div>
-                      <div style={labelStyle}>Coins Purchased</div>
-                      <div style={{ ...valueStyle, color: '#d97706' }}>{purchase.coins_amount.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div style={labelStyle}>Package</div>
-                      <div style={valueStyle}>{purchase.coin_package?.name || 'N/A'}</div>
-                      {purchase.coin_package?.bonus_premium_days && purchase.coin_package.bonus_premium_days > 0 && (
-                        <div style={{ fontSize: '11px', color: '#a855f7', marginTop: '2px' }}>
-                          +{purchase.coin_package.bonus_premium_days}d Premium
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <div style={labelStyle}>Payment Method</div>
-                      <div>{getPaymentMethodBadge(purchase.payment_method)}</div>
-                      {purchase.transaction_id && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
-                          <span style={{ fontSize: '11px', color: muted, fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                            {purchase.transaction_id}
-                          </span>
-                          <button
-                            onClick={() => navigator.clipboard.writeText(purchase.transaction_id!)}
-                            title="Copy"
-                            style={{ flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: muted, lineHeight: 1 }}
-                          >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{ width: 12, height: 12 }}>
-                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                            </svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '64px 0' }}>
-              <span style={{ fontSize: '56px' }}></span>
-              <h3 style={{ marginTop: '16px', fontSize: '13px', fontWeight: 500, color: fg }}>No coin purchases yet</h3>
-              <p style={{ marginTop: '4px', fontSize: '13px', color: muted }}>Coin top-up transactions will appear here.</p>
-            </div>
-          )}
-
-          {coinPurchases.last_page > 1 && (
-            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${border}` }}>
-              <div style={{ fontSize: '13px', color: muted }}>
-                Showing page {coinPurchases.current_page} of {coinPurchases.last_page}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Membership Purchases Tab */}
-      {activeTab === 'membership' && (
-        <div style={{ padding: '24px' }}>
-          {membershipPurchases.data.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {membershipPurchases.data.map((purchase) => (
-                <div key={purchase.id} style={cardStyle}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: 600, color: fg }}>
-                          {purchase.user.display_name || purchase.user.name}
-                        </h3>
-                        {getStatusBadge(purchase.status)}
-                      </div>
-                      <p style={{ fontSize: '13px', color: muted }}>{purchase.user.email}</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '24px', fontWeight: 700, color: '#a855f7' }}>
-                        {typeof purchase.amount_usd === 'number' ? purchase.amount_usd.toLocaleString() : parseFloat(purchase.amount_usd).toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: '11px', color: muted, marginTop: '4px' }}>
-                        {formatDate(purchase.created_at)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4" style={{ paddingTop: '16px', borderTop: `1px solid ${border}` }}>
-                    <div>
-                      <div style={labelStyle}>Invoice Number</div>
-                      <div style={{ ...valueStyle, fontFamily: 'monospace' }}>{purchase.invoice_number}</div>
-                    </div>
-                    <div>
-                      <div style={labelStyle}>Package</div>
-                      <div style={valueStyle}>{purchase.membership_package?.name || 'Legacy Package'}</div>
-                      <div style={{ fontSize: '11px', color: muted, marginTop: '2px' }}>{purchase.duration_days} days</div>
-                    </div>
-                    <div>
-                      <div style={labelStyle}>Tier</div>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 500, background: 'rgba(168,85,247,0.12)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.25)' }}>
-                        {purchase.tier.toUpperCase()}
+      {/* One row per transaction. The card layout put a single record across
+          five stacked blocks, so comparing two payments meant scrolling; a
+          table lets the eye run down a column instead. */}
+      <div style={{ padding: '24px' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${border}` }}>
+                {columns.map((col: Column) => (
+                  <th key={col.key} style={{ padding: 0, textAlign: col.align ?? 'left' }}>
+                    {col.sortable === false ? (
+                      <span style={{ display: 'block', padding: '10px 12px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: muted }}>
+                        {col.label}
                       </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '64px 0' }}>
-              <span style={{ fontSize: '56px' }}></span>
-              <h3 style={{ marginTop: '16px', fontSize: '13px', fontWeight: 500, color: fg }}>No membership purchases yet</h3>
-              <p style={{ marginTop: '4px', fontSize: '13px', color: muted }}>Membership transactions will appear here.</p>
-            </div>
-          )}
+                    ) : (
+                      <button onClick={() => toggleSort(col.key)}
+                        style={{
+                          width: '100%', display: 'flex', alignItems: 'center', gap: '4px',
+                          justifyContent: col.align === 'right' ? 'flex-end' : 'flex-start',
+                          padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer',
+                          fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                          color: sortKey === col.key ? fg : muted,
+                        }}
+                        title={`Sort by ${col.label.toLowerCase()}`}>
+                        {col.label}
+                        <span aria-hidden style={{ fontSize: '9px', opacity: sortKey === col.key ? 1 : 0.35 }}>
+                          {sortKey === col.key ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+                        </span>
+                      </button>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row: any) => (
+                <tr key={row.id} style={{ borderBottom: `1px solid ${border}` }}>
+                  <td style={cellStyle}>
+                    <div style={{ fontWeight: 600, color: fg }}>{row.user?.display_name || row.user?.name || '—'}</div>
+                    <div style={{ fontSize: '12px', color: muted }}>{row.user?.email}</div>
+                  </td>
 
-          {membershipPurchases.last_page > 1 && (
-            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${border}` }}>
-              <div style={{ fontSize: '13px', color: muted }}>
-                Showing page {membershipPurchases.current_page} of {membershipPurchases.last_page}
-              </div>
-            </div>
+                  {activeTab === 'coins' && (
+                    <>
+                      <td style={cellStyle}>
+                        <div style={{ color: fg }}>{row.coin_package?.name ?? '—'}</div>
+                        {row.coin_package?.bonus_premium_days > 0 && (
+                          <div style={{ fontSize: '12px', color: '#a78bfa' }}>+{row.coin_package.bonus_premium_days}d Premium</div>
+                        )}
+                      </td>
+                      <td style={{ ...cellStyle, textAlign: 'right', color: light ? '#b45309' : '#fbbf24', fontWeight: 600 }}>
+                        {Number(row.coins_amount).toLocaleString()}
+                      </td>
+                    </>
+                  )}
+
+                  {activeTab === 'membership' && (
+                    <>
+                      <td style={cellStyle}>
+                        <div style={{ color: fg }}>{row.membership_package?.name ?? '—'}</div>
+                        <div style={{ fontSize: '12px', color: muted, fontFamily: 'monospace' }}>{row.invoice_number}</div>
+                      </td>
+                      <td style={{ ...cellStyle, textAlign: 'right', color: fg }}>{row.duration_days}d</td>
+                    </>
+                  )}
+
+                  {activeTab === 'ebook' && (
+                    <>
+                      <td style={cellStyle}>
+                        <div style={{ color: fg }}>{row.ebook_item?.title ?? '—'}</div>
+                        <div style={{ fontSize: '12px', color: muted }}>{row.ebook_item?.ebook_series?.title}</div>
+                      </td>
+                      <td style={{ ...cellStyle, textAlign: 'right', color: light ? '#b45309' : '#fbbf24', fontWeight: 600 }}>
+                        &#162;{Number(row.price_paid).toLocaleString()}
+                      </td>
+                    </>
+                  )}
+
+                  {activeTab !== 'ebook' && (
+                    <>
+                      <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 700, color: light ? '#b45309' : '#fbbf24' }}>
+                        ${Number(activeTab === 'coins' ? row.price_usd : row.amount_usd).toFixed(2)}
+                      </td>
+                      <td style={cellStyle}>
+                        <span style={{ fontSize: '12px', color: fg }}>{row.payment_method}</span>
+                        {row.transaction_id && (
+                          <div style={{ fontSize: '11px', color: muted, fontFamily: 'monospace' }}>{row.transaction_id}</div>
+                        )}
+                      </td>
+                      <td style={cellStyle}>{getStatusBadge(row.status)}</td>
+                    </>
+                  )}
+
+                  <td style={{ ...cellStyle, color: muted, whiteSpace: 'nowrap' }}>
+                    {formatDate(activeTab === 'ebook' ? (row.purchased_at ?? row.created_at) : row.created_at)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {rows.length === 0 && (
+            <div style={{ padding: '48px', textAlign: 'center', color: muted }}>No transactions yet.</div>
           )}
         </div>
-      )}
 
-      {/* Ebook Purchases Tab */}
-      {activeTab === 'ebook' && (
-        <div style={{ padding: '24px' }}>
-          {ebookPurchases.data.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {ebookPurchases.data.map((purchase) => (
-                <div key={purchase.id} style={cardStyle}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: 600, color: fg }}>
-                          {purchase.user.display_name || purchase.user.name}
-                        </h3>
-                      </div>
-                      <p style={{ fontSize: '13px', color: muted }}>{purchase.user.email}</p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '24px', fontWeight: 700, color: '#22c55e' }}>
-                        {purchase.price_paid.toLocaleString()}
-                      </div>
-                      <div style={{ fontSize: '11px', color: muted, marginTop: '4px' }}>
-                        {formatDate(purchase.purchased_at || purchase.created_at)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4" style={{ paddingTop: '16px', borderTop: `1px solid ${border}` }}>
-                    <div>
-                      <div style={labelStyle}>Ebook Series</div>
-                      <div style={valueStyle}>{purchase.ebook_item.ebook_series.title}</div>
-                    </div>
-                    <div>
-                      <div style={labelStyle}>Item</div>
-                      <div style={valueStyle}>{purchase.ebook_item.title}</div>
-                      {purchase.ebook_item.volume_number && (
-                        <div style={{ fontSize: '11px', color: muted, marginTop: '2px' }}>
-                          Volume {purchase.ebook_item.volume_number}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '64px 0' }}>
-              <span style={{ fontSize: '56px' }}></span>
-              <h3 style={{ marginTop: '16px', fontSize: '13px', fontWeight: 500, color: fg }}>No ebook purchases yet</h3>
-              <p style={{ marginTop: '4px', fontSize: '13px', color: muted }}>Ebook transactions will appear here.</p>
-            </div>
-          )}
-
-          {ebookPurchases.last_page > 1 && (
-            <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${border}` }}>
-              <div style={{ fontSize: '13px', color: muted }}>
-                Showing page {ebookPurchases.current_page} of {ebookPurchases.last_page}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        {/* Page buttons, not just a page number. The old footer said "page 1 of
+            8" without offering any way to reach page 2. */}
+        {paginator.last_page > 1 && (
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: `1px solid ${border}`, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', color: muted, marginRight: 'auto' }}>
+              Page {paginator.current_page} of {paginator.last_page} · {paginator.total.toLocaleString()} records
+            </span>
+            {(paginator.links ?? []).map((link, i) => (
+              <button key={i}
+                onClick={() => link.url && router.get(link.url, {}, { preserveScroll: true })}
+                disabled={!link.url}
+                style={{
+                  padding: '6px 12px', fontSize: '13px', borderRadius: '6px',
+                  border: `1px solid ${border}`, cursor: link.url ? 'pointer' : 'not-allowed',
+                  opacity: link.url ? 1 : 0.4,
+                  background: link.active ? (light ? '#b45309' : '#fbbf24') : panelBg,
+                  color: link.active ? (light ? '#fff' : '#000') : fg,
+                  fontWeight: link.active ? 600 : 400,
+                }}
+                dangerouslySetInnerHTML={{ __html: link.label }} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

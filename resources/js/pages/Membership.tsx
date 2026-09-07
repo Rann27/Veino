@@ -3,6 +3,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import { useToast } from '@/Contexts/ToastContext';
+import { csrfHeaders } from '@/lib/csrf';
 
 interface MembershipPackage {
     id: number;
@@ -158,7 +159,7 @@ function MembershipContent({ packages, flash, errors }: Props) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    ...csrfHeaders(),
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({

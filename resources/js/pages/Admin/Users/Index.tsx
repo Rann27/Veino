@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useMemo, useRef } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { asTier, isPaidTier, TIER_LABEL, TIER_COLOR, type Tier } from '@/lib/tier';
 
 interface User {
     id: number;
@@ -9,13 +10,14 @@ interface User {
     email: string;
     role: string;
     coins: number;
-    membership_tier: 'basic' | 'premium';
+    membership_tier: Tier;
     membership_expires_at: string | null;
     is_banned: boolean;
     created_at: string;
 }
 
 interface UsersIndexProps {
+    sort: { key: string; dir: 'asc' | 'desc' };
     users: {
         data: User[];
         links: Array<{ url?: string; label: string; active: boolean }>;
@@ -46,7 +48,7 @@ function Spinner() {
   );
 }
 
-function UsersIndexContent({ users, search }: UsersIndexProps) {
+function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
     const { currentTheme } = useTheme();
     const light   = isLight(currentTheme.background);
     const fg      = currentTheme.foreground;
@@ -62,6 +64,25 @@ function UsersIndexContent({ users, search }: UsersIndexProps) {
     const [coinModalType, setCoinModalType] = useState<'add' | 'deduct'>('add');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [durationDays, setDurationDays] = useState('');
+    const [grantTier, setGrantTier] = useState<'premium' | 'exclusive'>('premium');
+    type SortKey = 'user' | 'email' | 'role' | 'coins' | 'membership' | 'status' | 'joined';
+    const sortKey = (sort?.key ?? 'joined') as SortKey;
+    const sortDir = sort?.dir ?? 'desc';
+
+    // Each column opens in the direction it is normally read: names A→Z, but
+    // coins and join date newest/biggest first.
+    const FIRST_DIR: Record<SortKey, 'asc' | 'desc'> = {
+        user: 'asc', email: 'asc', role: 'asc',
+        coins: 'desc', membership: 'desc', status: 'asc', joined: 'desc',
+    };
+
+    // Re-queries instead of reshuffling the loaded page, so the ordering holds
+    // across all pages rather than only the twenty rows on screen.
+    const toggleSort = (key: SortKey) => {
+        const dir = key === sortKey ? (sortDir === 'asc' ? 'desc' : 'asc') : FIRST_DIR[key];
+        router.get('/admin/user-management', { search: searchTerm, sort: key, dir }, { preserveState: true, replace: true });
+    };
+
     const [coinAmount, setCoinAmount] = useState('');
     const [coinReason, setCoinReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,10 +92,13 @@ function UsersIndexContent({ users, search }: UsersIndexProps) {
     useEffect(() => {
         if (isFirstRender.current) { isFirstRender.current = false; return; }
         const timer = setTimeout(() => {
-            router.get('/admin/user-management', { search: searchTerm }, { preserveState: true, replace: true });
+            router.get('/admin/user-management', { search: searchTerm, sort: sortKey, dir: sortDir }, { preserveState: true, replace: true });
         }, 450);
         return () => clearTimeout(timer);
     }, [searchTerm]);
+
+    // Already ordered by the server.
+    const sortedUsers = users.data;
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -92,14 +116,16 @@ function UsersIndexContent({ users, search }: UsersIndexProps) {
     };
 
     const openAddMembershipModal = (user: User) => {
-        setSelectedUser(user); setDurationDays(''); setShowMembershipModal(true);
+        setSelectedUser(user); setDurationDays('');
+        setGrantTier(asTier(user.membership_tier) === 'exclusive' ? 'exclusive' : 'premium');
+        setShowMembershipModal(true);
     };
 
     const handleAddMembership = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser || !durationDays) return;
         setIsSubmitting(true);
-        router.post(`/admin/users/${selectedUser.id}/add-membership`, { duration_days: parseInt(durationDays) }, {
+        router.post(`/admin/users/${selectedUser.id}/add-membership`, { duration_days: parseInt(durationDays), tier: grantTier }, {
             onSuccess: () => setShowMembershipModal(false),
             onFinish: () => setIsSubmitting(false),
         });
@@ -164,13 +190,32 @@ function UsersIndexContent({ users, search }: UsersIndexProps) {
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
                             <tr>
-                                {['User', 'Email', 'Role', 'Coins', 'Membership', 'Status', 'Joined', 'Actions'].map(h => (
-                                    <th key={h} style={thStyle}>{h}</th>
+                                {([
+                                    ['User', 'user'], ['Email', 'email'], ['Role', 'role'],
+                                    ['Coins', 'coins'], ['Membership', 'membership'],
+                                    ['Status', 'status'], ['Joined', 'joined'],
+                                ] as [string, SortKey][]).map(([label, key]) => (
+                                    <th key={key} style={{ ...thStyle, padding: 0 }}>
+                                        <button onClick={() => toggleSort(key)}
+                                            style={{
+                                                width: '100%', display: 'flex', alignItems: 'center', gap: '4px',
+                                                padding: '10px 16px', background: 'none', border: 'none', cursor: 'pointer',
+                                                font: 'inherit', textTransform: 'uppercase', letterSpacing: '0.05em',
+                                                color: sortKey === key ? fg : muted,
+                                            }}
+                                            title={`Sort by ${label.toLowerCase()}`}>
+                                            {label}
+                                            <span aria-hidden style={{ fontSize: '9px', opacity: sortKey === key ? 1 : 0.35 }}>
+                                                {sortKey === key ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+                                            </span>
+                                        </button>
+                                    </th>
                                 ))}
+                                <th style={thStyle}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {users.data.map((user) => (
+                            {sortedUsers.map((user) => (
                                 <tr key={user.id} style={{ background: user.is_banned ? (light ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.08)') : 'transparent' }}>
                                     <td style={tdStyle}><span style={{ fontWeight: 600 }}>{user.display_name}</span></td>
                                     <td style={tdStyle}>{user.email}</td>
@@ -178,8 +223,8 @@ function UsersIndexContent({ users, search }: UsersIndexProps) {
                                     <td style={tdStyle}><span style={{ fontWeight: 700, color: '#d97706' }}>¢{user.coins.toLocaleString()}</span></td>
                                     <td style={tdStyle}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                            {badge(user.membership_tier === 'premium' ? '#7c3aed' : '#6b7280', user.membership_tier === 'premium' ? 'Premium' : 'Basic')}
-                                            {user.membership_tier === 'premium' && user.membership_expires_at && (
+                                            {badge(TIER_COLOR[asTier(user.membership_tier)], TIER_LABEL[asTier(user.membership_tier)])}
+                                            {isPaidTier(user.membership_tier) && user.membership_expires_at && (
                                                 <span style={{ fontSize: '11px', color: muted }}>Expires: {new Date(user.membership_expires_at).toLocaleDateString()}</span>
                                             )}
                                         </div>
@@ -225,13 +270,27 @@ function UsersIndexContent({ users, search }: UsersIndexProps) {
             {showMembershipModal && selectedUser && (
                 <div style={modalOverlay} onClick={() => setShowMembershipModal(false)}>
                     <div style={modalBox} onClick={(e) => e.stopPropagation()}>
-                        <h3 style={modalTitle}>Add Premium Membership to {selectedUser.display_name}</h3>
+                        <h3 style={modalTitle}>Add Membership to {selectedUser.display_name}</h3>
                         <form onSubmit={handleAddMembership} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
                                 <span style={{ fontSize: '13px', color: muted }}>Current Status: </span>
-                                {badge(selectedUser.membership_tier === 'premium' ? '#7c3aed' : '#6b7280', selectedUser.membership_tier === 'premium' ? 'Premium' : 'Basic')}
-                                {selectedUser.membership_tier === 'premium' && selectedUser.membership_expires_at && (
+                                {badge(TIER_COLOR[asTier(selectedUser.membership_tier)], TIER_LABEL[asTier(selectedUser.membership_tier)])}
+                                {isPaidTier(selectedUser.membership_tier) && selectedUser.membership_expires_at && (
                                     <p style={{ marginTop: '4px', fontSize: '12px', color: muted }}>Expires: {new Date(selectedUser.membership_expires_at).toLocaleDateString()}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label style={lbl}>Tier *</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                    {(['premium', 'exclusive'] as const).map(t => (
+                                        <button key={t} type="button" onClick={() => setGrantTier(t)}
+                                            style={{ padding: '8px 10px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', cursor: 'pointer', color: grantTier === t ? '#fff' : fg, background: grantTier === t ? TIER_COLOR[t] : 'transparent', border: `1px solid ${grantTier === t ? TIER_COLOR[t] : border}` }}>
+                                            {TIER_LABEL[t]}
+                                        </button>
+                                    ))}
+                                </div>
+                                {isPaidTier(selectedUser.membership_tier) && asTier(selectedUser.membership_tier) !== grantTier && (
+                                    <p style={{ marginTop: '6px', fontSize: '11px', color: muted }}>Switching tier: half of the remaining whole days carry over as a bonus.</p>
                                 )}
                             </div>
                             <div>
@@ -241,7 +300,7 @@ function UsersIndexContent({ users, search }: UsersIndexProps) {
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '8px' }}>
                                 <button type="button" onClick={() => setShowMembershipModal(false)} style={btnCancel}>Cancel</button>
-                                <button type="submit" disabled={isSubmitting} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: 500, color: '#fff', background: '#7c3aed', border: 'none', borderRadius: '6px', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
+                                <button type="submit" disabled={isSubmitting} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', fontSize: '13px', fontWeight: 500, color: '#fff', background: TIER_COLOR[grantTier], border: 'none', borderRadius: '6px', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
                                     {isSubmitting && <Spinner />}
                                     Confirm
                                 </button>

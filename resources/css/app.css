@@ -648,10 +648,33 @@
 }
 
 /* ===== COVER IMAGE SKELETON ===== */
-/* Used by CoverImage.tsx — adapts shimmer via inline gradient from ThemeContext */
+/* CoverImage.tsx hands over --shimmer-base / --shimmer-shine so the sweep picks
+   up the active theme. The gradient itself has to live here: without it the
+   element animated a background that was never painted, so every loading cover
+   showed as a flat grey block instead of a moving shimmer. */
 .cover-skeleton {
-    animation: shimmer 1.6s infinite linear;
+    background-image: linear-gradient(
+        100deg,
+        var(--shimmer-base, rgba(128, 128, 128, 0.05)) 20%,
+        var(--shimmer-shine, rgba(128, 128, 128, 0.14)) 50%,
+        var(--shimmer-base, rgba(128, 128, 128, 0.05)) 80%
+    );
+    background-repeat: no-repeat;
     background-size: 600px 100%;
+    animation: shimmer 1.6s infinite linear;
+}
+
+/* A sweeping gradient is exactly the kind of motion this setting asks us to
+   drop; the placeholder still reads as "loading" without it. */
+@media (prefers-reduced-motion: reduce) {
+    .cover-skeleton {
+        animation: none;
+        background-image: linear-gradient(
+            100deg,
+            var(--shimmer-shine, rgba(128, 128, 128, 0.14)),
+            var(--shimmer-shine, rgba(128, 128, 128, 0.14))
+        );
+    }
 }
 
 /* ===== READING PROGRESS BAR ===== */

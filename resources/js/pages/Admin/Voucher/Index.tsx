@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { csrfHeaders } from '@/lib/csrf';
 
 interface Voucher {
     id: number;
@@ -74,7 +75,7 @@ function VoucherIndexContent({ vouchers }: Props) {
         setUsageHistory([]);
         try {
             const response = await fetch(route('admin.voucher.usage', voucher.id), {
-                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
+                headers: { ...csrfHeaders() },
             });
             const data = await response.json();
             setUsageHistory(data.usages || []);

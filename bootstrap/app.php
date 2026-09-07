@@ -20,9 +20,19 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\TrackPageView::class,
         ]);
         
-        // Use custom CSRF token verification
+        // Authoritative CSRF exemption list.
+        //
+        // These endpoints are called by PayPal and OxaPay, not by a browser, so
+        // no CSRF token can ever accompany them. They used to be listed only in
+        // App\Http\Middleware\VerifyCsrfToken, which Laravel 12 never registers
+        // — every payment webhook was being rejected with a 419 and payments
+        // relied entirely on the buyer returning to the status page.
         $middleware->validateCsrfTokens(except: [
-            '/voucher/validate',
+            'voucher/validate',
+            'payment/paypal-ipn',
+            'payment/callback/*',
+            'payment/webhook/*',
+            'membership/webhook/*',
         ]);
         
         $middleware->alias([

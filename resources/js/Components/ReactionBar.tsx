@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
+import { csrfHeaders } from '@/lib/csrf';
 
 interface ReactionCounts {
     like?: number;
@@ -105,7 +106,7 @@ export default function ReactionBar({
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    ...csrfHeaders(),
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({

@@ -160,7 +160,7 @@ export default function ReaderSettingsModal({
             {/* Floating Modal */}
             <div 
                 ref={modalRef}
-                className="absolute rounded-2xl shadow-2xl w-[calc(100vw-2rem)] sm:w-80 max-h-[calc(100vh-5rem)] sm:max-h-[32rem] overflow-y-auto pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200 themed-scrollbar"
+                className="absolute rounded-2xl shadow-2xl w-[calc(100vw-2rem)] sm:w-80 max-h-[calc(100vh-5rem)] sm:max-h-[32rem] flex flex-col overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200"
                 style={{
                     top: `${position.top}px`,
                     left: `${position.left}px`,
@@ -176,12 +176,14 @@ export default function ReaderSettingsModal({
                 onMouseDown={(e) => e.stopPropagation()}
             >
                 {/* Header */}
+                {/* No background of its own. The panel already paints one frosted
+                    surface; a second translucent layer on top composites to ~0.96
+                    alpha and reads as an opaque slab. Because the scroll area is
+                    bounded between header and footer, nothing ever passes under
+                    them and none is needed. */}
                 <div 
-                    className="sticky top-0 z-10 flex items-center justify-between px-5 py-4 rounded-t-2xl"
-                    style={{ 
-                        borderBottom: `1px solid ${currentTheme.foreground}10`,
-                        backgroundColor: currentTheme.background,
-                    }}
+                    className="shrink-0 flex items-center justify-between px-5 py-4"
+                    style={{ borderBottom: `1px solid ${currentTheme.foreground}10` }}
                 >
                     <h2 
                         className="text-base font-bold flex items-center gap-2.5"
@@ -212,7 +214,7 @@ export default function ReaderSettingsModal({
                     </button>
                 </div>
 
-                <div className="px-5 py-4 space-y-5">
+                <div className="flex-1 min-h-0 overflow-y-auto themed-scrollbar px-5 py-4 space-y-5">
                     {/* Font Family */}
                     <div>
                         <label 
@@ -531,7 +533,7 @@ export default function ReaderSettingsModal({
                                 </button>
                                 <div className="mt-3 grid grid-cols-2 gap-2">
                                     <label className="flex items-center gap-2 text-xs" style={{ color: `${currentTheme.foreground}70` }}>
-                                        <span>BG</span>
+                                        <span className="w-5 shrink-0">BG</span>
                                         <input
                                             type="color"
                                             value={customBg}
@@ -539,11 +541,12 @@ export default function ReaderSettingsModal({
                                                 setCustomBg(e.target.value);
                                                 applyCustomTheme(e.target.value, customFg);
                                             }}
-                                            className="h-7 w-full rounded cursor-pointer"
+                                            className="swatch-input h-7 w-full rounded-md cursor-pointer"
+                                            style={{ border: `1px solid ${currentTheme.foreground}20` }}
                                         />
                                     </label>
                                     <label className="flex items-center gap-2 text-xs" style={{ color: `${currentTheme.foreground}70` }}>
-                                        <span>FG</span>
+                                        <span className="w-5 shrink-0">FG</span>
                                         <input
                                             type="color"
                                             value={customFg}
@@ -551,7 +554,8 @@ export default function ReaderSettingsModal({
                                                 setCustomFg(e.target.value);
                                                 applyCustomTheme(customBg, e.target.value);
                                             }}
-                                            className="h-7 w-full rounded cursor-pointer"
+                                            className="swatch-input h-7 w-full rounded-md cursor-pointer"
+                                            style={{ border: `1px solid ${currentTheme.foreground}20` }}
                                         />
                                     </label>
                                 </div>
@@ -559,41 +563,54 @@ export default function ReaderSettingsModal({
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div 
-                        className="sticky bottom-0 flex justify-between items-center pt-4 pb-1 mt-1"
-                        style={{
-                            borderTop: `1px solid ${currentTheme.foreground}10`,
-                            backgroundColor: `${currentTheme.background}CC`,
-                            backdropFilter: 'blur(10px)',
-                            WebkitBackdropFilter: 'blur(10px)',
+                </div>
+
+                {/* Action Buttons — a sibling of the scroll area, not a child of
+                    it. Nested inside the padded content it could never reach the
+                    modal's edges, so its divider stopped short and the rounded
+                    corners showed the list sliding past underneath. */}
+                <div 
+                    className="shrink-0 flex justify-between items-center gap-3 px-5 py-3"
+                    style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}
+                >
+                    <button
+                        onClick={resetToDefaults}
+                        className="px-3 py-2 text-xs font-medium transition-all hover:opacity-100 rounded-lg"
+                        style={{ 
+                            // Was 60% opacity, which read as a disabled control.
+                            color: `${currentTheme.foreground}99`,
+                            backgroundColor: `${currentTheme.foreground}08`,
                         }}
                     >
-                        <button
-                            onClick={resetToDefaults}
-                            className="px-3 py-1.5 text-xs transition-all hover:opacity-70 rounded-lg"
-                            style={{ 
-                                color: `${currentTheme.foreground}60`,
-                                backgroundColor: `${currentTheme.foreground}05`,
-                            }}
-                        >
-                            Reset Defaults
-                        </button>
-                        <button
-                            onClick={onClose}
-                            className="px-5 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
-                            style={{
-                                backgroundColor: currentTheme.foreground,
-                                color: currentTheme.background,
-                            }}
-                        >
-                            Done
-                        </button>
-                    </div>
+                        Reset Defaults
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="px-5 py-2 rounded-lg text-xs font-semibold transition-all hover:opacity-90"
+                        style={{
+                            backgroundColor: currentTheme.foreground,
+                            color: currentTheme.background,
+                        }}
+                    >
+                        Done
+                    </button>
                 </div>
             </div>
 
             <style>{`
+                /* Native colour inputs draw their own inset frame and padding,
+                   which made a white BG and a black FG look like two different
+                   controls sitting at different sizes. */
+                .swatch-input {
+                    padding: 0;
+                    background: none;
+                    -webkit-appearance: none;
+                    appearance: none;
+                }
+                .swatch-input::-webkit-color-swatch-wrapper { padding: 0; }
+                .swatch-input::-webkit-color-swatch { border: none; border-radius: 5px; }
+                .swatch-input::-moz-color-swatch { border: none; border-radius: 5px; }
+
                 .slider::-webkit-slider-thumb {
                     appearance: none;
                     width: 14px;

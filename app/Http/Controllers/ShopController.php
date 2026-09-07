@@ -69,12 +69,25 @@ class ShopController extends Controller
             }
         }
 
+        $fees = app(\App\Services\PaymentFeeCalculator::class);
+        $user = auth()->user();
+
         return Inertia::render('Shop', [
             'coinPackages'              => $coinPackages,
             'membershipPackages'        => $membershipPackages,
             'activeTab'                 => $tab,
             'pendingPurchase'           => $pendingPurchase,
             'pendingMembershipPurchase' => $pendingMembershipPurchase,
+            // Shown as a line-by-line breakdown before checkout, so the buyer
+            // sees exactly what the fee adds rather than a surprise total.
+            'paypalFee'                 => [
+                'enabled' => $fees->enabled(),
+                'rate' => $fees->rate(),
+                'fixed' => $fees->fixed(),
+            ],
+            // Unused days on a current plan are worth half on a different tier.
+            'tierSwitchCarryOverDays'   => $user?->carryOverDays() ?? 0,
+            'currentTier'               => $user?->hasActiveMembership() ? $user->membership_tier : null,
         ]);
     }
 }

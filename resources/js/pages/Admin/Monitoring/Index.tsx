@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { csrfHeaders } from '@/lib/csrf';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -290,7 +291,7 @@ function MonitoringContent({ series, stats: initialStats }: Props) {
                 method: 'DELETE',
                 headers: {
                     Accept: 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    ...csrfHeaders(),
                 },
             });
             const json = await res.json().catch(() => ({}));

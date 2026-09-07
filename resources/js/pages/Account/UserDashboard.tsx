@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import { PremiumDiamond } from '@/Components/PremiumDiamond';
+import { asTier, TierIcon, TIER_LABEL, TIER_GRADIENT } from '@/lib/tier';
 import { SUCCESS_COLOR, WARNING_COLOR, ERROR_COLOR } from '@/constants/colors';
 
 interface User {
@@ -199,18 +200,25 @@ function DashboardContent({ user, membershipStatus, coinBalance, transactions = 
                                         {user.display_name}
                                     </h2>
                                     {/* Membership Badge inline with name */}
-                                    {membershipStatus.is_premium ? (
+                                    {membershipStatus.is_premium ? (() => {
+                                        const tier = asTier(membershipStatus.tier);
+                                        const exclusive = tier === 'exclusive';
+                                        return (
                                         <span
-                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-semibold whitespace-nowrap"
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-semibold whitespace-nowrap${exclusive ? ' tier-neon' : ''}`}
                                             style={{
-                                                background: `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #c084fc 100%)`,
+                                                background: exclusive
+                                                    ? TIER_GRADIENT.exclusive
+                                                    : `linear-gradient(135deg, ${SHINY_PURPLE} 0%, #c084fc 100%)`,
+                                                backgroundSize: exclusive ? '300% 300%' : undefined,
                                                 color: '#fff',
                                             }}
                                         >
-                                            <PremiumDiamond size={14} />
-                                            Premium
+                                            <TierIcon tier={tier} size={14} />
+                                            {TIER_LABEL[tier]}
                                         </span>
-                                    ) : (
+                                        );
+                                    })() : (
                                         <span
                                             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm whitespace-nowrap"
                                             style={{

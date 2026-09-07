@@ -5,6 +5,8 @@ import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import { useToast } from '@/Contexts/ToastContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import { SHINY_PURPLE_DIM } from '@/constants/colors';
+import { asTier, TierIcon, ExclusiveCrownIcon, TIER_LABEL, TIER_GRADIENT, TIER_COLOR, TIER_GLOW, EXCLUSIVE_GOLD } from '@/lib/tier';
+import { csrfHeaders } from '@/lib/csrf';
 
 /* ─── Interfaces ─── */
 interface CoinPackage {
@@ -14,6 +16,50 @@ interface CoinPackage {
     bonus_premium_days: number;
     price_usd: string;
 }
+
+/** Purple from the membership line, gold for Exclusive. */
+
+/** Crown — the Exclusive tier's mark, as the diamond is Premium's. */
+function ExclusiveCrown({ size = 22 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+            <defs>
+                <linearGradient id="exclCrown" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#f7d774" />
+                    <stop offset="45%" stopColor={EXCLUSIVE_GOLD} />
+                    <stop offset="100%" stopColor="#c9962a" />
+                </linearGradient>
+            </defs>
+            <path d="M3 8.5l3.6 2.6L12 4l5.4 7.1L21 8.5l-1.7 9.4a1.2 1.2 0 0 1-1.2 1H5.9a1.2 1.2 0 0 1-1.2-1L3 8.5Z"
+                fill="url(#exclCrown)" stroke="#fff" strokeWidth="0.5" strokeLinejoin="round" />
+            <circle cx="12" cy="15.4" r="1.15" fill="#fff" opacity="0.85" />
+        </svg>
+    );
+}
+
+/**
+ * The animated neon sweep. Declared once and reused — a keyframe per card
+ * would mean duplicate rules in the document for no gain.
+ */
+const EXCLUSIVE_STYLES = `
+@keyframes veinovelExclusiveSweep {
+    0%   { background-position:   0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position:   0% 50%; }
+}
+@keyframes veinovelExclusiveGlow {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+.excl-neon {
+    background-size: 260% 260%;
+    animation: veinovelExclusiveSweep 7s ease-in-out infinite;
+}
+.excl-glow { animation: veinovelExclusiveGlow 3.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .excl-neon, .excl-glow { animation: none; }
+}
+`;
 
 interface MembershipPackage {
     id: number;
@@ -57,9 +103,25 @@ interface Props {
     flash?: {
         success?: string;
         error?: string;
-        premium_granted?: { days: number; package_name: string; source: string };
+        premium_granted?: { days: number; package_name: string; source: string; tier?: string };
+        tier_blocked?: { message: string; current_tier: string; expires_at?: string | null };
     };
     errors?: Record<string, string | string[]>;
+    paypalFee?: { enabled: boolean; rate: number; fixed: number };
+    tierSwitchCarryOverDays?: number;
+    currentTier?: string | null;
+}
+
+/**
+ * Mirrors PaymentFeeCalculator on the server. Grossing up rather than simply
+ * adding the fee, because PayPal charges its percentage on the final amount.
+ */
+function withPaypalFee(price: number, fee?: { enabled: boolean; rate: number; fixed: number }) {
+    if (!fee?.enabled) return { subtotal: price, fee: 0, total: price };
+    const rate = fee.rate / 100;
+    if (rate >= 1) return { subtotal: price, fee: 0, total: price };
+    const total = Math.ceil(((price + fee.fixed) / (1 - rate)) * 100) / 100;
+    return { subtotal: price, fee: Math.round((total - price) * 100) / 100, total };
 }
 
 const getOriginalCoinPrice = (coinPrice: number, discount: number) =>
@@ -68,7 +130,7 @@ const getOriginalCoinPrice = (coinPrice: number, discount: number) =>
 /* ═══════════════════════════════════════════════
    Main Shop Page
    ═══════════════════════════════════════════════ */
-function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, pendingPurchase, pendingMembershipPurchase, flash, errors }: Props) {
+function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, pendingPurchase, pendingMembershipPurchase, flash, errors, paypalFee, tierSwitchCarryOverDays = 0, currentTier = null }: Props) {
     const { currentTheme } = useTheme();
     const [activeTab, setActiveTab] = useState<'coins' | 'membership'>(
         initialTab === 'membership' ? 'membership' : 'coins'
@@ -323,8 +385,8 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
                 {/* ── Tab Content ── */}
                 <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-8">
                     {activeTab === 'coins'
-                        ? <CoinShopTab packages={coinPackages} />
-                        : <MembershipTab packages={membershipPackages} flash={flash} errors={errors} />}
+                        ? <CoinShopTab packages={coinPackages} paypalFee={paypalFee} />
+                        : <MembershipTab packages={membershipPackages} flash={flash} errors={errors} paypalFee={paypalFee} tierSwitchCarryOverDays={tierSwitchCarryOverDays} currentTier={currentTier} />}
                 </div>
             </div>
         </>
@@ -334,7 +396,7 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
 /* ═══════════════════════════════════════════════
    Tab 1 — Coins
    ═══════════════════════════════════════════════ */
-function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
+function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalFee?: Props['paypalFee'] }) {
     const { currentTheme } = useTheme();
     const { toast } = useToast();
     const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
@@ -354,6 +416,12 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
     };
 
     const selectedPkg = packages.find(p => p.id === selectedPackage);
+    const coinPriceUsd = selectedPkg ? parseFloat(selectedPkg.price_usd) : 0;
+    // PayPal grosses up server-side, so the panel has to show the same number
+    // the buyer will actually be billed.
+    const coinCharge = paymentMethod === 'paypal'
+        ? withPaypalFee(coinPriceUsd, paypalFee)
+        : { fee: 0, total: coinPriceUsd };
 
     return (
         <div className="w-full">
@@ -549,10 +617,24 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
                                     <span className="text-sm font-semibold" style={{ color: SHINY_PURPLE }}>+{selectedPkg.bonus_premium_days}d Premium</span>
                                 </div>
                             )}
+                            {paymentMethod === 'paypal' && paypalFee?.enabled && (
+                                <>
+                                    <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
+                                        <span className="text-sm" style={{ color: `${currentTheme.foreground}55` }}>Subtotal</span>
+                                        <span className="text-sm" style={{ color: currentTheme.foreground }}>${coinPriceUsd.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm" style={{ color: `${currentTheme.foreground}55` }}>
+                                            PayPal fee <span className="opacity-60">({paypalFee.rate}% + ${paypalFee.fixed.toFixed(2)})</span>
+                                        </span>
+                                        <span className="text-sm" style={{ color: currentTheme.foreground }}>+${coinCharge.fee.toFixed(2)}</span>
+                                    </div>
+                                </>
+                            )}
                             <div className="flex items-center justify-between pt-3"
                                 style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
                                 <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
-                                <span className="text-2xl font-extrabold" style={{ color: currentTheme.foreground }}>${selectedPkg.price_usd} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                <span className="text-2xl font-extrabold" style={{ color: currentTheme.foreground }}>${coinCharge.total.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
                             </div>
                         </div>
                     ) : (
@@ -687,16 +769,19 @@ function CoinShopTab({ packages }: { packages: CoinPackage[] }) {
 /* ═══════════════════════════════════════════════
    Tab 2 — Membership
    ═══════════════════════════════════════════════ */
-function MembershipTab({ packages, flash, errors }: {
+function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOverDays = 0, currentTier = null }: {
     packages: MembershipPackage[];
     flash?: Props['flash'];
     errors?: Props['errors'];
+    paypalFee?: Props['paypalFee'];
+    tierSwitchCarryOverDays?: number;
+    currentTier?: string | null;
 }) {
     const { currentTheme } = useTheme();
     const { toast } = useToast();
     const page = usePage<{
-        auth: { user: { coins: number } };
-        flash?: { success?: string; error?: string; premium_granted?: { days: number; package_name: string; source: string } };
+        auth: { user: { coins: number; membership_expires_at?: string | null } };
+        flash?: { success?: string; error?: string; premium_granted?: { days: number; package_name: string; source: string }; tier_blocked?: { message: string } };
         errors?: Record<string, string | string[]>;
     }>();
 
@@ -705,13 +790,28 @@ function MembershipTab({ packages, flash, errors }: {
     const [paymentMethod, setPaymentMethod] = useState<'coins' | 'paypal' | 'oxapay'>('coins');
     const [isProcessing, setIsProcessing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    // Which tier the celebration should wear.
+    const [successTier, setSuccessTier] = useState<string | null>(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    // Set when the picked plan would downgrade an active Exclusive membership.
+    const [blockedPkg, setBlockedPkg] = useState<MembershipPackage | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(flash?.error ?? null);
     const [premiumGranted, setPremiumGranted] = useState<{ days: number; package_name: string; source: string } | null>(null);
     const [voucherCode, setVoucherCode] = useState('');
     const [voucherData, setVoucherData] = useState<any>(null);
     const [voucherError, setVoucherError] = useState<string | null>(null);
     const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
+
+    // Premium is a strict subset of Premium Exclusive, so buying it while
+    // Exclusive is active buys a downgrade — and grantMembership() would halve
+    // the remaining days on the way down. The server refuses it too.
+    const wouldDowngrade = (pkg: MembershipPackage) =>
+        currentTier === 'exclusive' && asTier(pkg.tier) === 'premium';
+
+    const rawExpiry = page.props.auth.user?.membership_expires_at;
+    const exclusiveExpiryLabel = rawExpiry
+        ? new Date(rawExpiry).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        : null;
 
     const isRealCurrency = paymentMethod !== 'coins';
 
@@ -732,7 +832,7 @@ function MembershipTab({ packages, flash, errors }: {
     };
 
     useEffect(() => {
-        if (flash?.premium_granted) { setPremiumGranted(flash.premium_granted); setShowSuccess(true); }
+        if (flash?.premium_granted) { setPremiumGranted(flash.premium_granted); setSuccessTier(flash.premium_granted.tier ?? 'premium'); setShowSuccess(true); }
     }, [flash?.premium_granted]);
 
     useEffect(() => {
@@ -741,6 +841,14 @@ function MembershipTab({ packages, flash, errors }: {
     }, []);
 
     useEffect(() => { if (flash?.error) setErrorMessage(flash.error); }, [flash?.error]);
+
+    // The client blocks this before it is sent, so a server refusal means the
+    // membership changed underneath us — another tab, or a slow click.
+    useEffect(() => {
+        if (!flash?.tier_blocked) return;
+        const pkg = packages.find(p => p.id === selectedPackage) ?? packages.find(p => asTier(p.tier) === 'premium');
+        if (pkg) { setBlockedPkg(pkg); setErrorMessage(null); setShowConfirmModal(false); }
+    }, [flash?.tier_blocked]);
 
     useEffect(() => {
         const pageErrors = errors ?? page.props.errors;
@@ -753,6 +861,8 @@ function MembershipTab({ packages, flash, errors }: {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault(); e.stopPropagation();
         if (!selectedPackage) { setErrorMessage('Please choose a membership package.'); return; }
+        const pkg = packages.find(p => p.id === selectedPackage);
+        if (pkg && wouldDowngrade(pkg)) { setBlockedPkg(pkg); return; }
         setShowConfirmModal(true);
     };
 
@@ -768,7 +878,7 @@ function MembershipTab({ packages, flash, errors }: {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    ...csrfHeaders(),
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({ code: voucherCode.toUpperCase(), type: 'membership', amount: pkg.coin_price }),
@@ -811,7 +921,7 @@ function MembershipTab({ packages, flash, errors }: {
                 setIsProcessing(false);
             },
             onSuccess: () => {
-                if (paymentMethod === 'coins') { setErrorMessage(null); setShowSuccess(true); }
+                if (paymentMethod === 'coins') { setErrorMessage(null); setSuccessTier(selectedPkg?.tier ?? 'premium'); setShowSuccess(true); }
                 setIsProcessing(false);
             },
             onFinish: () => {},
@@ -825,22 +935,78 @@ function MembershipTab({ packages, flash, errors }: {
     const priceUsd = selectedPkg ? parseFloat(selectedPkg.price_usd) : 0;
     const gimmickUsd = selectedPkg?.gimmick_price_usd ? parseFloat(selectedPkg.gimmick_price_usd) : 0;
     const usdSavePct = gimmickUsd > priceUsd ? Math.round(((gimmickUsd - priceUsd) / gimmickUsd) * 100) : 0;
+    // Only PayPal passes the fee on; coins and OxaPay bill face value.
+    const payTotal = paymentMethod === 'paypal'
+        ? withPaypalFee(priceUsd, paypalFee)
+        : { subtotal: priceUsd, fee: 0, total: priceUsd };
+
+    // Every confirmation surface dresses itself for the tier being bought, so
+    // the buyer never has to read the package name to know what they picked.
+    const pkgTier = asTier(selectedPkg?.tier);
+    const pkgAccent = TIER_COLOR[pkgTier];
+    const isExclusivePkg = pkgTier === 'exclusive';
 
     return (
         <div className="w-full">
+            {/* ── Downgrade Blocked Modal ── */}
+            {blockedPkg && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+                    onClick={() => setBlockedPkg(null)}>
+                    <div className="rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl"
+                        style={{ backgroundColor: currentTheme.background, border: `1.5px solid ${EXCLUSIVE_GOLD}55`, boxShadow: `0 0 50px ${EXCLUSIVE_GOLD}20` }}
+                        onClick={(e) => e.stopPropagation()}>
+                        <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4"
+                            style={{ background: `radial-gradient(circle, ${EXCLUSIVE_GOLD}25, ${EXCLUSIVE_GOLD}08)` }}>
+                            <ExclusiveCrownIcon size={30} />
+                        </div>
+
+                        <h2 className="text-lg font-extrabold mb-2" style={{ color: currentTheme.foreground }}>
+                            You're already on a higher plan
+                        </h2>
+
+                        <p className="text-sm leading-relaxed mb-4" style={{ color: `${currentTheme.foreground}70` }}>
+                            <span className="font-bold" style={{ color: EXCLUSIVE_GOLD }}>Premium Exclusive</span> is active on your
+                            account and already includes everything in{' '}
+                            <span className="font-semibold" style={{ color: currentTheme.foreground }}>{blockedPkg.name}</span>.
+                            Buying it now would replace your plan with the lower tier.
+                        </p>
+
+                        <div className="rounded-xl p-3 mb-5 text-sm" style={{ backgroundColor: `${EXCLUSIVE_GOLD}0F`, border: `1px solid ${EXCLUSIVE_GOLD}25` }}>
+                            <span style={{ color: `${currentTheme.foreground}55` }}>Your plan runs until </span>
+                            <span className="font-bold" style={{ color: EXCLUSIVE_GOLD }}>
+                                {exclusiveExpiryLabel ?? 'your current expiry date'}
+                            </span>
+                        </div>
+
+                        <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}45` }}>
+                            To add more time, renew Premium Exclusive instead.
+                        </p>
+
+                        <button onClick={() => setBlockedPkg(null)}
+                            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all hover:brightness-110"
+                            style={{ backgroundColor: EXCLUSIVE_GOLD, color: '#3b2a00' }}>
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* ── Confirm Modal ── */}
             {showConfirmModal && selectedPkg && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }} onClick={() => setShowConfirmModal(false)}>
-                    <div className="rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl overflow-hidden backdrop-blur-xl"
-                        style={{ backgroundColor: currentTheme.background, border: `2px solid ${SHINY_PURPLE}`, boxShadow: `0 0 60px ${SHINY_PURPLE}50` }}
+                    <div className={`rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl overflow-hidden backdrop-blur-xl${isExclusivePkg ? ' tier-neon' : ''}`}
+                        style={isExclusivePkg
+                            ? { backgroundColor: currentTheme.background, border: '2px solid transparent', backgroundImage: `linear-gradient(${currentTheme.background}, ${currentTheme.background}), ${TIER_GRADIENT.exclusive}`, backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', backgroundSize: 'auto, 300% 300%', boxShadow: TIER_GLOW.exclusive }
+                            : { backgroundColor: currentTheme.background, border: `2px solid ${SHINY_PURPLE}`, boxShadow: `0 0 60px ${SHINY_PURPLE}50` }}
                         onClick={(e) => e.stopPropagation()}>
                         <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4"
-                            style={{ background: `radial-gradient(circle, ${SHINY_PURPLE}30, ${SHINY_PURPLE}10)`, boxShadow: `0 0 24px ${SHINY_PURPLE}40` }}>
-                            <PremiumDiamond size={28} />
+                            style={{ background: `radial-gradient(circle, ${pkgAccent}30, ${pkgAccent}10)`, boxShadow: `0 0 24px ${pkgAccent}40` }}>
+                            <TierIcon tier={pkgTier} size={28} />
                         </div>
                         <h2 className="text-lg font-extrabold mb-1" style={{ color: currentTheme.foreground }}>Confirm Purchase</h2>
                         <p className="text-sm mb-4" style={{ color: `${currentTheme.foreground}60` }}>
-                            <span className="font-bold" style={{ color: SHINY_PURPLE }}>{selectedPkg.name}</span> — {selectedPkg.duration_days} days
+                            <span className="font-bold" style={{ color: pkgAccent }}>{selectedPkg.name}</span> — {selectedPkg.duration_days} days
                         </p>
 
                         <div className="rounded-xl p-4 mb-4 text-left space-y-2 text-sm" style={{ backgroundColor: `${currentTheme.foreground}06` }}>
@@ -854,7 +1020,7 @@ function MembershipTab({ packages, flash, errors }: {
                                     )}
                                     <div className="flex justify-between pt-2" style={{ borderTop: gimmickUsd > priceUsd ? `1px solid ${currentTheme.foreground}10` : undefined }}>
                                         <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
-                                        <span className="text-xl font-extrabold" style={{ color: SHINY_PURPLE }}>${priceUsd.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                        <span className="text-xl font-extrabold" style={{ color: pkgAccent }}>${priceUsd.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
                                     </div>
                                     <p className="text-[11px] pt-1" style={{ color: `${currentTheme.foreground}40` }}>
                                         You'll be redirected to {paymentMethod === 'paypal' ? 'PayPal' : 'OxaPay'} to complete your payment.
@@ -879,7 +1045,7 @@ function MembershipTab({ packages, flash, errors }: {
 
                         <div className="flex gap-3">
                             <button onClick={() => setShowConfirmModal(false)} className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-70" style={{ border: `1px solid ${currentTheme.foreground}15`, color: `${currentTheme.foreground}60` }}>Cancel</button>
-                            <button onClick={handleConfirmPurchase} disabled={isProcessing} className="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all hover:brightness-110 disabled:opacity-50" style={{ backgroundColor: SHINY_PURPLE, color: '#fff' }}>
+                            <button onClick={handleConfirmPurchase} disabled={isProcessing} className="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all hover:brightness-110 disabled:opacity-50" style={{ backgroundColor: pkgAccent, color: isExclusivePkg ? '#3b2a00' : '#fff' }}>
                                 {isProcessing ? 'Processing...' : isRealCurrency ? 'Continue →' : 'Confirm'}
                             </button>
                         </div>
@@ -888,34 +1054,58 @@ function MembershipTab({ packages, flash, errors }: {
             )}
 
             {/* ── Success Modal ── */}
-            {showSuccess && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }} onClick={() => setShowSuccess(false)}>
-                    <div className="rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl backdrop-blur-xl"
-                        style={{ backgroundColor: currentTheme.background, border: `2px solid ${SHINY_PURPLE}`, boxShadow: `0 0 60px ${SHINY_PURPLE}50` }}
-                        onClick={(e) => e.stopPropagation()}>
-                        <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style={{ background: `${SHINY_PURPLE}20`, boxShadow: `0 0 30px ${SHINY_PURPLE}50` }}>
-                            <PremiumDiamond size={36} />
-                        </div>
-                        <h2 className="text-2xl font-extrabold mb-2" style={{ color: SHINY_PURPLE }}>Congratulations!</h2>
-                        {premiumGranted ? (
-                            <>
-                                <p className="text-base mb-1" style={{ color: currentTheme.foreground }}><span className="font-bold" style={{ color: SHINY_PURPLE }}>{premiumGranted.days} {premiumGranted.days === 1 ? 'Day' : 'Days'}</span> of Premium</p>
-                                <p className="font-semibold mb-3" style={{ color: SHINY_PURPLE }}>Has Been Added!</p>
-                                <div className="inline-block px-4 py-1.5 rounded-xl mb-3" style={{ backgroundColor: `${SHINY_PURPLE}15`, border: `1px solid ${SHINY_PURPLE}35` }}>
-                                    <p className="text-sm font-semibold" style={{ color: SHINY_PURPLE }}>{premiumGranted.package_name}</p>
+            {/* Dressed to match whichever tier was bought, so an Exclusive
+                purchase is not congratulated in Premium's colours. */}
+            {showSuccess && (() => {
+                const boughtTier = asTier(successTier);
+                const isExcl = boughtTier === 'exclusive';
+                const accent = isExcl ? EXCLUSIVE_GOLD : SHINY_PURPLE;
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }} onClick={() => setShowSuccess(false)}>
+                        <div className={`relative rounded-3xl p-[2px] max-w-sm w-full shadow-2xl ${isExcl ? 'tier-neon' : ''}`}
+                            style={{ background: isExcl ? TIER_GRADIENT.exclusive : SHINY_PURPLE, boxShadow: `0 0 60px ${accent}50` }}
+                            onClick={(e) => e.stopPropagation()}>
+                            <div className="rounded-3xl p-8 text-center" style={{ backgroundColor: currentTheme.background }}>
+                                <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4"
+                                    style={{ background: `${accent}20`, boxShadow: `0 0 30px ${accent}50` }}>
+                                    <TierIcon tier={boughtTier === 'basic' ? 'premium' : boughtTier} size={36} />
                                 </div>
-                            </>
-                        ) : (
-                            <>
-                                <p className="text-base mb-1" style={{ color: currentTheme.foreground }}>Your Premium Membership</p>
-                                <p className="font-semibold mb-3" style={{ color: SHINY_PURPLE }}>Has Been Activated!</p>
-                            </>
-                        )}
-                        <p className="text-xs mb-6" style={{ color: `${currentTheme.foreground}50` }}>Enjoy unlimited access to all premium chapters and an ad-free experience.</p>
-                        <button onClick={() => setShowSuccess(false)} className="w-full py-2.5 rounded-xl font-bold transition-all hover:brightness-110" style={{ backgroundColor: SHINY_PURPLE, color: '#fff' }}>Start Reading ✦</button>
+                                <h2 className="text-2xl font-extrabold mb-2" style={{ color: accent }}>Congratulations!</h2>
+
+                                {premiumGranted ? (
+                                    <>
+                                        <p className="text-base mb-1" style={{ color: currentTheme.foreground }}>
+                                            <span className="font-bold" style={{ color: accent }}>{premiumGranted.days} {premiumGranted.days === 1 ? 'Day' : 'Days'}</span> of {TIER_LABEL[boughtTier === 'basic' ? 'premium' : boughtTier]}
+                                        </p>
+                                        <p className="font-semibold mb-3" style={{ color: accent }}>Has Been Added!</p>
+                                        <div className="inline-block px-4 py-1.5 rounded-xl mb-3" style={{ backgroundColor: `${accent}15`, border: `1px solid ${accent}35` }}>
+                                            <p className="text-sm font-semibold" style={{ color: accent }}>{premiumGranted.package_name}</p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-base mb-1" style={{ color: currentTheme.foreground }}>
+                                            Your {TIER_LABEL[boughtTier === 'basic' ? 'premium' : boughtTier]} Membership
+                                        </p>
+                                        <p className="font-semibold mb-3" style={{ color: accent }}>Has Been Activated!</p>
+                                    </>
+                                )}
+
+                                <p className="text-xs mb-6" style={{ color: `${currentTheme.foreground}50` }}>
+                                    {isExcl
+                                        ? 'Every premium chapter, every EPUB volume, and no ads — all yours.'
+                                        : 'Enjoy unlimited access to all premium chapters and an ad-free experience.'}
+                                </p>
+                                <button onClick={() => setShowSuccess(false)} className="w-full py-2.5 rounded-xl font-bold transition-all hover:brightness-110"
+                                    style={{ background: isExcl ? `linear-gradient(90deg, ${SHINY_PURPLE}, ${EXCLUSIVE_GOLD})` : SHINY_PURPLE, color: isExcl ? '#1a1206' : '#fff' }}>
+                                    Start Reading {isExcl ? '♛' : '✦'}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
 
             <form onSubmit={handleSubmit}>
                 {errorMessage && (
@@ -930,6 +1120,7 @@ function MembershipTab({ packages, flash, errors }: {
 
                     {/* ── Left: Package Cards ── */}
                     <div>
+                        <style>{EXCLUSIVE_STYLES}</style>
                         <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}40` }}>
                             Choose Your Plan
                         </p>
@@ -943,6 +1134,90 @@ function MembershipTab({ packages, flash, errors }: {
                                 const isSelected = selectedPackage === pkg.id;
                                 const isBestValue = pkg.duration_days === 365;
                                 const canAfford = isRealCurrency ? true : userCoins >= coinPrice;
+
+                                // Exclusive gets its own card: full width across the
+                                // grid, and a neon treatment that sets it apart from
+                                // the Premium tier rather than blending into it.
+                                if (pkg.tier === 'exclusive') {
+                                    return (
+                                        <button key={pkg.id} type="button" onClick={() => setSelectedPackage(isSelected ? null : pkg.id)}
+                                            className="relative sm:col-span-2 p-[1.5px] rounded-2xl text-left transition-all duration-300 overflow-hidden group"
+                                            style={{ opacity: canAfford ? 1 : 0.45, transform: isSelected ? 'translateY(-2px)' : undefined }}>
+
+                                            {/* Animated neon border */}
+                                            <span className="excl-neon absolute inset-0 rounded-2xl"
+                                                style={{ background: `linear-gradient(115deg, ${SHINY_PURPLE}, ${EXCLUSIVE_GOLD}, #e879f9, ${EXCLUSIVE_GOLD}, ${SHINY_PURPLE})` }} />
+                                            {isSelected && (
+                                                <span className="excl-glow absolute -inset-1 rounded-2xl pointer-events-none"
+                                                    style={{ boxShadow: `0 0 26px ${SHINY_PURPLE}70, 0 0 46px ${EXCLUSIVE_GOLD}45` }} />
+                                            )}
+
+                                            <div className="relative rounded-2xl p-5 h-full" style={{ backgroundColor: currentTheme.background }}>
+                                                <div className="excl-neon absolute inset-0 rounded-2xl pointer-events-none"
+                                                    style={{ background: `linear-gradient(115deg, ${SHINY_PURPLE}1F, ${EXCLUSIVE_GOLD}14, transparent 70%)` }} />
+
+                                                <div className="relative flex items-start justify-between gap-4 flex-wrap">
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide"
+                                                                style={{ background: `linear-gradient(90deg, ${SHINY_PURPLE}, ${EXCLUSIVE_GOLD})`, color: '#1a1206' }}>
+                                                                ♛ EXCLUSIVE
+                                                            </span>
+                                                            {!isRealCurrency && !canAfford && (
+                                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/20">
+                                                                    NEED MORE COINS
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <ExclusiveCrown size={22} />
+                                                            <h3 className="font-extrabold text-lg" style={{ color: currentTheme.foreground }}>{pkg.name}</h3>
+                                                        </div>
+                                                        <p className="text-xs mb-3" style={{ color: `${currentTheme.foreground}45` }}>
+                                                            {pkg.duration_days} days · everything in Premium, plus every EPUB volume free
+                                                        </p>
+
+                                                    </div>
+
+                                                    <div className="text-right flex-shrink-0">
+                                                        {isRealCurrency ? (
+                                                            <>
+                                                                <div className="flex items-end gap-2 justify-end">
+                                                                    <span className="text-3xl font-extrabold" style={{ color: EXCLUSIVE_GOLD }}>${pkgPriceUsd.toFixed(2)}</span>
+                                                                    {pkgGimmickUsd > pkgPriceUsd && (
+                                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>${pkgGimmickUsd.toFixed(2)}</span>
+                                                                    )}
+                                                                </div>
+                                                                {pkgUsdSavePct > 0 && (
+                                                                    <div className="mt-2 inline-flex px-2.5 py-1 rounded-lg text-xs font-bold"
+                                                                        style={{ backgroundColor: `${EXCLUSIVE_GOLD}18`, color: EXCLUSIVE_GOLD, border: `1px solid ${EXCLUSIVE_GOLD}30` }}>
+                                                                        Save {pkgUsdSavePct}%
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className="flex items-end gap-2 justify-end">
+                                                                    <span className="text-3xl font-extrabold" style={{ color: EXCLUSIVE_GOLD }}>¢{coinPrice.toLocaleString()}</span>
+                                                                    {originalCoinPrice > 0 && (
+                                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>¢{originalCoinPrice.toLocaleString()}</span>
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        {isSelected && (
+                                                            <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold" style={{ color: EXCLUSIVE_GOLD }}>
+                                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                                                Selected
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                }
 
                                 return (
                                     <button key={pkg.id} type="button" onClick={() => setSelectedPackage(isSelected ? null : pkg.id)}
@@ -1025,19 +1300,32 @@ function MembershipTab({ packages, flash, errors }: {
                     {/* ── Right Sidebar ── */}
                     <div className="flex flex-col gap-4">
 
-                        {/* What You'll Get */}
-                        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${SHINY_PURPLE}20` }}>
-                            <div className="px-5 py-3 flex items-center gap-2" style={{ background: `linear-gradient(90deg, ${SHINY_PURPLE}18, ${SHINY_PURPLE}08)` }}>
-                                <PremiumDiamond size={14} />
-                                <span className="text-xs font-extrabold uppercase tracking-wider" style={{ color: SHINY_PURPLE }}>What You'll Get</span>
+                        {/* What You'll Get — follows the selected plan, so the
+                            panel answers "what am I buying" rather than listing
+                            one tier's perks next to another tier's price. */}
+                        <div className={`rounded-2xl overflow-hidden${isExclusivePkg ? ' tier-neon' : ''}`}
+                            style={isExclusivePkg
+                                ? { border: '1px solid transparent', backgroundImage: `linear-gradient(${currentTheme.background}, ${currentTheme.background}), ${TIER_GRADIENT.exclusive}`, backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', backgroundSize: 'auto, 300% 300%' }
+                                : { border: `1px solid ${SHINY_PURPLE}20` }}>
+                            <div className="px-5 py-3 flex items-center gap-2"
+                                style={{ background: isExclusivePkg
+                                    ? `linear-gradient(90deg, ${EXCLUSIVE_GOLD}22, ${EXCLUSIVE_GOLD}08)`
+                                    : `linear-gradient(90deg, ${SHINY_PURPLE}18, ${SHINY_PURPLE}08)` }}>
+                                <TierIcon tier={pkgTier} size={14} />
+                                <span className="text-xs font-extrabold uppercase tracking-wider" style={{ color: pkgAccent }}>
+                                    {isExclusivePkg ? "What You'll Get — Exclusive" : "What You'll Get"}
+                                </span>
                             </div>
                             <div className="px-5 py-4" style={{ backgroundColor: `${currentTheme.foreground}03` }}>
                                 <ul className="space-y-2.5">
-                                    {['Unlock all premium chapters', 'Completely ad-free reading', 'Access to EPUB downloads'].map((text) => (
+                                    {(isExclusivePkg
+                                        ? ['All in Premium', 'Access Exclusive Epubs download']
+                                        : ['Unlock all premium chapters', 'Completely ad-free reading', 'Access to EPUB downloads']
+                                    ).map((text) => (
                                         <li key={text} className="flex items-center gap-3 text-sm" style={{ color: currentTheme.foreground }}>
                                             <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" fill="none">
-                                                <circle cx="8" cy="8" r="8" fill={`${SHINY_PURPLE}25`} />
-                                                <path d="M4.5 8l2.5 2.5 4.5-5" stroke={SHINY_PURPLE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                <circle cx="8" cy="8" r="8" fill={`${pkgAccent}25`} />
+                                                <path d="M4.5 8l2.5 2.5 4.5-5" stroke={pkgAccent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
                                             <span>{text}</span>
                                         </li>
@@ -1206,10 +1494,33 @@ function MembershipTab({ packages, flash, errors }: {
                                             <span className="text-emerald-400">−{usdSavePct}%</span>
                                         </div>
                                     )}
+                                    {/* PayPal's cut, itemised — the buyer should never
+                                        meet a total they cannot account for. */}
+                                    {paymentMethod === 'paypal' && paypalFee?.enabled && (
+                                        <>
+                                            <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
+                                                <span style={{ color: `${currentTheme.foreground}55` }}>Subtotal</span>
+                                                <span style={{ color: currentTheme.foreground }}>${priceUsd.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span style={{ color: `${currentTheme.foreground}55` }}>
+                                                    PayPal fee <span className="opacity-60">({paypalFee.rate}% + ${paypalFee.fixed.toFixed(2)})</span>
+                                                </span>
+                                                <span style={{ color: currentTheme.foreground }}>+${payTotal.fee.toFixed(2)}</span>
+                                            </div>
+                                        </>
+                                    )}
                                     <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${SHINY_PURPLE}20` }}>
                                         <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
-                                        <span className="text-xl font-extrabold" style={{ color: SHINY_PURPLE }}>${priceUsd.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                        <span className="text-xl font-extrabold" style={{ color: SHINY_PURPLE }}>${payTotal.total.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
                                     </div>
+
+                                    {/* Brief, on purpose — the full rule belongs in help, not checkout. */}
+                                    {currentTier && selectedPkg.tier !== currentTier && tierSwitchCarryOverDays > 0 && (
+                                        <p className="pt-2 text-xs leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                                            Switching tiers: half your unused days carry over — <strong style={{ color: EXCLUSIVE_GOLD }}>+{tierSwitchCarryOverDays} day{tierSwitchCarryOverDays === 1 ? '' : 's'}</strong> added.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         )}

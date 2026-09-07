@@ -129,6 +129,18 @@ Route::get('/series/{slug}/chapter/{chapter}', [UserChapterController::class, 's
 Route::post('/series/{slug}/chapter/{chapter}/purchase', [UserChapterController::class, 'purchase'])
     ->name('chapters.purchase')->middleware('auth');
 
+// Free chapter access through the Move2Link ad challenge.
+// `claim` is intentionally public: the reader returns from an external
+// shortener, and authorisation comes from the pending record, not the URL.
+// Throttled: `start` is what calls the Move2Link API, whose rate limit is per
+// IP — ours. It is also the step a script would hammer to farm free access.
+Route::post('/series/{slug}/chapter/{chapter}/unlock/start', [App\Http\Controllers\ChapterUnlockController::class, 'start'])
+    ->name('chapters.unlock.start')->middleware(['auth', 'throttle:12,1']);
+Route::get('/unlock/sandbox/{token}', [App\Http\Controllers\ChapterUnlockController::class, 'sandbox'])
+    ->name('chapters.unlock.sandbox')->middleware('throttle:30,1');
+Route::get('/unlock/{token}', [App\Http\Controllers\ChapterUnlockController::class, 'claim'])
+    ->name('chapters.unlock.claim')->middleware('throttle:20,1');
+
 // Mark (paragraph marks) — auth required
 Route::middleware('auth')->group(function () {
     Route::post('/series/{slug}/chapter/{chapter}/marks', [MarkController::class, 'store'])->name('marks.store');
@@ -227,9 +239,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     
     // Chapter Management
     Route::post('/series/{series}/chapters', [ChapterController::class, 'store'])->name('chapters.store');
+    Route::get('/chapters/{chapter}/content', [ChapterController::class, 'content'])->name('chapters.content');
     Route::put('/chapters/{chapter}', [ChapterController::class, 'update'])->name('chapters.update');
     Route::delete('/chapters/{chapter}', [ChapterController::class, 'destroy'])->name('chapters.destroy');
     Route::patch('/chapters/{chapter}/toggle-premium', [ChapterController::class, 'togglePremium'])->name('chapters.toggle-premium');
+    Route::post('/chapters/{chapter}/unlock-link', [ChapterController::class, 'generateUnlockLink'])->name('chapters.unlock-link');
     Route::post('/chapters/upload-image', [ChapterController::class, 'uploadImage'])->name('chapters.upload-image');
 
     // Batch Upload & Batch Manager
@@ -240,6 +254,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::put('/series/{series}/batch-update', [\App\Http\Controllers\Admin\BatchController::class, 'batchUpdate'])->name('chapters.batch-update');
     
     // User Management
+    // Storage manager — scans every managed directory and reports which files
+    // are still referenced by the site. Deletion quarantines rather than unlinks.
+    Route::get('/storage', [\App\Http\Controllers\Admin\StorageController::class, 'index'])->name('storage.index');
+    Route::delete('/storage/files', [\App\Http\Controllers\Admin\StorageController::class, 'destroy'])->name('storage.destroy');
+    Route::post('/storage/restore', [\App\Http\Controllers\Admin\StorageController::class, 'restore'])->name('storage.restore');
+    Route::delete('/storage/purge', [\App\Http\Controllers\Admin\StorageController::class, 'purge'])->name('storage.purge');
+
     Route::get('/user-management', [UserController::class, 'index'])->name('users.index');
     Route::post('/users/{user}/ban', [UserController::class, 'banUser'])->name('users.ban');
     Route::post('/users/{user}/unban', [UserController::class, 'unbanUser'])->name('users.unban');

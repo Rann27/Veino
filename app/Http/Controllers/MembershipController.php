@@ -57,6 +57,32 @@ class MembershipController extends Controller
         $package = MembershipPackage::findOrFail($request->package_id);
         $isInertiaRequest = $request->headers->has('X-Inertia');
 
+        // Buying plain Premium on top of an active Exclusive would be a
+        // downgrade the buyer paid for: grantMembership() switches tiers and
+        // halves the remaining days. Refused before any money moves, for every
+        // payment method at once — the UI blocks it too, but the UI is not the
+        // authority.
+        if ($package->tier === 'premium' && $user->hasExclusiveMembership()) {
+            $errorMsg = 'You already have an active Premium Exclusive membership, which includes everything in Premium. Buying a Premium plan now would replace it with a lower tier.';
+
+            if ($isInertiaRequest) {
+                return back()
+                    ->withErrors(['membership' => $errorMsg])
+                    ->with('tier_blocked', [
+                        'message' => $errorMsg,
+                        'current_tier' => $user->membership_tier,
+                        'expires_at' => $user->membership_expires_at?->toISOString(),
+                    ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => $errorMsg,
+                'message' => $errorMsg,
+                'code' => 'tier_downgrade_blocked',
+            ], 422);
+        }
+
         // Route to real-currency flow
         if (in_array($request->payment_method, ['paypal', 'oxapay'])) {
             return $this->purchaseWithRealCurrency($request, $user, $package, $isInertiaRequest);
@@ -142,15 +168,17 @@ class MembershipController extends Controller
                 'description' => $voucher ? "Membership ({$package->name}) with {$discountAmount} coins discount" : "Membership ({$package->name})",
             ]);
 
-            // Grant membership (premium tier)
-            $granted = $this->membershipService->grantPremium($user, $package->duration_days);
+            // Grant the tier the package actually sells.
+            $granted = $this->membershipService->grantPremium($user, $package->duration_days, $package->tier);
 
             if (!$granted) {
+                // The rollback already restores the deducted coins — the manual
+                // refund that used to sit here credited them a second time, and
+                // at full list price rather than the discounted amount actually
+                // paid, minting coins out of a failed purchase.
                 DB::rollBack();
-                
-                // Refund coins
-                $user->addCoins($package->coin_price);
-                
+                $user->refresh();
+
                 $errorMsg = 'Failed to grant membership';
                 
                 if ($isInertiaRequest) {
@@ -189,7 +217,9 @@ class MembershipController extends Controller
                     ->with('premium_granted', [
                         'days' => $package->duration_days,
                         'package_name' => $package->name,
-                        'source' => 'membership_purchase'
+                        'source' => 'membership_purchase',
+                        // Lets the success modal dress itself for the tier bought.
+                        'tier' => $package->tier,
                     ]);
             }
 
@@ -203,16 +233,18 @@ class MembershipController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            $errorMessage = $e->getMessage();
-            if (empty($errorMessage)) {
-                $errorMessage = 'An unexpected error occurred during purchase';
-            }
-            
+            $user->refresh();
+
+            // Deliberately generic. Returning $e->getMessage() put raw database
+            // errors on the page — a failed insert showed the buyer the whole
+            // SQL statement, table and column names included. The detail belongs
+            // in the log, not in front of the customer.
+            $errorMessage = 'Purchase could not be completed. Your coins have not been deducted — please try again.';
+
             Log::error('Membership purchase with coins failed', [
                 'user_id' => $user->id,
                 'package_id' => $package->id,
-                'error' => $errorMessage,
+                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
@@ -343,8 +375,13 @@ class MembershipController extends Controller
                     ];
                 }
 
+                // PayPal's cut is passed on to the buyer, so the amount charged
+                // is grossed up — billing the list price would leave us short
+                // by the fee. Only PayPal is affected; OxaPay bills face value.
+                $charge = app(\App\Services\PaymentFeeCalculator::class)->totalFor((float) $package->price_usd);
+
                 $result = $this->paypalService->createOrder(
-                    $package->price_usd,
+                    $charge,
                     'USD',
                     "Veinovel Membership – {$package->name}",
                     $returnUrl,
@@ -396,7 +433,7 @@ class MembershipController extends Controller
             
             return [
                 'success' => false,
-                'error' => 'Payment gateway error: ' . $e->getMessage()
+                'error' => 'Payment gateway error. Please try again in a moment.'
             ];
         }
     }
@@ -458,6 +495,12 @@ class MembershipController extends Controller
                 'completed_at'        => $history->completed_at?->toISOString(),
                 'created_at'          => $history->created_at->toISOString(),
                 'package'             => $history->package ? ['name' => $history->package->name] : null,
+                // What PayPal actually bills: amount_usd is the list price, but
+                // the buyer covers the fee, so the page must not quote a total
+                // lower than the one waiting for them on PayPal's screen.
+                'charged_usd'         => $history->payment_method === 'paypal'
+                    ? app(\App\Services\PaymentFeeCalculator::class)->totalFor((float) $history->amount_usd)
+                    : (float) $history->amount_usd,
             ],
             'auth' => [
                 'user' => $user
@@ -495,36 +538,64 @@ class MembershipController extends Controller
      */
     private function completePayment($history, $transactionId = null)
     {
-        // Idempotency: skip if already completed
-        if ($history->status === 'completed') {
+        // Claimed atomically, in one conditional UPDATE.
+        //
+        // The old guard read $history->status in PHP and only wrote 'completed'
+        // at the end, leaving a wide gap in between. completePayment() is called
+        // both by the status-page poll and by the gateway webhook, and when
+        // those arrived together each saw 'pending' and each granted the
+        // membership — a 90-day plan handed out 180 days. Only one caller can
+        // win this update; the loser stops here.
+        $claimed = MembershipHistory::whereKey($history->id)
+            ->where('status', 'pending')
+            ->update(['status' => 'completed']);
+
+        if ($claimed === 0) {
             return;
         }
 
         DB::beginTransaction();
         try {
             $user = $history->user;
-            $package = $history->package;
 
-            // Calculate membership period
-            $startsAt = $user->membership_expires_at && $user->membership_expires_at->isFuture()
-                ? $user->membership_expires_at
-                : now();
-            $expiresAt = $startsAt->copy()->addDays($package->duration_days);
+            // duration_days is copied onto the history at checkout, so it stays
+            // correct even if the package was edited or removed since.
+            $days = (int) ($history->duration_days ?: $history->package?->duration_days ?: 0);
 
-            // Update history
+            // The tier that was actually paid for. This used to be hardcoded to
+            // 'premium', so a Premium Exclusive bought with real money activated
+            // as plain Premium — the buyer paid the higher price and silently
+            // received the lower tier.
+            $tier = $history->tier;
+
+            // A Premium order can still settle after the buyer upgraded, so
+            // never let it pull an active Exclusive membership down a rung.
+            if ($tier === 'premium' && $user->hasExclusiveMembership()) {
+                $tier = 'exclusive';
+            }
+
+            // A renewal of the same tier stacks onto the end of the current
+            // period; anything else starts now. Read before the grant, since the
+            // grant is what changes it.
+            $stacks = $user->hasActiveMembership() && $user->membership_tier === $tier;
+            $startsAt = $stacks ? $user->membership_expires_at->copy() : now();
+
+            // Routed through the model so real-currency payments settle exactly
+            // like coin purchases, carry-over rule included.
+            $user->grantMembership($tier, $days);
+            $user->refresh();
+
             $history->update([
                 'status' => 'completed',
                 'transaction_id' => $transactionId,
                 'starts_at' => $startsAt,
-                'expires_at' => $expiresAt,
+                // Mirrors what the user actually ended up with, rather than a
+                // separately computed figure that can drift from it.
+                'expires_at' => $user->membership_expires_at,
                 'completed_at' => now(),
             ]);
 
-            // Grant membership to user
-            $user->update([
-                'membership_tier' => 'premium',
-                'membership_expires_at' => $expiresAt,
-            ]);
+            $expiresAt = $user->membership_expires_at;
 
             DB::commit();
 
@@ -536,6 +607,11 @@ class MembershipController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+
+            // Hand the row back, or a transient failure would strand the payment
+            // as 'completed' with nothing granted and no way to retry.
+            MembershipHistory::whereKey($history->id)->update(['status' => 'pending']);
+
             Log::error('Failed to complete payment', [
                 'history_id' => $history->id,
                 'error' => $e->getMessage()

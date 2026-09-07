@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { csrfHeaders } from '@/lib/csrf';
 
 function wa(hex: string, a: number) {
     try {
@@ -89,11 +90,6 @@ function BatchManagerContent({ series, chapters: initialChapters }: Props) {
     const dirtyCount   = rows.filter(r => r._dirty && !r._deleted).length;
     const deletedCount = rows.filter(r => r._deleted).length;
 
-    const csrfHeaders = (): Record<string, string> => {
-        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-        if (match) return { 'X-XSRF-TOKEN': decodeURIComponent(match[1]) };
-        return { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' };
-    };
 
     const handleSave = async () => {
         if (saving) return;

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -195,13 +196,19 @@ class User extends Authenticatable
 
     // ==================== MEMBERSHIP METHODS ====================
 
+    /** Paid tiers, weakest first. Order matters for tier comparisons. */
+    public const PAID_TIERS = ['premium', 'exclusive'];
+
     /**
      * Check if user has an active membership
+     *
+     * Any paid tier counts. This used to test for 'premium' alone, which would
+     * have left Premium Exclusive buyers with no access at all.
      */
     public function hasActiveMembership(): bool
     {
-        return $this->membership_tier === 'premium' 
-            && $this->membership_expires_at 
+        return in_array($this->membership_tier, self::PAID_TIERS, true)
+            && $this->membership_expires_at
             && $this->membership_expires_at->isFuture();
     }
 
@@ -210,9 +217,19 @@ class User extends Authenticatable
      */
     public function isMembershipExpired(): bool
     {
-        return $this->membership_tier === 'premium' 
-            && $this->membership_expires_at 
+        return in_array($this->membership_tier, self::PAID_TIERS, true)
+            && $this->membership_expires_at
             && $this->membership_expires_at->isPast();
+    }
+
+    /**
+     * Premium Exclusive: everything Premium has, plus every EPUB volume.
+     */
+    public function hasExclusiveMembership(): bool
+    {
+        return $this->membership_tier === 'exclusive'
+            && $this->membership_expires_at
+            && $this->membership_expires_at->isFuture();
     }
 
     /**
@@ -258,16 +275,56 @@ class User extends Authenticatable
      */
     public function grantMembership(string $tier, int $days): bool
     {
-        $this->membership_tier = $tier;
-        
-        // If user already has active membership of same tier, extend it
-        if ($this->hasActiveMembership() && $this->membership_tier === $tier) {
+        $sameTier = $this->hasActiveMembership() && $this->membership_tier === $tier;
+
+        if ($sameTier) {
+            // Renewing the tier they already hold simply stacks on the end.
             $this->membership_expires_at = $this->membership_expires_at->addDays($days);
         } else {
+            // Switching tiers. Unused days on the old one are worth half on the
+            // new one, so nothing paid for is silently thrown away.
+            $days += $this->carryOverDays();
             $this->membership_expires_at = now()->addDays($days);
         }
-        
+
+        $this->membership_tier = $tier;
+
         return $this->save();
+    }
+
+    /**
+     * Add complimentary membership days without ever lowering the tier held.
+     *
+     * Bonus days ride along with something else the user bought (coin packages,
+     * promotions), so they must never cost them the tier they are on. Granting
+     * a flat 'premium' would demote an Exclusive member — and halve their
+     * remaining days on the way out — as a reward for spending money.
+     */
+    public function grantBonusDays(int $days): bool
+    {
+        return $this->grantMembership(
+            $this->hasActiveMembership() ? $this->membership_tier : 'premium',
+            $days
+        );
+    }
+
+    /**
+     * Compensation, in days, for switching away from an active membership.
+     *
+     * Half of the whole days left, rounded down, and nothing at all below two
+     * days. Part-days never count: 23 days and 22 hours is 23 whole days, which
+     * earns 11.
+     */
+    public function carryOverDays(): int
+    {
+        if (! $this->hasActiveMembership()) {
+            return 0;
+        }
+
+        $wholeDays = (int) floor(now()->diffInDays($this->membership_expires_at, false));
+
+        // Under 48 hours is not eligible; intdiv also floors the odd case.
+        return $wholeDays < 2 ? 0 : intdiv($wholeDays, 2);
     }
 
     /**
@@ -275,7 +332,11 @@ class User extends Authenticatable
      */
     public function getMembershipDisplayNameAttribute(): string
     {
-        return ucfirst($this->membership_tier);
+        return match ($this->membership_tier) {
+            'exclusive' => 'Premium Exclusive',
+            'premium' => 'Premium',
+            default => 'Basic',
+        };
     }
 
     /**
@@ -302,12 +363,28 @@ class User extends Authenticatable
      */
     public function deductCoins(int $amount): bool
     {
-        if ($this->coins < $amount) {
+        if ($amount <= 0) {
+            return true;
+        }
+
+        // Settled in a single conditional UPDATE rather than read-modify-write.
+        // Two checkouts firing at once both loaded the same balance and both
+        // wrote their own subtraction of it, so the second silently erased the
+        // first — two purchases, one payment. The `coins >= ?` guard also makes
+        // it impossible to spend into a negative balance.
+        $affected = static::whereKey($this->getKey())
+            ->where('coins', '>=', $amount)
+            ->update(['coins' => DB::raw('coins - '.(int) $amount)]);
+
+        if ($affected === 0) {
             return false;
         }
-        
-        $this->coins -= $amount;
-        return $this->save();
+
+        // Keep the in-memory model in step with what the database now holds.
+        $this->coins = max(0, (int) $this->coins - $amount);
+        $this->syncOriginalAttribute('coins');
+
+        return true;
     }
 
     /**

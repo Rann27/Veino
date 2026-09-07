@@ -249,6 +249,46 @@ class ChapterController extends Controller
     }
 
     /**
+     * A single chapter's body, fetched when the editor opens.
+     *
+     * The series page lists hundreds of chapters; shipping every body with that
+     * list pushed one page to 3.2 MB. Only the chapter actually being edited
+     * needs its content, and only at the moment it is opened.
+     */
+    public function content(Chapter $chapter)
+    {
+        return response()->json([
+            'id' => $chapter->id,
+            'content' => $chapter->content,
+        ]);
+    }
+
+    /**
+     * Mints the Move2Link shortlink for a chapter's free-access challenge.
+     *
+     * Links are normally created the first time a reader presses the button,
+     * which keeps batch imports from firing a burst of API calls. This is the
+     * manual path, for preparing a chapter ahead of release.
+     */
+    public function generateUnlockLink(Chapter $chapter, \App\Services\ChapterUnlockService $unlock)
+    {
+        if (! $chapter->is_premium) {
+            return redirect()->back()->with('error', 'Only premium chapters need an unlock link.');
+        }
+
+        $shortlink = $unlock->shortlinkFor($chapter, regenerate: true);
+
+        if (! $shortlink) {
+            // Report what actually went wrong. A generic "check your token"
+            // sends the admin hunting in the wrong place when the real cause
+            // was a local APP_URL or their rate limit.
+            return redirect()->back()->with('error', $unlock->lastError() ?? 'Could not generate the shortlink.');
+        }
+
+        return redirect()->back()->with('success', 'Shortlink generated.');
+    }
+
+    /**
      * Upload image for chapter content (CKEditor)
      */
     public function uploadImage(Request $request)

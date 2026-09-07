@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
 import { ToastProvider } from '@/Contexts/ToastContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
+import { TierStyles, TierIcon, ExclusiveCrownIcon, TIER_LABEL, TIER_COLOR, TIER_GRADIENT, TIER_GLOW, asTier, isPaidTier, tierRingStyle } from '@/lib/tier';
 
 
 interface User {
@@ -11,7 +12,7 @@ interface User {
   display_name: string;
   email: string;
   coins: number;
-  membership_tier: 'basic' | 'premium';
+  membership_tier: 'basic' | 'premium' | 'exclusive';
   membership_expires_at?: string;
   avatar?: string;
   avatar_url?: string;
@@ -269,14 +270,18 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen"
-      style={{ 
+      style={{
         backgroundColor: currentTheme.background,
-        color: currentTheme.foreground 
+        color: currentTheme.foreground
       }}
+      data-tier={asTier(auth?.user?.membership_tier)}
     >
       {title && <Head title={title} />}
+
+      {/* Tier keyframes, mounted once for the whole page */}
+      <TierStyles />
 
       {/* Page transition progress bar */}
       {pageLoading && <div className="page-progress-bar" />}
@@ -462,17 +467,14 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                     <button
                       onClick={toggleAccountMenu}
                       className="p-0.5 rounded-full transition-all"
-                      style={auth.user.membership_tier === 'premium' ? {
-                        background: 'linear-gradient(135deg, #c084fc, #e879f9, #818cf8)',
-                        boxShadow: '0 0 10px #a78bfa60',
-                        padding: '2px',
-                      } : {
+                      style={isPaidTier(auth.user.membership_tier) ? tierRingStyle(auth.user.membership_tier) : {
                         backgroundColor: showAccountMenu ? `${currentTheme.foreground}10` : 'transparent',
                       }}
+                      data-tier={asTier(auth.user.membership_tier)}
                       title={auth.user.display_name}
                     >
                       <div className="rounded-full overflow-hidden"
-                        style={auth.user.membership_tier === 'premium' ? { background: currentTheme.background } : {}}>
+                        style={isPaidTier(auth.user.membership_tier) ? { background: currentTheme.background } : {}}>
                         {auth.user.avatar_url ? (
                           <img
                             src={auth.user.avatar_url}
@@ -528,21 +530,11 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                         className="px-4 py-2.5 text-sm border-b"
                         style={{ borderColor: `${currentTheme.foreground}20` }}
                       >
-                        {auth.user.membership_tier === 'premium' ? (
+                        {isPaidTier(auth.user.membership_tier) ? (
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5">
-                              <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-                                <defs>
-                                  <linearGradient id="diamondGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style={{ stopColor: '#c084fc', stopOpacity: 1 }} />
-                                    <stop offset="50%" style={{ stopColor: '#e879f9', stopOpacity: 1 }} />
-                                    <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-                                  </linearGradient>
-                                </defs>
-                                <path d="M12 2L3 9L12 22L21 9L12 2Z" fill="url(#diamondGradient)" stroke="#fff" strokeWidth="0.5"/>
-                                <path d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" stroke="#fff" strokeWidth="0.3" opacity="0.6"/>
-                              </svg>
-                              <span className="font-semibold" style={{ color: '#a78bfa' }}>Premium</span>
+                              <TierIcon tier={auth.user.membership_tier} size={16} />
+                              <span className="font-semibold" style={{ color: TIER_COLOR[asTier(auth.user.membership_tier)] }}>{TIER_LABEL[asTier(auth.user.membership_tier)]}</span>
                             </div>
                             {auth.user.membership_expires_at && (
                               <span className="text-xs" style={{ color: `${currentTheme.foreground}50` }}>
@@ -851,30 +843,10 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                       >
                         ¢{auth.user.coins?.toLocaleString() || 0}
                       </Link>
-                      {auth.user.membership_tier === 'premium' && auth.user.membership_expires_at && new Date(auth.user.membership_expires_at) > new Date() ? (
-                        <div className="text-xs flex items-center gap-1 mt-1" style={{ color: '#a78bfa' }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <defs>
-                              <linearGradient id="diamondGradientMobile" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" style={{ stopColor: '#c084fc', stopOpacity: 1 }} />
-                                <stop offset="50%" style={{ stopColor: '#e879f9', stopOpacity: 1 }} />
-                                <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 1 }} />
-                              </linearGradient>
-                            </defs>
-                            <path 
-                              d="M12 2L3 9L12 22L21 9L12 2Z" 
-                              fill="url(#diamondGradientMobile)"
-                              stroke="#fff"
-                              strokeWidth="0.5"
-                            />
-                            <path 
-                              d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" 
-                              stroke="#fff" 
-                              strokeWidth="0.3" 
-                              opacity="0.6"
-                            />
-                          </svg>
-                          <span className="font-semibold">Premium Member</span>
+                      {isPaidTier(auth.user.membership_tier) && auth.user.membership_expires_at && new Date(auth.user.membership_expires_at) > new Date() ? (
+                        <div className="text-xs flex items-center gap-1 mt-1" style={{ color: TIER_COLOR[asTier(auth.user.membership_tier)] }}>
+                          <TierIcon tier={auth.user.membership_tier} size={14} />
+                          <span className="font-semibold">{TIER_LABEL[asTier(auth.user.membership_tier)]} Member</span>
                         </div>
                       ) : (
                         <p className="text-xs mt-1" style={{ color: `${currentTheme.foreground}60` }}>
@@ -1115,7 +1087,7 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
               }}
               className="mb-4 sm:mb-0"
             >
-              Veinovel © 2025
+              Veinovel © 2026
             </p>
             <div className="flex space-x-6">
               <Link 
@@ -1160,14 +1132,30 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
       />
 
       {/* Premium Congratulations Modal */}
-      {showPremiumCongrats && premiumGrantedData && (
+      {showPremiumCongrats && premiumGrantedData && (() => {
+        // Dressed for whichever tier was actually granted — the flash carries
+        // the slug, so an Exclusive purchase never congratulates you on Premium.
+        const grantedTier = asTier(premiumGrantedData.tier);
+        const accent = TIER_COLOR[grantedTier];
+        const exclusive = grantedTier === 'exclusive';
+
+        return (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 flex items-center justify-center z-50 p-4"
+          style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
           onClick={() => setShowPremiumCongrats(false)}
         >
           <div 
-            className="rounded-lg p-8 max-w-md w-full shadow-xl border"
-            style={{ 
+            className={`rounded-lg p-8 max-w-md w-full shadow-xl border${exclusive ? ' tier-neon' : ''}`}
+            style={exclusive ? {
+              backgroundColor: currentTheme.background,
+              border: '2px solid transparent',
+              backgroundImage: `linear-gradient(${currentTheme.background}, ${currentTheme.background}), ${TIER_GRADIENT.exclusive}`,
+              backgroundOrigin: 'border-box',
+              backgroundClip: 'padding-box, border-box',
+              backgroundSize: 'auto, 300% 300%',
+              boxShadow: TIER_GLOW.exclusive,
+            } : { 
               backgroundColor: currentTheme.background,
               borderColor: `${currentTheme.foreground}20`
             }}
@@ -1175,10 +1163,14 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
           >
             {/* Success Icon */}
             <div className="flex justify-center mb-6">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#a78bfa20' }}>
-                <svg className="w-8 h-8" style={{ color: '#a78bfa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: `${accent}20` }}>
+                {exclusive ? (
+                  <ExclusiveCrownIcon size={34} />
+                ) : (
+                  <svg className="w-8 h-8" style={{ color: accent }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
               </div>
             </div>
 
@@ -1201,19 +1193,20 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                 color: `${currentTheme.foreground}80`
               }}
             >
-              {premiumGrantedData.days} Day{premiumGrantedData.days !== 1 ? 's' : ''} of Premium Has Been Added to Your Account!
+              {premiumGrantedData.days} Day{premiumGrantedData.days !== 1 ? 's' : ''} of {TIER_LABEL[grantedTier]} Has Been Added to Your Account!
             </p>
 
             {/* Package Badge */}
             <div className="flex justify-center mb-6">
               <span 
-                className="px-4 py-2 rounded-full text-sm font-semibold"
+                className="px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-1.5"
                 style={{
-                  backgroundColor: '#a78bfa20',
-                  color: '#a78bfa',
+                  backgroundColor: `${accent}20`,
+                  color: accent,
                   fontFamily: 'Poppins, sans-serif'
                 }}
               >
+                <TierIcon tier={grantedTier} size={14} />
                 {premiumGrantedData.package_name}
               </span>
             </div>
@@ -1223,8 +1216,8 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
               onClick={() => setShowPremiumCongrats(false)}
               className="w-full py-3 rounded-lg font-semibold transition-all duration-200 hover:opacity-90"
               style={{
-                backgroundColor: '#a78bfa',
-                color: 'white',
+                backgroundColor: accent,
+                color: exclusive ? '#3b2a00' : 'white',
                 fontFamily: 'Poppins, sans-serif'
               }}
             >
@@ -1232,7 +1225,8 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
             </button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Mobile Bottom Navigation */}
       {!hideMobileBottomNav && <MobileBottomNav currentPath={currentPath} user={auth?.user} />}

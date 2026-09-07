@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { usePage } from '@inertiajs/react';
+import { isPaidTier, type Tier } from '@/lib/tier';
 
 interface PageProps {
     auth?: {
@@ -8,7 +9,7 @@ interface PageProps {
             display_name: string;
             email: string;
             coins: number;
-            membership_tier: 'basic' | 'premium';
+            membership_tier: Tier;
             membership_expires_at?: string;
         };
     };
@@ -23,8 +24,8 @@ export default function AadsBanner({ position = 'top' }: AadsBannerProps) {
     const { auth } = usePage<PageProps>().props;
     const [isMobile, setIsMobile] = useState(false);
 
-    // Premium users don't see ads
-    if (auth?.user?.membership_tier === 'premium') {
+    // Every paid tier is ad-free, not just 'premium'
+    if (isPaidTier(auth?.user?.membership_tier)) {
         return null;
     }
 

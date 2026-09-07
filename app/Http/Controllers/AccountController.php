@@ -18,7 +18,9 @@ class AccountController extends Controller
         // Get membership status
         $membershipStatus = [
             'is_premium' => $user->hasActiveMembership(),
-            'tier' => $user->hasActiveMembership() ? ucfirst($user->membership_tier) : null,
+            // Raw slug: the frontend owns the label so 'exclusive' renders as
+            // "Premium Exclusive" rather than a naive ucfirst().
+            'tier' => $user->hasActiveMembership() ? $user->membership_tier : null,
             'expires_at' => $user->membership_expires_at ? $user->membership_expires_at->toISOString() : null,
         ];
         

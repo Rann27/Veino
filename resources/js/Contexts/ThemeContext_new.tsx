@@ -1,6 +1,7 @@
 // Enhanced Theme Context with Backend Integration
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
+import { csrfHeaders } from '@/lib/csrf';
 
 export interface ThemePreset {
     name: string;
@@ -238,7 +239,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    ...csrfHeaders(),
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({

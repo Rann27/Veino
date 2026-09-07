@@ -464,7 +464,13 @@ function MiscContent() {
                         <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', background: 'rgba(37,99,235,0.12)', color: accent }}>{heroSeries.filter(id => id > 0).length} / 5 filled</span>
                     </div>
                     <p style={sectionDesc}>Select up to 5 series to display in the hero slider on the homepage</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Kept, not deleted: the saved picks are still here if the
+                        automatic ranking is ever rolled back. */}
+                    <div style={{ marginBottom: '14px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(234,179,8,0.10)', border: '1px solid rgba(234,179,8,0.30)' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#b45309', marginBottom: '4px' }}>Now chosen automatically — these picks are inactive</p>
+                        <p style={{ fontSize: '12px', color: muted, lineHeight: 1.6 }}>Light novels with the most series and chapter views over the last 24 hours, held for the next 24 hours so the top of the page stays stable. Web novels are excluded.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', opacity: 0.45, pointerEvents: 'none' }} aria-disabled>
                         {heroSeries.map((seriesId, index) => (
                             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <span style={slotLabel}>Slot {index + 1}</span>
@@ -493,7 +499,13 @@ function MiscContent() {
                         <span style={{ fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '999px', background: 'rgba(124,58,237,0.12)', color: '#7c3aed' }}>{featuredSeries.filter(id => id > 0).length} / 8 filled</span>
                     </div>
                     <p style={sectionDesc}>Select up to 8 series to display in the featured section</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {/* Kept, not deleted: the saved picks are still here if the
+                        automatic ranking is ever rolled back. */}
+                    <div style={{ marginBottom: '14px', padding: '12px 14px', borderRadius: '10px', background: 'rgba(234,179,8,0.10)', border: '1px solid rgba(234,179,8,0.30)' }}>
+                        <p style={{ fontSize: '13px', fontWeight: 700, color: '#b45309', marginBottom: '4px' }}>Now chosen automatically — these picks are inactive</p>
+                        <p style={{ fontSize: '12px', color: muted, lineHeight: 1.6 }}>Light novels with the most series and chapter views over the last 3 days, refreshed continuously. Web novels are excluded.</p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', opacity: 0.45, pointerEvents: 'none' }} aria-disabled>
                         {featuredSeries.map((seriesId, index) => (
                             <div key={index} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                 <span style={slotLabel}>Slot {index + 1}</span>

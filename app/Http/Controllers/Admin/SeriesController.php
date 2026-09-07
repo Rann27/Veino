@@ -133,13 +133,32 @@ class SeriesController extends Controller
             'sort'                => $sort,
             'total'               => $total,
             'premiumChapterPrice' => PaymentSetting::get('premium_chapter_price', 10),
+            'unlockChallenge' => [
+                'enabled' => (bool) PaymentSetting::get('unlock_challenge_enabled', true),
+                'days' => (int) PaymentSetting::get('unlock_challenge_days', 7),
+                'daily_limit' => (int) PaymentSetting::get('unlock_challenge_daily_limit', 10),
+                'sandbox' => app(\App\Services\ChapterUnlockService::class)->sandbox(),
+                // False outside local, so the modal can say the switch is inert
+                // here rather than showing a toggle that quietly does nothing.
+                'sandbox_allowed' => app(\App\Services\ChapterUnlockService::class)->sandboxAllowed(),
+                // Surfaced so the modal can warn instead of silently doing nothing.
+                'token_configured' => ! empty(config('move2link.token')),
+            ],
         ]);
     }
 
     public function show(Series $series)
     {
-        $series->load(['nativeLanguage', 'genres', 'chapters' => function($query) {
-            $query->orderBy('chapter_number');
+        // Chapter bodies are deliberately absent: this page lists chapters, it
+        // does not display them. Shipping every content column turned the
+        // payload into 3.2 MB on a long series. The editor fetches the one body
+        // it needs from admin.chapters.content when it opens.
+        $series->load(['nativeLanguage', 'genres', 'chapters' => function ($query) {
+            $query->select([
+                'id', 'series_id', 'title', 'chapter_number', 'chapter_link',
+                'volume', 'is_premium', 'coin_price', 'is_published', 'views',
+                'unlock_shortlink', 'created_at', 'updated_at',
+            ])->orderBy('chapter_number');
         }]);
 
         // Add raw cover URL for editing (bypass accessor)
@@ -148,7 +167,13 @@ class SeriesController extends Controller
 
         return Inertia::render('Admin/Series/Show', [
             'series' => $seriesData,
-            'ebookSeriesOptions' => EbookSeries::orderBy('title')->get(['id', 'title', 'slug']),
+            // Projected to arrays: EbookSeries appends price_range, whose
+            // accessor reads $this->items, so returning models lazy-loads every
+            // volume — 303 KB for a three-field dropdown.
+            'ebookSeriesOptions' => EbookSeries::orderBy('title')
+                ->get(['id', 'title', 'slug'])
+                ->map(fn ($e) => ['id' => $e->id, 'title' => $e->title, 'slug' => $e->slug])
+                ->all(),
         ]);
     }
 
@@ -272,10 +297,21 @@ class SeriesController extends Controller
     {
         $validated = $request->validate([
             'price' => 'required|integer|min:1|max:9999',
+            'challenge_enabled' => 'required|boolean',
+            // 0 means unlimited, which is why the floor is 0 rather than 1.
+            'challenge_days' => 'required|integer|min:1|max:365',
+            'challenge_daily_limit' => 'required|integer|min:0|max:100',
+            'challenge_sandbox' => 'required|boolean',
         ]);
 
         PaymentSetting::set('premium_chapter_price', $validated['price'], 'integer', 'Global coin price for unlocking a premium chapter');
+        PaymentSetting::set('unlock_challenge_enabled', $validated['challenge_enabled'] ? 1 : 0, 'boolean', 'Offer free chapter access through the Move2Link challenge');
+        PaymentSetting::set('unlock_challenge_days', $validated['challenge_days'], 'integer', 'How many days challenge-earned access lasts');
+        PaymentSetting::set('unlock_challenge_daily_limit', $validated['challenge_daily_limit'], 'integer', 'Free unlocks a reader may earn per day (0 = unlimited)');
+        PaymentSetting::set('unlock_challenge_sandbox', $validated['challenge_sandbox'] ? 1 : 0, 'boolean', 'Bypass Move2Link with a local stand-in gate — testing only');
 
-        return back()->with('success', 'Premium chapter price updated to ' . $validated['price'] . ' coins.');
+        return back()->with('success', $validated['challenge_sandbox']
+            ? 'Settings saved. Sandbox is ON — readers can unlock without seeing an ad.'
+            : 'Settings saved.');
     }
 }

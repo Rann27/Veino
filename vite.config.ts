@@ -26,8 +26,21 @@ export default defineConfig({
         chunkSizeWarningLimit: 1000,
         rollupOptions: {
             output: {
+                // CKEditor is deliberately absent here. Naming it as a manual
+                // chunk made Rollup treat it as a static dependency of the
+                // entry, so app.tsx pulled in 929 KB (242 KB gzipped) on every
+                // public page — homepage included — even though every
+                // RichTextEditor import is already lazy() and only admins ever
+                // open an editor. Worse, because it sat in the entry graph the
+                // app could not boot until it finished downloading: one failed
+                // request for it left readers with a blank white page.
+                //
+                // Left to itself, Rollup splits it out behind those lazy()
+                // boundaries, which is what was wanted all along.
+                //
+                // vendor stays: react, react-dom and Inertia genuinely are
+                // needed before anything can render.
                 manualChunks: {
-                    'ckeditor': ['ckeditor5', '@ckeditor/ckeditor5-react'],
                     'vendor': ['react', 'react-dom', '@inertiajs/react'],
                 }
             }

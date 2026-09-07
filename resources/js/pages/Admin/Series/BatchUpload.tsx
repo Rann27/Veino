@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { csrfHeaders } from '@/lib/csrf';
 
 const RichTextEditor = lazy(() => import('@/Components/RichTextEditor'));
 
@@ -84,12 +85,6 @@ function BatchUploadContent({ series }: Props) {
     const [saving, setSaving]     = useState(false);
     const [reviewAlert, setReviewAlert] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 
-    // Read CSRF from XSRF-TOKEN cookie (always fresh); fallback to meta tag.
-    const csrfHeaders = (): Record<string, string> => {
-        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-        if (match) return { 'X-XSRF-TOKEN': decodeURIComponent(match[1]) };
-        return { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' };
-    };
 
     const [parseProgress, setParseProgress] = useState<{ done: number; total: number } | null>(null);
 

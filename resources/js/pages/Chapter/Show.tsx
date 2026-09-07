@@ -9,6 +9,7 @@ import InTextAd from '@/Components/Ads/InTextAd';
 import { markChapterVisited, saveScrollPosition, getScrollPosition, clearScrollPosition } from '@/lib/reading';
 import InterstitialAd from '@/Components/Ads/InterstitialAd';
 import axios from 'axios';
+import { csrfHeaders } from '@/lib/csrf';
 const ReaderSettingsModal = lazy(() => import('@/Components/ReaderSettingsModal'));
 const CommentSection = lazy(() => import('@/Components/CommentSection'));
 const ReactionBar = lazy(() => import('@/Components/ReactionBar'));
@@ -84,12 +85,23 @@ interface SeriesMark extends MarkItem {
     created_at: string;
 }
 
+interface Challenge {
+    available: boolean;
+    days: number;
+    daily_limit: number;
+    used_today: number;
+    sandbox?: boolean;
+}
+
 interface Props {
     series: Series;
     chapter: Chapter;
     canAccess: boolean;
     isPremiumMember: boolean;
     hasCoinPurchase: boolean;
+    challenge?: Challenge;
+    temporaryAccessExpiresAt?: string | null;
+    justUnlocked?: boolean;
     prevChapter: NavigationChapter | null;
     nextChapter: NavigationChapter | null;
     allChapters: ChapterOption[];
@@ -134,7 +146,7 @@ function MarksModal({
     const handleDelete = async (m: SeriesMark) => {
         await fetch(route('marks.destroy', m.id), {
             method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '' },
+            headers: { ...csrfHeaders() },
         });
         setMarks(prev => prev?.filter(x => x.id !== m.id) ?? []);
         onMarkDeleted(m.id, m.chapter_id, m.paragraph_index);
@@ -257,6 +269,7 @@ function MarksModal({
 function ChapterShowContent({
     series, chapter, canAccess, isPremiumMember, hasCoinPurchase,
     prevChapter, nextChapter, allChapters, marks: initialMarks, auth,
+    challenge, temporaryAccessExpiresAt = null, justUnlocked = false,
 }: Props) {
     const { currentTheme, readerSettings } = useTheme();
     const { confirm } = useToast();
@@ -335,6 +348,69 @@ function ChapterShowContent({
     useEffect(() => {
         markChapterVisited(series.id, chapter.id);
     }, [series.id, chapter.id]);
+
+    // ── free unlock via the shortlink challenge ────────────────────────────
+    const [startingChallenge, setStartingChallenge] = useState(false);
+    const [challengeError, setChallengeError] = useState<string | null>(null);
+    const [showUnlockedModal, setShowUnlockedModal] = useState(justUnlocked);
+
+    // Light novels are read by chapter title, web novels by number.
+    const chapterLabel = series.type === 'light-novel' && chapter.title
+        ? chapter.title
+        : `Chapter ${chapter.chapter_number}`;
+
+    const startChallenge = async () => {
+        if (!auth?.user) {
+            router.visit(route('login'));
+            return;
+        }
+
+        setStartingChallenge(true);
+        setChallengeError(null);
+
+        try {
+            const res = await fetch(route('chapters.unlock.start', [series.slug, chapter.chapter_link]), {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...csrfHeaders(),
+                },
+            });
+            // A 419 here means the session itself lapsed while the page sat
+            // open — no token can rescue that, only a reload. Say so plainly
+            // instead of surfacing Laravel's "CSRF token mismatch".
+            if (res.status === 419) {
+                setChallengeError('Your session expired. Please refresh the page and try again.');
+                setStartingChallenge(false);
+                return;
+            }
+
+            const json = await res.json().catch(() => ({}));
+
+            if (!res.ok || !json.shortlink) {
+                setChallengeError(json.message ?? 'Could not start the challenge. Please try again.');
+                setStartingChallenge(false);
+                return;
+            }
+
+            // Same tab: the reader has to come back here to be granted access,
+            // and a popup would likely be blocked anyway.
+            window.location.href = json.shortlink;
+        } catch {
+            setChallengeError('Network error. Please try again.');
+            setStartingChallenge(false);
+        }
+    };
+
+    // Drop `?unlocked=1` so a refresh does not replay the celebration.
+    useEffect(() => {
+        if (!justUnlocked) return;
+
+        const url = new URL(window.location.href);
+        url.searchParams.delete('unlocked');
+        window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }, [justUnlocked]);
 
     // ── offer to resume ────────────────────────────────────────────────────
     // Offered, never automatic: yanking the page down before the reader has got
@@ -517,11 +593,10 @@ function ChapterShowContent({
     const handleMark = async () => {
         if (markLoading || toolbar.pIndex < 0) return;
         setMarkLoading(true);
-        const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
         try {
             const res = await fetch(route('marks.store', [series.slug, chapter.chapter_link]), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+                headers: { 'Content-Type': 'application/json', ...csrfHeaders(), 'Accept': 'application/json' },
                 body: JSON.stringify({ paragraph_index: toolbar.pIndex, paragraph_preview: toolbar.preview }),
             });
             const data = await res.json();
@@ -602,6 +677,40 @@ function ChapterShowContent({
                                 ¢{coinPrice} — Top Up Coins
                             </Link>
                         )}
+
+                        {/* The free route sits last, behind a divider: it is the
+                            fallback for readers who will not pay, not the offer
+                            we lead with. */}
+                        {challenge?.available && (
+                            <>
+                                <div className="flex items-center gap-3 py-1">
+                                    <span className="h-px flex-1" style={{ backgroundColor: `${currentTheme.foreground}15` }} />
+                                    <span className="text-xs font-medium uppercase tracking-wider" style={{ color: `${currentTheme.foreground}40` }}>or</span>
+                                    <span className="h-px flex-1" style={{ backgroundColor: `${currentTheme.foreground}15` }} />
+                                </div>
+                                <button
+                                    onClick={startChallenge}
+                                    disabled={startingChallenge}
+                                    className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90 disabled:opacity-60 disabled:hover:scale-100"
+                                    style={{ background: 'linear-gradient(135deg,#1baf7a 0%,#12916a 100%)', color: '#fff', boxShadow: '0 4px 20px rgba(27,175,122,0.35)' }}
+                                >
+                                    {startingChallenge
+                                        ? 'Preparing…'
+                                        : challenge.sandbox
+                                            ? `SANDBOX — ${challenge.days}d Free (no ad)`
+                                            : `${challenge.days}d Free with challenge`}
+                                </button>
+                                <p className="-mt-1 text-xs" style={{ color: `${currentTheme.foreground}55` }}>
+                                    Complete a short sponsored link to read this chapter free for {challenge.days} days.
+                                    {challenge.daily_limit > 0 && auth?.user && (
+                                        <> {Math.max(0, challenge.daily_limit - challenge.used_today)} of {challenge.daily_limit} left today.</>
+                                    )}
+                                </p>
+                                {challengeError && (
+                                    <p className="-mt-1 text-xs font-medium" style={{ color: '#d03b3b' }}>{challengeError}</p>
+                                )}
+                            </>
+                        )}
                     </div>
                     <div className="mt-8 text-sm">
                         <Link href={`/series/${series.slug}`} className="transition-colors hover:opacity-60" style={{ color: `${currentTheme.foreground}60` }}>← Back to Series</Link>
@@ -623,6 +732,48 @@ function ChapterShowContent({
                 <meta property="og:type" content="article" />
                 <meta property="og:site_name" content="VeiNovel" />
             </Head>
+
+            {/* Unlocked confirmation, after returning from the challenge */}
+            {showUnlockedModal && (
+                <div
+                    className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+                    onClick={() => setShowUnlockedModal(false)}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        className="w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl"
+                        style={{ backgroundColor: currentTheme.background, border: `1px solid ${currentTheme.foreground}18` }}
+                    >
+                        <div
+                            className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center"
+                            style={{ background: 'linear-gradient(135deg,#1baf7a 0%,#12916a 100%)' }}
+                        >
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 6L9 17l-5-5" />
+                            </svg>
+                        </div>
+                        <h2 className="text-lg font-bold mb-2" style={{ color: currentTheme.foreground }}>Chapter unlocked</h2>
+                        <p className="text-sm leading-relaxed mb-1" style={{ color: `${currentTheme.foreground}99` }}>
+                            You&rsquo;ve unlocked <strong style={{ color: currentTheme.foreground }}>{series.title}</strong>
+                            {' — '}
+                            <strong style={{ color: currentTheme.foreground }}>{chapterLabel}</strong>
+                        </p>
+                        {temporaryAccessExpiresAt && (
+                            <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}60` }}>
+                                Yours until {new Date(temporaryAccessExpiresAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                        )}
+                        <button
+                            onClick={() => setShowUnlockedModal(false)}
+                            className="w-full py-2.5 rounded-xl font-semibold text-sm transition-opacity hover:opacity-90"
+                            style={{ backgroundColor: currentTheme.foreground, color: currentTheme.background }}
+                        >
+                            Start reading
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Reading Progress Bar */}
             <div className="reading-progress-bar" style={{ width: `${readingProgress}%`, top: 'auto', bottom: showNavbar ? '64px' : '0' }} />

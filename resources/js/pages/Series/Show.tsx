@@ -11,6 +11,7 @@ import BookmarkIcon from '@/Components/Icons/BookmarkIcon';
 import CommentIcon from '@/Components/Icons/CommentIcon';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import { getVisitedChapters } from '@/lib/reading';
+import { csrfHeaders } from '@/lib/csrf';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -191,6 +192,8 @@ interface Props {
     firstChapter?: string | null;
     readChapterIds?: number[];
     lastRead?: LastRead | null;
+    /** chapter id → ISO expiry of challenge-earned access */
+    temporaryAccess?: Record<string, string>;
     auth?: {
         user?: {
             id: number;
@@ -243,9 +246,21 @@ const sanitizeContent = (html: string): string => {
 
 function SeriesShowContent({
     series, chapters, relatedSeries, isBookmarked = false, seriesMarks = [], auth,
-    firstChapter = null, readChapterIds = [], lastRead = null,
+    firstChapter = null, readChapterIds = [], lastRead = null, temporaryAccess = {},
 }: Props) {
     const { currentTheme } = useTheme();
+
+    /** Whole days left on challenge-earned access, or null when there is none. */
+    const temporaryDaysLeft = (chapterId: number): number | null => {
+        const iso = temporaryAccess[String(chapterId)];
+        if (!iso) return null;
+
+        const ms = new Date(iso).getTime() - Date.now();
+        if (ms <= 0) return null;
+
+        // Round up so the final hours still read as "1d" rather than "0d".
+        return Math.max(1, Math.ceil(ms / 86400000));
+    };
 
     // Server data covers signed-in readers across devices; localStorage covers
     // guests and reflects this device instantly. Merging gives both.
@@ -287,10 +302,9 @@ function SeriesShowContent({
     const [marksExpanded, setMarksExpanded] = useState(false);
 
     const handleDeleteMark = async (id: number) => {
-        const csrfToken = (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
         await fetch(route('marks.destroy', id), {
             method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken },
+            headers: { ...csrfHeaders() },
         });
         setMarks(prev => prev.filter(m => m.id !== id));
     };
@@ -426,7 +440,7 @@ function SeriesShowContent({
                 method,
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    ...csrfHeaders(),
                 },
             });
 
@@ -1180,6 +1194,14 @@ function SeriesShowContent({
                                                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: 'rgba(234,179,8,0.12)', color: '#eab308' }}>
                                                                     <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                                     Owned
+                                                                </span>
+                                                            )}
+                                                            {/* Challenge-earned access, shown only when it is not
+                                                                already owned outright. */}
+                                                            {!chapter.is_owned && temporaryDaysLeft(chapter.id) !== null && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: 'rgba(27,175,122,0.12)', color: '#1baf7a' }}>
+                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1baf7a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
+                                                                    Owned for {temporaryDaysLeft(chapter.id)}d
                                                                 </span>
                                                             )}
                                                         </div>

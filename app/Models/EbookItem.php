@@ -98,6 +98,12 @@ class EbookItem extends Model
             return false;
         }
 
+        // Premium Exclusive covers every volume, regardless of how the series
+        // is flagged — that is the whole point of the tier.
+        if ($user->hasExclusiveMembership()) {
+            return true;
+        }
+
         $series = $this->relationLoaded('ebookSeries')
             ? $this->ebookSeries
             : $this->ebookSeries()->first();

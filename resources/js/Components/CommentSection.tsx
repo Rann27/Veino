@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import { useToast } from '@/Contexts/ToastContext';
 import { router } from '@inertiajs/react';
+import { asTier, isPaidTier, EXCLUSIVE_GOLD, type Tier } from '@/lib/tier';
+import { csrfHeaders } from '@/lib/csrf';
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -36,7 +38,11 @@ const ChevronIcon = ({ open }: { open: boolean }) => (
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface User { id: number; display_name: string; avatar_url?: string; is_premium?: boolean; }
+interface User { id: number; display_name: string; avatar_url?: string; is_premium?: boolean; tier?: Tier | null; }
+
+// Exclusive members read gold, Premium purple, everyone else plain.
+const nameColor = (user: User, fallback: string) =>
+    !user.is_premium ? fallback : asTier(user.tier) === 'exclusive' ? EXCLUSIVE_GOLD : SHINY_PURPLE;
 
 interface Comment {
     id: number;
@@ -73,8 +79,11 @@ function Avatar({ user, size = 36 }: { user: User; size?: number }) {
     const [err, setErr] = useState(false);
     const initials = user.display_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
-    const premiumRing: React.CSSProperties = user.is_premium
-        ? { boxShadow: `0 0 0 2px ${SHINY_PURPLE}, 0 0 0 4px ${SHINY_PURPLE}30` }
+    const ringColor = user.is_premium
+        ? (asTier(user.tier) === 'exclusive' ? EXCLUSIVE_GOLD : SHINY_PURPLE)
+        : null;
+    const premiumRing: React.CSSProperties = ringColor
+        ? { boxShadow: `0 0 0 2px ${ringColor}, 0 0 0 4px ${ringColor}30` }
         : {};
 
     if (!user.avatar_url || err) {
@@ -163,14 +172,6 @@ export default function CommentSection({ commentableType, commentableId, isAuthe
 
     useEffect(() => { loadComments(1, false); }, [commentableType, commentableId, sortBy]);
 
-    // Read CSRF from XSRF-TOKEN cookie (always fresh, set by Laravel on every response).
-    // The meta[name="csrf-token"] tag becomes stale after Inertia SPA navigation post-login,
-    // causing 419 errors on first session. Cookie-based token avoids this entirely.
-    const csrfHeaders = (): Record<string, string> => {
-        const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
-        if (match) return { 'X-XSRF-TOKEN': decodeURIComponent(match[1]) };
-        return { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' };
-    };
 
     async function loadComments(pageNum = 1, append = false) {
         if (!append) setLoading(true);
@@ -298,7 +299,7 @@ export default function CommentSection({ commentableType, commentableId, isAuthe
                         >
                             {/* Header */}
                             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                <span className="text-sm font-bold" style={{ color: comment.user.is_premium ? SHINY_PURPLE : currentTheme.foreground }}>
+                                <span className="text-sm font-bold" style={{ color: nameColor(comment.user, currentTheme.foreground) }}>
                                     {comment.user.display_name}
                                 </span>
                                 <span className="text-[11px]" style={{ color: `${currentTheme.foreground}40` }}>

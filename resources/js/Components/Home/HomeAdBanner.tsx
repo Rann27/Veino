@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { isPaidTier, type Tier } from '@/lib/tier';
 
 declare global {
   interface Window {
@@ -12,7 +13,7 @@ interface PageProps {
   auth?: {
     user?: {
       id: number;
-      membership_tier: 'basic' | 'premium';
+      membership_tier: Tier;
     };
   };
   [key: string]: any;
@@ -36,8 +37,8 @@ export default function HomeAdBanner({ position }: HomeAdBannerProps) {
   const CLICKADILLA_SCRIPT_SRC = 'https://js.wpadmngr.com/static/adManager.js';
   const CLICKADILLA_ADMP_IDS = ['425375', '425377', '425379'];
 
-  // Premium users don't see ads
-  if (auth?.user?.membership_tier === 'premium') {
+  // Every paid tier is ad-free, not just 'premium'
+  if (isPaidTier(auth?.user?.membership_tier)) {
     return null;
   }
 

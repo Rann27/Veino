@@ -28,6 +28,14 @@ interface SeriesIndexProps {
   series: Series[]; currentPage: number; totalPages: number;
   hasMore: boolean; search: string; type: string; sort: string; total: number;
   premiumChapterPrice: number;
+  unlockChallenge: {
+    enabled: boolean;
+    days: number;
+    daily_limit: number;
+    sandbox: boolean;
+    sandbox_allowed: boolean;
+    token_configured: boolean;
+  };
 }
 
 const fmtViews = (n: number) => n >= 1_000_000 ? (n/1_000_000).toFixed(1)+'M' : n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
@@ -461,7 +469,7 @@ function SkeletonCard({ cardBg, fg }: { cardBg: string; fg: string }) {
 // ═══════════════════════════════════════════════════════════════════════════
 // Main Page
 // ═══════════════════════════════════════════════════════════════════════════
-function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, search: initialSearch, type: initialType, sort: initialSort, total, premiumChapterPrice: initialPrice }: SeriesIndexProps) {
+function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, search: initialSearch, type: initialType, sort: initialSort, total, premiumChapterPrice: initialPrice, unlockChallenge }: SeriesIndexProps) {
   const { currentTheme } = useTheme();
   const light    = isLight(currentTheme.background);
   const fg       = currentTheme.foreground;
@@ -487,7 +495,13 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
   const [genres, setGenres]         = useState<Genre[]>([]);
   const [nativeLangs, setNativeLangs] = useState<NativeLanguage[]>([]);
   const [ebookSeriesOptions, setEbookSeriesOptions] = useState<SlugOption[]>([]);
-  const settingsForm = useForm({ price: String(initialPrice) });
+  const settingsForm = useForm({
+    price: String(initialPrice),
+    challenge_enabled: unlockChallenge.enabled,
+    challenge_days: String(unlockChallenge.days),
+    challenge_daily_limit: String(unlockChallenge.daily_limit),
+    challenge_sandbox: unlockChallenge.sandbox,
+  });
 
   // Request ID — prevents stale responses from overwriting newer results
   const requestId = useRef(0);
@@ -576,7 +590,16 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => { settingsForm.setData('price', String(initialPrice)); setShowSettingsModal(true); }}
+            onClick={() => {
+              settingsForm.setData({
+                price: String(initialPrice),
+                challenge_enabled: unlockChallenge.enabled,
+                challenge_days: String(unlockChallenge.days),
+                challenge_daily_limit: String(unlockChallenge.daily_limit),
+                challenge_sandbox: unlockChallenge.sandbox,
+              });
+              setShowSettingsModal(true);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all border"
             style={{ backgroundColor: cardBg, color: fg, borderColor: border }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = accent)}
@@ -723,9 +746,9 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
       {/* Settings Modal */}
       {showSettingsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
-          <div className="w-full max-w-sm rounded-2xl shadow-2xl p-6" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
+          <div className="w-full max-w-md rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold" style={{ color: fg }}>Chapter Price Settings</h2>
+              <h2 className="text-lg font-bold" style={{ color: fg }}>Chapter & Access Settings</h2>
               <button onClick={() => setShowSettingsModal(false)} style={{ color: muted }} className="hover:opacity-70 transition-opacity">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -749,6 +772,114 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 />
                 {settingsForm.errors.price && <p className="mt-1 text-xs text-red-500">{settingsForm.errors.price}</p>}
               </div>
+
+              {/* ── Free access through the Move2Link challenge ── */}
+              <div className="pt-4" style={{ borderTop: `1px solid ${border}` }}>
+                <div className="flex items-start justify-between gap-3 mb-1.5">
+                  <div>
+                    <label className="block text-sm font-medium" style={{ color: fg }}>🔓 Free Access Challenge</label>
+                    <p className="text-xs mt-0.5 opacity-60" style={{ color: fg }}>
+                      Lets readers unlock a premium chapter by completing a sponsored link.
+                    </p>
+                  </div>
+                  <button type="button"
+                    onClick={() => settingsForm.setData('challenge_enabled', !settingsForm.data.challenge_enabled)}
+                    className="relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors mt-0.5"
+                    style={{ backgroundColor: settingsForm.data.challenge_enabled ? accent : `${fg}30` }}
+                    aria-pressed={settingsForm.data.challenge_enabled}>
+                    <span className="inline-block rounded-full bg-white shadow transition-transform"
+                      style={{ width: 14, height: 14, transform: settingsForm.data.challenge_enabled ? 'translateX(18px)' : 'translateX(3px)' }} />
+                  </button>
+                </div>
+
+                {!unlockChallenge.token_configured && (
+                  <p className="text-xs mb-3 font-medium" style={{ color: '#d03b3b' }}>
+                    MOVE2LINK_TOKEN is not set in .env — the button stays hidden from readers until it is.
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: fg }}>Access duration (days)</label>
+                    <input type="number" min={1} max={365} required
+                      value={settingsForm.data.challenge_days}
+                      onChange={e => settingsForm.setData('challenge_days', e.target.value)}
+                      className="block w-full px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
+                      style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                      onFocus={e => { e.currentTarget.style.borderColor = accent; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = border; }}
+                    />
+                    {settingsForm.errors.challenge_days && <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_days}</p>}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1" style={{ color: fg }}>Daily limit per reader</label>
+                    <input type="number" min={0} max={100} required
+                      value={settingsForm.data.challenge_daily_limit}
+                      onChange={e => settingsForm.setData('challenge_daily_limit', e.target.value)}
+                      className="block w-full px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
+                      style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                      onFocus={e => { e.currentTarget.style.borderColor = accent; }}
+                      onBlur={e => { e.currentTarget.style.borderColor = border; }}
+                    />
+                    {settingsForm.errors.challenge_daily_limit && <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_daily_limit}</p>}
+                  </div>
+                </div>
+                <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
+                  {settingsForm.data.challenge_daily_limit === '0'
+                    ? 'No daily cap — readers can unlock as many chapters as they like.'
+                    : `A reader may earn ${settingsForm.data.challenge_daily_limit} free unlocks per day. A cap protects your Move2Link account from invalid-traffic flags.`}
+                </p>
+
+                {/* Sandbox — testing only */}
+                <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <label className="block text-sm font-medium" style={{ color: fg }}>🧪 Sandbox mode</label>
+                      <p className="text-xs mt-0.5 opacity-60" style={{ color: fg }}>
+                        {unlockChallenge.sandbox_allowed
+                          ? 'Skips Move2Link entirely and uses a local stand-in gate, so the flow can be tested without a public URL.'
+                          : 'Available only when APP_ENV=local. On this server the switch has no effect — readers always go through the real Move2Link gate.'}
+                      </p>
+                    </div>
+                    <button type="button"
+                      disabled={!unlockChallenge.sandbox_allowed}
+                      onClick={() => settingsForm.setData('challenge_sandbox', !settingsForm.data.challenge_sandbox)}
+                      className="relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors mt-0.5"
+                      style={{
+                        backgroundColor: settingsForm.data.challenge_sandbox && unlockChallenge.sandbox_allowed ? '#fab219' : `${fg}30`,
+                        opacity: unlockChallenge.sandbox_allowed ? 1 : 0.4,
+                        cursor: unlockChallenge.sandbox_allowed ? 'pointer' : 'not-allowed',
+                      }}
+                      aria-pressed={settingsForm.data.challenge_sandbox && unlockChallenge.sandbox_allowed}>
+                      <span className="inline-block rounded-full bg-white shadow transition-transform"
+                        style={{ width: 14, height: 14, transform: settingsForm.data.challenge_sandbox && unlockChallenge.sandbox_allowed ? 'translateX(18px)' : 'translateX(3px)' }} />
+                    </button>
+                  </div>
+
+                  {!unlockChallenge.sandbox_allowed && (
+                    <div className="mt-2.5 p-3 rounded-xl" style={{ backgroundColor: `${fg}08`, border: `1px solid ${border}` }}>
+                      <p className="text-xs leading-relaxed" style={{ color: fg, opacity: 0.7 }}>
+                        🔒 Locked outside local development. Even if this setting were switched on in the database,
+                        it would be ignored here — premium chapters can never be given away by a stray toggle.
+                      </p>
+                    </div>
+                  )}
+
+                  {settingsForm.data.challenge_sandbox && unlockChallenge.sandbox_allowed && (
+                    <div className="mt-2.5 p-3 rounded-xl" style={{ backgroundColor: 'rgba(250,178,25,0.10)', border: '1px solid rgba(250,178,25,0.35)' }}>
+                      <p className="text-xs font-bold mb-1" style={{ color: '#fab219' }}>
+                        Readers unlock for free without seeing an ad
+                      </p>
+                      <p className="text-xs leading-relaxed" style={{ color: fg, opacity: 0.75 }}>
+                        Turn this off before going live. Sandbox links are never saved to a chapter, so switching back
+                        restores real Move2Link links immediately — nothing to clean up. Grants made here are tagged
+                        <strong> sandbox</strong>, and the reader&rsquo;s button says so too.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowSettingsModal(false)}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
@@ -758,7 +889,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 <button type="submit" disabled={settingsForm.processing}
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50"
                   style={{ backgroundColor: accent, color: bg }}>
-                  {settingsForm.processing ? 'Saving…' : 'Save Price'}
+                  {settingsForm.processing ? 'Saving…' : 'Save Settings'}
                 </button>
               </div>
             </form>

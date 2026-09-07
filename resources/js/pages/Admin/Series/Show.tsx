@@ -5,6 +5,7 @@ const RichTextEditor = lazy(() => import('@/Components/RichTextEditor'));
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
 import { appendFile } from '@/lib/upload';
+import { csrfHeaders } from '@/lib/csrf';
 
 // ── colour helpers ────────────────────────────────────────────────────────────
 function hexToRgb(hex: string) {
@@ -94,6 +95,7 @@ interface Chapter {
   is_published: boolean;
   views: number;
   created_at: string;
+  unlock_shortlink?: string | null;
 }
 
 interface Series {
@@ -145,6 +147,9 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
   const [alertMessage, setAlertMessage] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+  // The chapter list no longer carries bodies, so the editor pulls the one it
+  // needs when it opens.
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
   
   // Refs for auto-focus
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -223,12 +228,12 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
     }
   };
 
-  const openChapterModal = (chapter?: Chapter) => {
+  const openChapterModal = async (chapter?: Chapter) => {
     if (chapter) {
       setEditingChapter(chapter);
       setChapterFormData({
         title: chapter.title,
-        content: chapter.content || '',
+        content: '',
         is_premium: chapter.is_premium,
         use_volume: !!chapter.volume,
         volume: chapter.volume ? chapter.volume.toString() : '',
@@ -251,6 +256,25 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
     setTimeout(() => {
       chapterTitleInputRef.current?.focus();
     }, 100);
+
+    if (!chapter) return;
+
+    setIsLoadingContent(true);
+    try {
+      const res = await fetch(route('admin.chapters.content', chapter.id), {
+        headers: { Accept: 'application/json', ...csrfHeaders() },
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      setChapterFormData(prev => ({ ...prev, content: data.content ?? '' }));
+    } catch {
+      // Saving now would overwrite the chapter with an empty body, so the modal
+      // closes rather than showing a blank editor over real content.
+      setShowChapterModal(false);
+      alert('Could not load this chapter content. Please try again.');
+    } finally {
+      setIsLoadingContent(false);
+    }
   };
 
   // Handle genre toggle for edit form
@@ -313,6 +337,12 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
   };
 
   const handleChapterSubmit = (e: React.FormEvent) => {
+    // Saving mid-fetch would write the still-empty editor over a real chapter.
+    if (isLoadingContent) {
+      e.preventDefault();
+      return;
+    }
+
     e.preventDefault();
     setIsSubmitting(true);
     
@@ -389,6 +419,32 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
         }
       });
     }
+  };
+
+  // Normally the link is minted the first time a reader presses the challenge
+  // button. This is the manual path, for preparing a chapter before release.
+  const [generatingLink, setGeneratingLink] = useState<number | null>(null);
+
+  const handleGenerateUnlockLink = (chapterId: number, regenerate = false) => {
+    // Regenerating replaces a link readers may already be using, so it asks
+    // first; a first-time generation has nothing to lose and does not.
+    if (regenerate && !confirm('Replace this shortlink? The old one stops working once Move2Link issues the new one.')) {
+      return;
+    }
+
+    setGeneratingLink(chapterId);
+    router.post(`/admin/chapters/${chapterId}/unlock-link`, {}, {
+      preserveScroll: true,
+      onSuccess: () => {
+        setAlertMessage({ type: 'success', message: regenerate ? 'Shortlink replaced.' : 'Shortlink generated.' });
+        setTimeout(() => setAlertMessage(null), 3000);
+      },
+      onError: () => {
+        setAlertMessage({ type: 'error', message: 'Could not generate the shortlink. Check the Move2Link token.' });
+        setTimeout(() => setAlertMessage(null), 5000);
+      },
+      onFinish: () => setGeneratingLink(null),
+    });
   };
 
   const handleTogglePremium = (chapterId: number, newPremiumStatus: boolean) => {
@@ -691,6 +747,49 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
                           style={{ width:14, height:14, transform: chapter.is_premium ? 'translateX(18px)' : 'translateX(3px)' }} />
                       </button>
                     </div>
+
+                    {/* Free-access shortlink. Only premium chapters have a
+                        paywall to bypass, so only they need one. */}
+                    {chapter.is_premium && (
+                      <div className="px-3 pb-3">
+                        {chapter.unlock_shortlink ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium"
+                              style={{ color: '#1baf7a' }}
+                              title={chapter.unlock_shortlink}
+                            >
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1baf7a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                              Shortlink ready
+                            </span>
+                            {/* A link already minted can still be wrong — one made
+                                from a staging host points at a domain that will
+                                stop existing. This mints a fresh one. */}
+                            <button
+                              onClick={() => handleGenerateUnlockLink(chapter.id, true)}
+                              disabled={generatingLink === chapter.id}
+                              className="px-2 py-1 rounded-md text-[11px] font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
+                              style={{ backgroundColor: wa(fg, 0.06), color: fg, border: `1px solid ${wa(fg, 0.12)}` }}
+                              title={`Replace this shortlink:
+${chapter.unlock_shortlink}`}
+                            >
+                              {generatingLink === chapter.id ? 'Working…' : 'Regenerate'}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleGenerateUnlockLink(chapter.id)}
+                            disabled={generatingLink === chapter.id}
+                            className="w-full py-1.5 rounded-lg text-[11px] font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
+                            style={{ backgroundColor: wa(fg, 0.06), color: fg, border: `1px solid ${wa(fg, 0.12)}` }}
+                          >
+                            {generatingLink === chapter.id ? 'Generating…' : 'Generate Shortlink'}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -903,7 +1002,7 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
               </div>
             </div>
             <button type="button" form="chapter-form" onClick={handleChapterSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isLoadingContent}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-60"
               style={{ backgroundColor: successColor, color: '#fff' }}>
               {isSubmitting && <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>}
@@ -982,6 +1081,11 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
 
                   <div>
                     <TLabel muted={muted}>Content *</TLabel>
+                    {isLoadingContent ? (
+                      <div style={{ height: 520, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cardBg, border: `1px solid ${border}`, borderRadius: '0.5rem', color: muted, fontSize: '0.875rem' }}>
+                        Loading chapter content…
+                      </div>
+                    ) : (
                     <Suspense fallback={<div style={{ height: 520, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cardBg, border: `1px solid ${border}`, borderRadius: '0.5rem', color: muted, fontSize: '0.875rem' }}>Loading editor…</div>}>
                       <RichTextEditor
                         value={chapterFormData.content}
@@ -990,6 +1094,7 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
                         height={520}
                       />
                     </Suspense>
+                    )}
                   </div>
                 </div>
               </div>

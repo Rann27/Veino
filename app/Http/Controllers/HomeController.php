@@ -26,67 +26,67 @@ class HomeController extends Controller
         return ['hero_series' => [], 'featured_series' => [], 'banners' => []];
     }
 
-    public function index()
+    public function index(\App\Services\HomeRanking $ranking)
     {
         $config = $this->getConfig();
 
-        // Hero slider - from configuration or fallback to latest ongoing
-        if (!empty($config['hero_series'])) {
-            $heroSeries = Series::with(['nativeLanguage', 'genres'])
-                ->withCount('chapters')
-                ->whereIn('id', $config['hero_series'])
-                ->get()
-                ->sortBy(function ($series) use ($config) {
-                    return array_search($series->id, $config['hero_series']);
-                })
-                ->values();
-        } else {
-            $heroSeries = Series::with(['nativeLanguage', 'genres'])
-                ->withCount('chapters')
-                ->where('status', 'ongoing')
-                ->orderBy('created_at', 'desc')
-                ->take(5)
-                ->get();
-        }
+        // Hero and featured are ranked by reader traffic now, not by the manual
+        // picks in Misc. That configuration is left in place but no longer read —
+        // see HomeRanking for the windows and why only light novels compete.
+        $heroIds = $ranking->heroSeriesIds(5);
+
+        $heroSeries = Series::with(['nativeLanguage', 'genres'])
+            ->withCount('chapters')
+            ->whereIn('id', $heroIds)
+            ->get()
+            // whereIn returns rows in whatever order the database likes, so the
+            // ranking has to be reapplied here or the ordering is lost.
+            ->sortBy(fn ($series) => array_search($series->id, $heroIds))
+            ->values();
 
         // Featured series - 10 for fullwidth layout
-        if (!empty($config['featured_series'])) {
-            $featuredSeries = Series::with(['nativeLanguage', 'genres'])
-                ->withCount('chapters')
-                ->whereIn('id', $config['featured_series'])
-                ->get()
-                ->sortBy(function ($series) use ($config) {
-                    return array_search($series->id, $config['featured_series']);
-                })
-                ->values();
-        } else {
-            $featuredSeries = Series::with(['nativeLanguage', 'genres'])
-                ->withCount('chapters')
-                ->orderBy('chapters_count', 'desc')
-                ->orderBy('updated_at', 'desc')
-                ->take(10)
-                ->get();
-        }
+        // No genres eager-load here: only the hero renders genre chips and a
+        // synopsis. The cards below show cover, title, rating and chapter count,
+        // so shipping both fields cost ~16 KB for nothing.
+        $featuredIds = $ranking->featuredSeriesIds(10);
+
+        $featuredSeries = Series::with(['nativeLanguage'])
+            ->withCount('chapters')
+            ->whereIn('id', $featuredIds)
+            ->get()
+            ->sortBy(fn ($series) => array_search($series->id, $featuredIds))
+            ->values();
 
         // Latest updates - merged Light Novel + Web Novel with premium/free chapter mix
         $latestUpdates = $this->getLatestUpdates('all', 12);
 
         // Epub novels - latest ebook series for homepage preview
-        $epubSeries = EbookSeries::with('items')
+        // items are loaded only to compute price_range, then dropped: each volume
+        // carries a preview_content blob of ~19 KB, and shipping them made this
+        // one prop 144 KB — a third of the homepage document — for data the page
+        // never renders. Only price_coins is needed to work out the range.
+        $epubSeries = EbookSeries::with(['items:id,ebook_series_id,price_coins'])
             ->orderBy('created_at', 'desc')
             ->take(12)
             ->get()
-            ->map(function ($series) {
-                $series->cover_url = $series->cover_url;
-                $series->price_range = $series->price_range;
-                $series->free_for_premium_members = (bool) $series->free_for_premium_members;
-                $series->is_mature = (bool) $series->is_mature;
-
-                return $series;
-            });
+            // Projected to a plain array rather than handed over as a model.
+            // price_range sits in $appends and its accessor reads $this->items,
+            // so serialising the model lazy-loads the volumes straight back in —
+            // unsetRelation() cannot win against that. Listing the fields the
+            // grid actually renders is both smaller and immune to it.
+            ->map(fn ($series) => [
+                'id' => $series->id,
+                'slug' => $series->slug,
+                'series_slug' => $series->series_slug,
+                'title' => $series->title,
+                'cover_url' => $series->cover_url,
+                'price_range' => $series->price_range,
+                'free_for_premium_members' => (bool) $series->free_for_premium_members,
+                'is_mature' => (bool) $series->is_mature,
+            ]);
 
         // New series - recently published (16 cards for fullwidth grid)
-        $newSeries = Series::with(['nativeLanguage', 'genres'])
+        $newSeries = Series::with(['nativeLanguage'])
             ->withCount('chapters')
             ->orderBy('created_at', 'desc')
             ->take(16)
@@ -142,10 +142,13 @@ class HomeController extends Controller
 
         return Inertia::render('Home', [
             'heroSeries' => $heroSeries,
-            'featuredSeries' => $featuredSeries,
-            'latestUpdates' => $latestUpdates,
+            // synopsis is a long text column the card grids never print; only the
+            // hero shows it. Hiding it on the other three collections removes
+            // roughly 35 KB from every homepage document.
+            'featuredSeries' => $featuredSeries->makeHidden(['synopsis']),
+            'latestUpdates' => $latestUpdates->makeHidden(['synopsis']),
             'epubSeries' => $epubSeries,
-            'newSeries' => $newSeries,
+            'newSeries' => $newSeries->makeHidden(['synopsis']),
             'showPremiumCongrats' => $showPremiumCongrats,
             'blogs' => $blogs,
             'banners' => $banners,
@@ -168,7 +171,7 @@ class HomeController extends Controller
      */
     private function getLatestUpdates(string $type, int $limit)
     {
-        $query = Series::with(['nativeLanguage', 'genres'])
+        $query = Series::with(['nativeLanguage'])
             ->withCount('chapters')
             ->whereHas('chapters')
             ->select('series.*', \DB::raw('(SELECT MAX(updated_at) FROM chapters WHERE chapters.series_id = series.id) as latest_chapter_date'))

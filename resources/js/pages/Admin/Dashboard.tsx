@@ -1,6 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { asTier, TIER_LABEL, EXCLUSIVE_GOLD } from '@/lib/tier';
 import { useState, type JSX } from 'react';
 import {
     AreaChart, Area, LineChart, Line, BarChart, Bar,
@@ -487,8 +488,11 @@ function DashboardContent({ stats }: { stats: Stats }) {
         if (s === 'completed') return { color: '#2563eb', bg: 'rgba(37,99,235,0.1)' };
         return { color: '#9ca3af', bg: 'rgba(156,163,175,0.1)' };
     };
-    const tierColor = (tier: string) =>
-        tier === 'premium' ? { color: '#ca8a04', bg: 'rgba(202,138,4,0.1)' } : { color: muted, bg: withAlpha(fg, 0.06) };
+    const tierColor = (tier: string) => {
+        if (tier === 'exclusive') return { color: EXCLUSIVE_GOLD, bg: withAlpha(EXCLUSIVE_GOLD, 0.12) };
+        if (tier === 'premium')   return { color: '#ca8a04', bg: 'rgba(202,138,4,0.1)' };
+        return { color: muted, bg: withAlpha(fg, 0.06) };
+    };
     const methodLabel = (m: string) => {
         if (m === 'paypal')  return { label: 'PayPal',  color: '#3b82f6' };
         if (m === 'oxapay') return { label: 'OxaPay',  color: '#10b981' };
@@ -604,7 +608,7 @@ function DashboardContent({ stats }: { stats: Stats }) {
                                             <p className="text-xs truncate" style={{ color: muted }}>{u.email}</p>
                                         </div>
                                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full capitalize" style={{ color: tc.color, backgroundColor: tc.bg }}>{u.membership_tier}</span>
+                                            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full capitalize" style={{ color: tc.color, backgroundColor: tc.bg }}>{TIER_LABEL[asTier(u.membership_tier)]}</span>
                                             <span className="text-[10px]" style={{ color: muted }}>{fmtDate(u.created_at)}</span>
                                         </div>
                                     </div>

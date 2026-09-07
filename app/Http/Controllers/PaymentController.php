@@ -129,16 +129,20 @@ class PaymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
+            // The detail is in the log above; the buyer gets a plain message
+            // rather than a raw database or gateway error.
+            $errorMessage = 'Payment could not be started. Please try again in a moment.';
+
             if ($isInertiaRequest) {
                 return back()
                     ->withInput()
-                    ->withErrors(['payment' => $e->getMessage()])
-                    ->with('error', $e->getMessage());
+                    ->withErrors(['payment' => $errorMessage])
+                    ->with('error', $errorMessage);
             }
 
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
             ], 500);
         }
     }
@@ -161,8 +165,9 @@ class PaymentController extends Controller
         $cancelUrl = route('payment.status', ['purchase' => $purchase->id]);
 
         if ($paymentMethod === 'paypal') {
+            // Grossed up so the fee lands on the buyer, not on us.
             return $this->paypalService->createOrder(
-                $package->price_usd,
+                app(\App\Services\PaymentFeeCalculator::class)->totalFor((float) $package->price_usd),
                 'USD',
                 $description,
                 $returnUrl,
@@ -301,8 +306,20 @@ class PaymentController extends Controller
         if ($result['success']) {
             DB::beginTransaction();
             try {
-                // Update purchase status
-                $purchase->update(['status' => 'completed']);
+                // Claimed in one conditional UPDATE. Reading the status in PHP
+                // and writing it later leaves a gap where a webhook and a
+                // browser callback can both pass the check and both credit the
+                // same purchase.
+                $claimed = CoinPurchase::whereKey($purchase->id)
+                    ->where('status', '!=', 'completed')
+                    ->update(['status' => 'completed']);
+
+                if ($claimed === 0) {
+                    DB::rollBack();
+
+                    return redirect()->route('payment.status', ['purchase' => $purchase->id])
+                        ->with('success', 'Payment completed successfully!');
+                }
 
                 // Add coins to user
                 $user = $purchase->user;
@@ -324,13 +341,15 @@ class PaymentController extends Controller
 
                 // Grant bonus premium days if applicable
                 if ($package && $package->bonus_premium_days > 0) {
-                    $user->grantMembership('premium', $package->bonus_premium_days);
+                    $user->grantBonusDays($package->bonus_premium_days);
+                    $bonusTier = $user->membership_tier;
                     
                     // Set flash for congratulations modal
                     session()->flash('premium_granted', [
                         'days' => $package->bonus_premium_days,
                         'package_name' => $package->name,
-                        'source' => 'coin_purchase'
+                        'source' => 'coin_purchase',
+                        'tier' => $bonusTier,
                     ]);
                 }
 
@@ -385,7 +404,16 @@ class PaymentController extends Controller
             if ($result['success'] && strtolower($result['status'] ?? '') === 'paid') {
                 DB::beginTransaction();
                 try {
-                    $purchase->update(['status' => 'completed']);
+                    $claimed = CoinPurchase::whereKey($purchase->id)
+                        ->where('status', '!=', 'completed')
+                        ->update(['status' => 'completed']);
+
+                    if ($claimed === 0) {
+                        DB::rollBack();
+
+                        return redirect()->route('payment.status', ['purchase' => $purchase->id]);
+                    }
+
                     $user    = $purchase->user;
                     $package = $purchase->coinPackage;
 
@@ -403,11 +431,13 @@ class PaymentController extends Controller
                     ]);
 
                     if ($package && $package->bonus_premium_days > 0) {
-                        $user->grantMembership('premium', $package->bonus_premium_days);
+                        $user->grantBonusDays($package->bonus_premium_days);
+                        $bonusTier = $user->membership_tier;
                         session()->flash('premium_granted', [
                             'days'         => $package->bonus_premium_days,
                             'package_name' => $package->name,
                             'source'       => 'coin_purchase',
+                            'tier'         => $bonusTier,
                         ]);
                     }
 
@@ -457,8 +487,9 @@ class PaymentController extends Controller
                 $description .= ' + ' . $coinPackage->bonus_premium_days . 'd Premium Bonus';
             }
             
+            // Grossed up so the fee lands on the buyer, not on us.
             $result = $paypalService->createOrder(
-                $coinPackage->price_usd,
+                app(\App\Services\PaymentFeeCalculator::class)->totalFor((float) $coinPackage->price_usd),
                 'USD',
                 $description,
                 $request->input('return_url'),
@@ -572,6 +603,23 @@ class PaymentController extends Controller
                     return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Invalid coin package.');
                 }
 
+                // Claimed before crediting. These PayPal success paths were guarded only
+                // by the `pending_payment` session key, which the gateway webhook knows
+                // nothing about — so a webhook that credited first and a browser landing
+                // here second would each pay out the same purchase.
+                if (isset($pendingPayment['purchase_id'])) {
+                    $claimed = CoinPurchase::whereKey($pendingPayment['purchase_id'])
+                        ->where('status', '!=', 'completed')
+                        ->update(['status' => 'completed', 'transaction_id' => $token]);
+
+                    if ($claimed === 0) {
+                        session()->forget('pending_payment');
+
+                        return redirect()->route('shop', ['tab' => 'coins'])
+                            ->with('success', 'This payment was already processed.');
+                    }
+                }
+
                 $user = Auth::user();
                 $oldBalance = $user->coins;
                 $user->increment('coins', $coinPackage->coin_amount);
@@ -592,7 +640,7 @@ class PaymentController extends Controller
 
                 // Grant bonus premium days if applicable
                 if ($coinPackage->bonus_premium_days > 0) {
-                    $user->grantMembership('premium', $coinPackage->bonus_premium_days);
+                    $user->grantBonusDays($coinPackage->bonus_premium_days);
                     
                     Log::info('Bonus premium days granted from coin purchase', [
                         'user_id' => $user->id,
@@ -602,15 +650,7 @@ class PaymentController extends Controller
                 }
 
                 // Update CoinPurchase status to completed
-                if (isset($pendingPayment['purchase_id'])) {
-                    CoinPurchase::where('id', $pendingPayment['purchase_id'])
-                        ->update([
-                            'status' => 'completed',
-                            'transaction_id' => $token // Update with PayPal order ID
-                        ]);
-                    
-                    Log::info('CoinPurchase updated to completed', ['purchase_id' => $pendingPayment['purchase_id']]);
-                }
+                Log::info('CoinPurchase completed', ['purchase_id' => $pendingPayment['purchase_id'] ?? null]);
 
                 // Clear pending payment session
                 session()->forget('pending_payment');
@@ -658,6 +698,23 @@ class PaymentController extends Controller
                 return redirect()->route('shop', ['tab' => 'coins'])->with('error', 'Invalid coin package.');
             }
 
+            // Claimed before crediting. These PayPal success paths were guarded only
+            // by the `pending_payment` session key, which the gateway webhook knows
+            // nothing about — so a webhook that credited first and a browser landing
+            // here second would each pay out the same purchase.
+            if (isset($pendingPayment['purchase_id'])) {
+                $claimed = CoinPurchase::whereKey($pendingPayment['purchase_id'])
+                    ->where('status', '!=', 'completed')
+                    ->update(['status' => 'completed', 'transaction_id' => $captureResult['capture_id'] ?? $token]);
+
+                if ($claimed === 0) {
+                    session()->forget('pending_payment');
+
+                    return redirect()->route('shop', ['tab' => 'coins'])
+                        ->with('success', 'This payment was already processed.');
+                }
+            }
+
             $user = Auth::user();
             $oldBalance = $user->coins;
             $user->increment('coins', $coinPackage->coin_amount);
@@ -678,7 +735,7 @@ class PaymentController extends Controller
 
             // Grant bonus premium days if applicable
             if ($coinPackage->bonus_premium_days > 0) {
-                $user->grantMembership('premium', $coinPackage->bonus_premium_days);
+                $user->grantBonusDays($coinPackage->bonus_premium_days);
                 
                 Log::info('Bonus premium days granted from coin purchase', [
                     'user_id' => $user->id,
@@ -872,7 +929,16 @@ class PaymentController extends Controller
 
         DB::beginTransaction();
         try {
-            $purchase->update(['status' => 'completed']);
+            $claimed = CoinPurchase::whereKey($purchase->id)
+                ->where('status', '!=', 'completed')
+                ->update(['status' => 'completed']);
+
+            if ($claimed === 0) {
+                DB::rollBack();
+
+                return response()->json(['success' => true]);
+            }
+
             $user    = $purchase->user;
             $package = $purchase->coinPackage;
 
@@ -890,7 +956,7 @@ class PaymentController extends Controller
             ]);
 
             if ($package && $package->bonus_premium_days > 0) {
-                $user->grantMembership('premium', $package->bonus_premium_days);
+                $user->grantBonusDays($package->bonus_premium_days);
             }
 
             DB::commit();

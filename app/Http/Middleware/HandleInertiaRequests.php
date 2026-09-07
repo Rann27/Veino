@@ -71,7 +71,10 @@ class HandleInertiaRequests extends Middleware
                 $premiumGrantedFromAdmin = [
                     'days' => $stored['days'],
                     'package_name' => $stored['package_name'],
-                    'source' => $stored['source']
+                    'source' => $stored['source'],
+                    // Dropping this made the modal congratulate every
+                    // admin-granted Exclusive member on plain Premium.
+                    'tier' => $stored['tier'] ?? 'premium',
                 ];
                 // Remove after first access
                 session()->forget($sessionKey);
@@ -102,6 +105,9 @@ class HandleInertiaRequests extends Middleware
                 'success' => session('success'),
                 'error' => session('error'),
                 'premium_granted' => $premiumGrantedData,
+                // Server-side refusal of a tier downgrade, so the shop can raise
+                // its modal even when the client never saw the block coming.
+                'tier_blocked' => session('tier_blocked'),
                 'otp_sent' => session('otp_sent'),
                 'otp_email' => session('otp_email'),
                 'request_commission_sent' => session('request_commission_sent'),
