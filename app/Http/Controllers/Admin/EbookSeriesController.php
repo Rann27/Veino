@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use App\Services\ThumbnailService;
 
 class EbookSeriesController extends Controller
 {
@@ -100,6 +101,7 @@ class EbookSeriesController extends Controller
         // Handle cover upload
         if ($request->hasFile('cover')) {
             $path = $request->file('cover')->store('ebook-covers', 'public');
+            app(ThumbnailService::class)->generate($path);
             $validated['cover'] = 'storage/' . $path;
         } elseif ($request->filled('fetched_cover_url')) {
             // Download cover from on-site series URL
@@ -108,6 +110,7 @@ class EbookSeriesController extends Controller
                 $ext  = pathinfo(parse_url($request->fetched_cover_url, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
                 $name = 'ebook-covers/' . Str::random(20) . '.' . $ext;
                 Storage::disk('public')->put($name, $response->body());
+                app(ThumbnailService::class)->generate($name);
                 $validated['cover'] = 'storage/' . $name;
             }
         }
@@ -137,7 +140,7 @@ class EbookSeriesController extends Controller
             return [
                 'id' => $item->id,
                 'title' => $item->title,
-                'cover_url' => $item->cover_url,
+                'cover_url' => $item->thumb_url,
                 'summary' => $item->summary,
                 'price_coins' => $item->price_coins,
                 'order' => $item->order,
@@ -189,6 +192,7 @@ class EbookSeriesController extends Controller
             }
 
             $path = $request->file('cover')->store('ebook-covers', 'public');
+            app(ThumbnailService::class)->generate($path);
             $validated['cover'] = 'storage/' . $path;
         }
 
@@ -266,6 +270,7 @@ class EbookSeriesController extends Controller
         // Handle cover upload
         if ($request->hasFile('cover')) {
             $path = $request->file('cover')->store('ebook-item-covers', 'public');
+            app(ThumbnailService::class)->generate($path);
             $itemData['cover'] = 'storage/' . $path;
         }
 
@@ -327,6 +332,7 @@ class EbookSeriesController extends Controller
                 Storage::disk('public')->delete(str_replace('storage/', '', $item->cover));
             }
             $path = $request->file('cover')->store('ebook-item-covers', 'public');
+            app(ThumbnailService::class)->generate($path);
             $itemData['cover'] = 'storage/' . $path;
         }
 
@@ -439,6 +445,7 @@ class EbookSeriesController extends Controller
 
         if ($request->hasFile('upload')) {
             $path = $request->file('upload')->store('ebook-preview-images', 'public');
+            app(ThumbnailService::class)->generate($path);
 
             return response()->json(['url' => asset('storage/' . $path)]);
         }

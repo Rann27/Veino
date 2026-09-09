@@ -32,6 +32,7 @@ interface SeriesIndexProps {
     enabled: boolean;
     days: number;
     daily_limit: number;
+    rotate_after: number;
     sandbox: boolean;
     sandbox_allowed: boolean;
     token_configured: boolean;
@@ -500,6 +501,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
     challenge_enabled: unlockChallenge.enabled,
     challenge_days: String(unlockChallenge.days),
     challenge_daily_limit: String(unlockChallenge.daily_limit),
+    challenge_rotate_after: String(unlockChallenge.rotate_after),
     challenge_sandbox: unlockChallenge.sandbox,
   });
 
@@ -596,6 +598,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 challenge_enabled: unlockChallenge.enabled,
                 challenge_days: String(unlockChallenge.days),
                 challenge_daily_limit: String(unlockChallenge.daily_limit),
+                challenge_rotate_after: String(unlockChallenge.rotate_after),
                 challenge_sandbox: unlockChallenge.sandbox,
               });
               setShowSettingsModal(true);
@@ -829,6 +832,34 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                     ? 'No daily cap — readers can unlock as many chapters as they like.'
                     : `A reader may earn ${settingsForm.data.challenge_daily_limit} free unlocks per day. A cap protects your Move2Link account from invalid-traffic flags.`}
                 </p>
+
+                {/* Link rotation — off by default */}
+                <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>
+                    Retire claim link after (unlocks)
+                  </label>
+                  <input type="number" min={0} max={100} required
+                    value={settingsForm.data.challenge_rotate_after}
+                    onChange={e => settingsForm.setData('challenge_rotate_after', e.target.value)}
+                    className="block w-full px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
+                    style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                    onFocus={e => { e.currentTarget.style.borderColor = accent; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = border; }}
+                  />
+                  {settingsForm.errors.challenge_rotate_after && (
+                    <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_rotate_after}</p>
+                  )}
+                  <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
+                    {settingsForm.data.challenge_rotate_after === '0'
+                      ? 'Off — a chapter keeps one claim link forever. Anyone who saves that link from the ad gate can reuse it without watching another ad.'
+                      : settingsForm.data.challenge_rotate_after === '1'
+                        ? 'Tightest setting: every unlock retires the link, so a saved one never works twice. Costs one Move2Link API call per unlock.'
+                        : `After ${settingsForm.data.challenge_rotate_after} unlocks the link is replaced. A saved link works at most ${Number(settingsForm.data.challenge_rotate_after) - 1} more time before it dies. Fewer API calls than 1, less airtight.`}
+                  </p>
+                  <p className="text-xs mt-1 opacity-60" style={{ color: fg }}>
+                    Readers already walking through the gate keep working for 30 minutes after a swap, so nobody loses an ad they sat through.
+                  </p>
+                </div>
 
                 {/* Sandbox — testing only */}
                 <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>

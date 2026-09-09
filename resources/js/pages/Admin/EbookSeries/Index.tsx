@@ -23,6 +23,7 @@ interface Series {
     alternative_title?: string;
     slug: string;
     cover_url: string;
+    thumb_url?: string | null;
     author?: string;
     artist?: string;
     items_count: number;
@@ -169,7 +170,7 @@ function IndexContent({ series, stats }: Props) {
                                     {/* Cover */}
                                     <div style={{ width: '3.25rem', flexShrink: 0 }}>
                                         <img
-                                            src={item.cover_url}
+                                            src={item.thumb_url ?? item.cover_url}
                                             alt={item.title}
                                             style={{ width: '100%', aspectRatio: '2/3', objectFit: 'cover', borderRadius: '0.375rem', display: 'block' }}
                                             onError={e => { e.currentTarget.src = '/images/default-cover.jpg'; }}

@@ -328,6 +328,7 @@ class StorageScanner
     public function scan(): array
     {
         $references = $this->references();
+        $thumbs = app(ThumbnailService::class);
         $files = [];
 
         foreach ([['public', self::PUBLIC_DIRS], ['local', self::PRIVATE_DIRS]] as [$diskName, $dirs]) {
@@ -363,6 +364,13 @@ class StorageScanner
                         // a domain that may be unreachable. A root-relative path
                         // resolves against whatever host is serving the page.
                         'url' => $diskName === 'public' ? '/storage/'.$path : null,
+                        // Optional by design. The listing shows this when it
+                        // exists and an icon when it does not — what it must
+                        // never do is fall back to the full image, which is the
+                        // half-megabyte file this page existed to help manage.
+                        'thumb' => $diskName === 'public' && $thumbs->has($path)
+                            ? '/storage/'.$thumbs->pathFor($path)
+                            : null,
                         'hash' => $size <= self::MAX_HASH_BYTES ? $this->hash($diskName, $path) : null,
                     ];
                 }

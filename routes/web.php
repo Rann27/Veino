@@ -256,6 +256,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     // User Management
     // Storage manager — scans every managed directory and reports which files
     // are still referenced by the site. Deletion quarantines rather than unlinks.
+    // Who is getting through the free-unlock challenge, and how fast.
+    Route::get('/unlock-monitor', [\App\Http\Controllers\Admin\UnlockMonitorController::class, 'index'])->name('unlock-monitor.index');
+
     Route::get('/storage', [\App\Http\Controllers\Admin\StorageController::class, 'index'])->name('storage.index');
     Route::delete('/storage/files', [\App\Http\Controllers\Admin\StorageController::class, 'destroy'])->name('storage.destroy');
     Route::post('/storage/restore', [\App\Http\Controllers\Admin\StorageController::class, 'restore'])->name('storage.restore');

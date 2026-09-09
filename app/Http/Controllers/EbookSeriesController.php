@@ -141,7 +141,7 @@ class EbookSeriesController extends Controller
                 'id' => $item->id,
                 'title' => $item->title,
                 'cover' => $item->cover,
-                'cover_url' => $item->cover_url,
+                'cover_url' => $item->thumb_url,
                 'summary' => $item->summary,
                 'price_coins' => $item->price_coins,
                 'order' => $item->order,

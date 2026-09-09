@@ -16,6 +16,7 @@ interface EbookSeries {
     title: string;
     slug: string;
     cover_url: string;
+    thumb_url?: string | null;
     price_range: string;
     genres: Genre[];
     free_for_premium_members?: boolean;
@@ -319,7 +320,7 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                                         {/* Cover */}
                                         <div className="relative mb-2">
                                             <CoverImage
-                                                src={s.cover_url}
+                                                src={s.thumb_url ?? s.cover_url}
                                                 alt={s.title}
                                                 containerClassName="rounded-md"
                                                 hoverScale={true}

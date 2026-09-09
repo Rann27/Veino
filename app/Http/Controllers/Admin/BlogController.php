@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use HTMLPurifier;
 use HTMLPurifier_Config;
+use App\Services\ThumbnailService;
 
 class BlogController extends Controller
 {
@@ -41,6 +42,7 @@ class BlogController extends Controller
         if ($request->hasFile('upload')) {
             $image = $request->file('upload');
             $path = $image->store('blog-images', 'public');
+            app(ThumbnailService::class)->generate($path);
             $url = asset('storage/' . $path);
 
             return response()->json(['url' => $url]);

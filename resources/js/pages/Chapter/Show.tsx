@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import { useToast } from '@/Contexts/ToastContext';
@@ -352,6 +352,16 @@ function ChapterShowContent({
     // ── free unlock via the shortlink challenge ────────────────────────────
     const [startingChallenge, setStartingChallenge] = useState(false);
     const [challengeError, setChallengeError] = useState<string | null>(null);
+
+    // The unlock flow redirects here with a flashed reason when it refuses —
+    // "start the challenge first", "that was too quick", the daily cap. Nothing
+    // on this page read it, so a rejected claim looked identical to simply
+    // arriving at the paywall, and the guard appeared to be doing nothing.
+    const flashError = (usePage().props as { flash?: { error?: string } }).flash?.error;
+
+    useEffect(() => {
+        if (flashError) setChallengeError(flashError);
+    }, [flashError]);
     const [showUnlockedModal, setShowUnlockedModal] = useState(justUnlocked);
 
     // Light novels are read by chapter title, web novels by number.

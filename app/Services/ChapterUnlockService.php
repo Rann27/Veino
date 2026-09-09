@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Chapter;
 use App\Models\ChapterPurchase;
 use App\Models\ChapterTemporaryAccess;
+use App\Models\ChapterUnlockToken;
 use App\Models\PaymentSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -30,13 +31,17 @@ class ChapterUnlockService
     private const PENDING_TTL_MINUTES = 30;
 
     /**
-     * Fastest a genuine run can finish. The Move2Link gate takes about a
-     * minute, so anything materially quicker is someone who jumped straight to
-     * the landing URL. Set below 60 on purpose — the clock starts when our
-     * button is pressed, and shaving the threshold absorbs clock drift and
-     * redirect overhead rather than punishing an honest reader.
+     * Fastest a genuine run can finish.
+     *
+     * Originally 45, guessed from an assumption that the gate took about a
+     * minute. Live data says otherwise: across the first several dozen honest
+     * runs the quickest was 126 seconds and none came close to the old floor,
+     * so 45 was leaving a wide corridor open for anyone jumping straight to the
+     * landing URL. 90 sits roughly 30% under the fastest run ever observed —
+     * tight enough to be worth something, loose enough that a reader on a fast
+     * connection is not punished for it.
      */
-    private const MIN_CHALLENGE_SECONDS = 45;
+    private const MIN_CHALLENGE_SECONDS = 90;
 
     public function __construct(private Move2LinkClient $move2link) {}
 
@@ -102,6 +107,30 @@ class ChapterUnlockService
     public function dailyLimit(): int
     {
         return max(0, (int) PaymentSetting::get('unlock_challenge_daily_limit', 10));
+    }
+
+    /**
+     * Grants a token may serve before it is replaced. 0 turns rotation off.
+     *
+     * The claim URL is the one secret in this flow that a reader can keep. It
+     * is reachable from the gate's own "continue" button, so anyone who has
+     * finished the gate once can save it and reuse it later without watching
+     * anything. Retiring the token after a set number of grants means a saved
+     * URL stops working, and the only way to learn the replacement is to reach
+     * the end of the gate again.
+     *
+     * Lower is tighter and costs more: at 1 no reuse is possible at all, but
+     * every grant spends a Move2Link API call, and that rate limit is per
+     * server IP — one bucket shared by every reader.
+     */
+    public function rotateAfter(): int
+    {
+        return max(0, (int) PaymentSetting::get('unlock_rotate_after', 0));
+    }
+
+    public function rotationEnabled(): bool
+    {
+        return $this->rotateAfter() > 0 && ! $this->sandbox();
     }
 
     // ─── Eligibility ─────────────────────────────────────────────────────────
@@ -177,7 +206,110 @@ class ChapterUnlockService
             return route('chapters.unlock.sandbox', $chapter->unlock_token);
         }
 
+        // Rotation happens here rather than at the moment of the grant. The
+        // reader is already waiting on an API call at this point, so the cost
+        // is hidden; doing it during the claim would put a Move2Link round trip
+        // in front of the redirect that hands them their chapter.
+        $this->rotateIfDue($chapter);
+
         return $this->shortlinkFor($chapter);
+    }
+
+    /**
+     * Replaces the token once it has served its allotted grants.
+     *
+     * Ordered so a failure changes nothing: the replacement shortlink has to
+     * come back from Move2Link before the old token is retired. Rotate first
+     * and a rate-limited API would leave the chapter holding a token with no
+     * link pointing at it — the free route dead until someone noticed.
+     *
+     * The lock is non-blocking on purpose. Two readers arriving together should
+     * not queue behind each other for a housekeeping task; whoever misses it
+     * simply serves the current link and the rotation happens on the next press.
+     */
+    private function rotateIfDue(Chapter $chapter): void
+    {
+        if (! $this->rotationEnabled() || ! $chapter->unlock_token) {
+            return;
+        }
+
+        if ($chapter->unlock_claim_count < $this->rotateAfter()) {
+            return;
+        }
+
+        $lock = Cache::lock('unlock:rotate:'.$chapter->id, 30);
+
+        if (! $lock->get()) {
+            return;
+        }
+
+        try {
+            // Re-read under the lock: the chapter in hand may have been loaded
+            // before another request rotated it.
+            $fresh = Chapter::find($chapter->id);
+
+            if (! $fresh || $fresh->unlock_claim_count < $this->rotateAfter()) {
+                return;
+            }
+
+            $retiring = $fresh->unlock_token;
+            $newToken = $this->freshToken();
+            $shortlink = $this->createShortlink($fresh, $newToken);
+
+            if (! $shortlink) {
+                return;   // Nothing touched. The current link keeps working.
+            }
+
+            ChapterUnlockToken::firstOrCreate(
+                ['token' => $retiring],
+                ['chapter_id' => $fresh->id, 'retired_at' => now()],
+            );
+
+            $fresh->unlock_token = $newToken;
+            $fresh->unlock_shortlink = $shortlink;
+            $fresh->unlock_shortlink_at = now();
+            $fresh->unlock_claim_count = 0;
+            $this->persist($fresh);
+
+            // Keep the caller's copy in step so it serves the new link now.
+            $chapter->unlock_token = $newToken;
+            $chapter->unlock_shortlink = $shortlink;
+            $chapter->unlock_claim_count = 0;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    /**
+     * Finds the chapter a claim token belongs to, live or retired.
+     *
+     * Retired tokens still resolve so the controller can answer them exactly as
+     * it answers anything else. Returning null for them would turn the reply
+     * into a liveness test: a saved URL that 404s is known-dead, one that
+     * reaches the chapter page is known-good, and that is free reconnaissance.
+     *
+     * @return array{0: ?Chapter, 1: bool} the chapter, and whether the token is
+     *                                     still honourable
+     */
+    public function resolveToken(string $token): array
+    {
+        if ($chapter = Chapter::where('unlock_token', $token)->first()) {
+            return [$chapter, true];
+        }
+
+        $retired = ChapterUnlockToken::with('chapter')->where('token', $token)->first();
+
+        if (! $retired || ! $retired->chapter) {
+            return [null, false];
+        }
+
+        // A reader part-way through the gate when rotation happened has done
+        // nothing wrong, and the pending record they hold is still the real
+        // proof. Honouring the old token for the length of that record's life
+        // means rotation never costs anyone the ad they already sat through.
+        $withinGrace = $retired->retired_at->gt(now()->subMinutes(self::PENDING_TTL_MINUTES));
+
+        return [$retired->chapter, $withinGrace];
     }
 
     /** Assigns and persists a token if the chapter has none. */
@@ -213,19 +345,7 @@ class ChapterUnlockService
             $chapter->unlock_token = $this->freshToken();
         }
 
-        $series = $chapter->series;
-
-        // Pinned to APP_URL rather than the host serving this request. route()
-        // would otherwise bake whatever domain the admin happened to be on into
-        // the shortlink — generate one from a staging subdomain and Move2Link
-        // stores that address forever, so every link dies with the subdomain.
-        $claimUrl = rtrim((string) config('app.url'), '/')
-            .route('chapters.unlock.claim', $chapter->unlock_token, false);
-
-        $shortlink = $this->move2link->createLink(
-            $claimUrl,
-            $series ? Str::limit($series->title.' — '.($chapter->title ?: 'Chapter '.$chapter->chapter_number), 250, '') : null
-        );
+        $shortlink = $this->createShortlink($chapter, $chapter->unlock_token);
 
         if (! $shortlink) {
             // Persist the token anyway so a later retry reuses the same URL.
@@ -241,11 +361,37 @@ class ChapterUnlockService
         return $shortlink;
     }
 
+    /**
+     * Asks Move2Link for a link pointing at one specific token.
+     *
+     * Takes the token as an argument rather than reading it off the chapter so
+     * rotation can mint a link for its replacement before anything is written —
+     * the chapter still holds the old token while this runs.
+     */
+    private function createShortlink(Chapter $chapter, string $token): ?string
+    {
+        $series = $chapter->series;
+
+        // Pinned to APP_URL rather than the host serving this request. route()
+        // would otherwise bake whatever domain the admin happened to be on into
+        // the shortlink — generate one from a staging subdomain and Move2Link
+        // stores that address forever, so every link dies with the subdomain.
+        $claimUrl = rtrim((string) config('app.url'), '/')
+            .route('chapters.unlock.claim', $token, false);
+
+        return $this->move2link->createLink(
+            $claimUrl,
+            $series ? Str::limit($series->title.' — '.($chapter->title ?: 'Chapter '.$chapter->chapter_number), 250, '') : null
+        );
+    }
+
     private function freshToken(): string
     {
         do {
             $token = Str::lower(Str::random(32));
-        } while (Chapter::where('unlock_token', $token)->exists());
+            $taken = Chapter::where('unlock_token', $token)->exists()
+                || ChapterUnlockToken::where('token', $token)->exists();
+        } while ($taken);
 
         return $token;
     }
@@ -257,10 +403,28 @@ class ChapterUnlockService
         return "unlock:pending:{$userId}:{$chapterId}";
     }
 
-    /** Records that this reader has set off towards the ad gate. */
-    public function startChallenge(User $user, Chapter $chapter): void
+    /** The floor a run has to clear, for showing in the admin. */
+    public function minChallengeSeconds(): int
     {
-        Cache::put(
+        return self::MIN_CHALLENGE_SECONDS;
+    }
+
+    /**
+     * Records that this reader has set off towards the ad gate.
+     *
+     * add() rather than put() so a second press cannot restart the clock. The
+     * button stays on screen while the gate runs in another tab, and a reader
+     * who presses it again mid-run used to have their elapsed time recomputed
+     * from that moment — turning a completed run into a "too_fast" refusal and
+     * writing a false accusation into the log. The first press is the honest
+     * start; later ones during the same run are noise.
+     *
+     * @return bool true when this press began a new run, false when one was
+     *              already under way
+     */
+    public function startChallenge(User $user, Chapter $chapter): bool
+    {
+        return Cache::add(
             $this->pendingKey($user->id, $chapter->id),
             now()->timestamp,
             now()->addMinutes(self::PENDING_TTL_MINUTES)
@@ -270,7 +434,11 @@ class ChapterUnlockService
     /**
      * Consumes the pending record.
      *
-     * @return array{0: bool, 1: string} success and a reason when it failed
+     * The elapsed time comes back with the verdict rather than being discarded:
+     * a single run tells you nothing, but the spread across many runs is what
+     * exposes a bypass doing the rounds.
+     *
+     * @return array{0: bool, 1: string, 2: ?int} success, reason, elapsed seconds
      */
     public function consumeChallenge(User $user, Chapter $chapter, ?string $referer, ?string $currentHost = null): array
     {
@@ -278,22 +446,24 @@ class ChapterUnlockService
         $startedAt = Cache::get($key);
 
         if ($startedAt === null) {
-            return [false, 'not_started'];
+            return [false, 'not_started', null];
         }
 
         Cache::forget($key);
+
+        $elapsed = max(0, now()->timestamp - (int) $startedAt);
 
         // The stand-in gate has no real countdown to sit through, so holding
         // sandbox to the live threshold would just mean waiting 45 seconds for
         // nothing. Everything else — the pending record, single use, the tie to
         // this reader — is enforced exactly as in live mode.
-        if (! $this->sandbox() && now()->timestamp - (int) $startedAt < self::MIN_CHALLENGE_SECONDS) {
-            return [false, 'too_fast'];
+        if (! $this->sandbox() && $elapsed < self::MIN_CHALLENGE_SECONDS) {
+            return [false, 'too_fast', $elapsed];
         }
 
         // In sandbox the gate is our own page, so there is nothing to vouch for.
         if ($this->sandbox()) {
-            return [true, 'ok'];
+            return [true, 'ok', $elapsed];
         }
 
         // Best effort. Shorteners routinely strip the referer, so a missing one
@@ -315,17 +485,23 @@ class ChapterUnlockService
                 || collect($allowed)->contains(fn ($own) => $own !== '' && str_ends_with($host, '.'.$own));
 
             if (! str_contains($host, 'move2link') && ! $matchesOwnHost) {
-                return [false, 'bad_referer'];
+                return [false, 'bad_referer', $elapsed];
             }
         }
 
-        return [true, 'ok'];
+        return [true, 'ok', $elapsed];
     }
 
     // ─── Granting ────────────────────────────────────────────────────────────
 
     public function grant(User $user, Chapter $chapter): ChapterTemporaryAccess
     {
+        // Incremented in SQL, never read-then-written: two readers claiming the
+        // same chapter at once would otherwise both see the same count and both
+        // write the same successor, and the token would serve one grant more
+        // than it was allowed to.
+        Chapter::whereKey($chapter->id)->increment('unlock_claim_count');
+
         return ChapterTemporaryAccess::updateOrCreate(
             ['user_id' => $user->id, 'chapter_id' => $chapter->id],
             [

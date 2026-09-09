@@ -7,6 +7,7 @@ use App\Models\Series;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use App\Services\ThumbnailService;
 
 class MiscController extends Controller
 {
@@ -91,6 +92,7 @@ class MiscController extends Controller
         ]);
 
         $path = $request->file('image')->store('banners', 'public');
+        app(ThumbnailService::class)->generate($path);
 
         return response()->json([
             'image_path' => $path,

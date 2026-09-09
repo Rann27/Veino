@@ -23,6 +23,7 @@ interface Series {
   title: string;
   slug: string;
   cover_url?: string;
+  thumb_url?: string | null;
   rating: number;
   chapters_count?: number;
   chapters?: Chapter[];
@@ -60,7 +61,7 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
         {/* Cover Image with zoom on card hover */}
         <div className="mb-3 overflow-hidden rounded-lg">
           <CoverImage
-            src={series.cover_url}
+            src={series.thumb_url ?? series.cover_url}
             alt={series.title}
             containerClassName="cover-zoom"
             hoverScale={false}

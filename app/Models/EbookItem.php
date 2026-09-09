@@ -4,9 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Concerns\HasCoverThumbnail;
 
 class EbookItem extends Model
 {
+    use HasCoverThumbnail;
+
     use HasFactory;
 
     protected $fillable = [
@@ -26,7 +29,7 @@ class EbookItem extends Model
         'order' => 'integer',
     ];
 
-    protected $appends = ['cover_url'];
+    protected $appends = ['cover_url', 'thumb_url'];
 
     // Relationships
     public function ebookSeries()
@@ -123,5 +126,10 @@ class EbookItem extends Model
     public function isInCartOf($userId)
     {
         return $this->chartItems()->where('user_id', $userId)->exists();
+    }
+
+    protected function thumbnailSource(): ?string
+    {
+        return $this->cover;
     }
 }

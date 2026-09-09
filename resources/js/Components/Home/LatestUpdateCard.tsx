@@ -28,6 +28,7 @@ interface LatestUpdateCardProps {
     slug: string;
     type?: 'light-novel' | 'web-novel';
     cover_url?: string;
+    thumb_url?: string | null;
     rating: number;
     chapters_count?: number;
     chapters?: Chapter[];
@@ -159,7 +160,7 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
         {/* Cover - Left */}
         <Link href={`/series/${series.slug}`} className="flex-shrink-0 w-[110px] sm:w-[120px] self-stretch">
           <CoverImage
-            src={series.cover_url}
+            src={series.thumb_url ?? series.cover_url}
             alt={series.title}
             aspectClass=""
             containerClassName="h-full min-h-[180px] rounded-none"

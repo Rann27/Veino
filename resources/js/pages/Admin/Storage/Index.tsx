@@ -19,6 +19,9 @@ interface FileRow {
     used_by: Referrer[];
     used_by_count: number;
     url: string | null;
+    /** Present only when one has been generated; the listing never falls back
+     *  to `url`, since loading full-size images is what it exists to avoid. */
+    thumb: string | null;
     hash: string | null;
 }
 
@@ -31,7 +34,7 @@ interface Props {
         unused_files: number; unused_size: number;
         directories: DirSummary[];
     };
-    duplicates: { hash: string; count: number; size: number; wasted: number; files: { path: string; used: boolean; url: string | null }[] }[];
+    duplicates: { hash: string; count: number; size: number; wasted: number; files: { path: string; used: boolean; url: string | null; thumb: string | null }[] }[];
     missing: { path: string; disk: string; used_by: Referrer[]; used_by_count: number }[];
     scannedAt: string;
     trash: { id: number; original_path: string; size: number; deleted_at: string; expires_at: string; deleted_by: string | null }[];
@@ -51,6 +54,17 @@ const human = (b: number) => {
 
 const when = (unix: number) => new Date(unix * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 const whenIso = (iso: string) => new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+
+function PictureIcon({ color }: { color: string }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.6}
+            style={{ width: 20, height: 20, margin: '0 auto' }}>
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <path d="m21 15-5-5L5 21" />
+        </svg>
+    );
+}
 
 const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg', 'bmp'];
 
@@ -86,6 +100,10 @@ function StorageContent(props: Props) {
     const [filter, setFilter] = useState<Filter>('unused');
     const [search, setSearch] = useState('');
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    // Holds the row whose full image is being viewed. The <img> is only
+    // mounted while this is set, so the original is fetched on demand rather
+    // than once per row on every page load.
+    const [preview, setPreview] = useState<FileRow | null>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
     const [sortKey, setSortKey] = useState<SortKey>('size');
     const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -344,9 +362,18 @@ function StorageContent(props: Props) {
                                                 </td>
                                                 <td className="p-3">
                                                     {f.url && IMAGE_EXT.includes(f.ext) ? (
-                                                        <img src={f.url} alt="" loading="lazy"
-                                                            className="rounded object-cover"
-                                                            style={{ width: 44, height: 44, border: `1px solid ${border}` }} />
+                                                        <button type="button" onClick={() => setPreview(f)}
+                                                            title="View full image"
+                                                            className="rounded overflow-hidden transition hover:opacity-75"
+                                                            style={{ width: 44, height: 44, border: `1px solid ${border}`, background: `${fg}08` }}>
+                                                            {f.thumb ? (
+                                                                <img src={f.thumb} alt="" loading="lazy"
+                                                                    className="object-cover"
+                                                                    style={{ width: 44, height: 44 }} />
+                                                            ) : (
+                                                                <PictureIcon color={muted} />
+                                                            )}
+                                                        </button>
                                                     ) : (
                                                         <div className="rounded flex items-center justify-center text-[10px] font-bold uppercase"
                                                             style={{ width: 44, height: 44, background: `${fg}08`, color: muted, border: `1px solid ${border}` }}>
@@ -428,7 +455,7 @@ function StorageContent(props: Props) {
                                 {g.files.map(f => (
                                     <div key={f.path} className="flex items-center gap-2 px-2 py-1.5 rounded-lg"
                                         style={{ background: `${fg}06`, border: `1px solid ${border}` }}>
-                                        {f.url && <img src={f.url} alt="" className="rounded" style={{ width: 28, height: 28, objectFit: 'cover' }} />}
+                                        {f.thumb && <img src={f.thumb} alt="" loading="lazy" className="rounded" style={{ width: 28, height: 28, objectFit: 'cover' }} />}
                                         <span className="text-xs break-all" style={{ color: fg }}>{f.path}</span>
                                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                                             style={f.used
@@ -516,6 +543,44 @@ function StorageContent(props: Props) {
                             </li>
                         ))}
                     </ul>
+                </div>
+            )}
+
+            {/* Full image, fetched only once something is actually clicked. */}
+            {preview && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
+                    style={{ background: 'rgba(0,0,0,0.72)' }}
+                    onClick={() => setPreview(null)}>
+                    <div className="rounded-2xl overflow-hidden max-w-full max-h-full flex flex-col"
+                        style={{ background: cardBg, border: `1px solid ${border}` }}
+                        onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between gap-4 px-4 py-3 shrink-0"
+                            style={{ borderBottom: `1px solid ${border}` }}>
+                            <div className="min-w-0">
+                                <p className="text-sm font-semibold break-all" style={{ color: fg }}>{preview.name}</p>
+                                <p className="text-xs" style={{ color: muted }}>
+                                    {preview.dir} · {human(preview.size)}
+                                    {preview.thumb ? '' : ' · no thumbnail'}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <a href={preview.url ?? '#'} target="_blank" rel="noreferrer"
+                                    className="px-3 py-1.5 rounded-lg text-sm font-semibold"
+                                    style={{ background: `${fg}0C`, color: fg, border: `1px solid ${border}` }}>
+                                    Open in new tab
+                                </a>
+                                <button onClick={() => setPreview(null)}
+                                    className="px-3 py-1.5 rounded-lg text-sm font-semibold"
+                                    style={{ background: `${fg}0C`, color: fg, border: `1px solid ${border}` }}>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                        <div className="overflow-auto p-4">
+                            <img src={preview.url ?? ''} alt={preview.name}
+                                style={{ maxWidth: '80vw', maxHeight: '70vh', objectFit: 'contain' }} />
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -33,12 +33,12 @@ class BookshelfController extends Controller
                 'series_id' => $series->id,
                 'series_title' => $series->title,
                 'series_slug' => $series->slug,
-                'series_cover' => $series->cover_url,
+                'series_cover' => $series->thumb_url,
                 'items' => $items->map(function ($purchase) {
                     return [
                         'id' => $purchase->ebookItem->id,
                         'title' => $purchase->ebookItem->title,
-                        'cover_url' => $purchase->ebookItem->cover_url,
+                        'cover_url' => $purchase->ebookItem->thumb_url,
                         'purchased_at' => $purchase->purchased_at->format('M d, Y'),
                         'can_download' => !empty($purchase->ebookItem->file_path),
                         'can_download_pdf' => !empty($purchase->ebookItem->pdf_file_path),

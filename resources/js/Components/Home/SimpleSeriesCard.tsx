@@ -16,6 +16,7 @@ interface SimpleSeriesCardProps {
     title: string;
     slug: string;
     cover_url?: string;
+    thumb_url?: string | null;
     rating: number;
     native_language?: NativeLanguage;
   };
@@ -44,7 +45,7 @@ export default function SimpleSeriesCard({ series, index = 0 }: SimpleSeriesCard
         {/* Cover Image with zoom */}
         <div className="overflow-hidden">
           <CoverImage
-            src={series.cover_url}
+            src={series.thumb_url ?? series.cover_url}
             alt={series.title}
             aspectClass="aspect-[2/3]"
             containerClassName="cover-zoom"

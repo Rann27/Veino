@@ -25,7 +25,7 @@ class BookmarkController extends Controller
                     'id' => $bookmark->id,
                     'series_title' => $bookmark->series->title,
                     'series_slug' => $bookmark->series->slug,
-                    'series_cover' => $bookmark->series->cover_url,
+                    'series_cover' => $bookmark->series->thumb_url,
                     'series_author' => $bookmark->series->author,
                     'series_status' => $bookmark->series->status,
                     'series_rating' => $bookmark->series->rating,

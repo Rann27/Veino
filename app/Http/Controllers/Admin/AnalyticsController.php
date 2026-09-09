@@ -445,7 +445,7 @@ class AnalyticsController extends Controller
                 'id' => (int) $r->id,
                 'title' => $r->title,
                 'slug' => $r->slug,
-                'cover' => $r->cover_url,
+                'cover' => app(\App\Services\ThumbnailService::class)->urlFor($r->cover_url),
                 'pageviews' => (int) $r->pageviews,
                 'visitors' => (int) $r->visitors,
                 'chapter_views' => (int) $r->chapter_views,

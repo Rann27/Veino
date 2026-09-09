@@ -89,7 +89,7 @@ class DashboardController extends Controller
                 'status'          => $s->status,
                 'native_language' => ['name' => $s->nativeLanguage->name ?? 'Unknown'],
                 'created_at'      => $s->created_at,
-                'cover_url'       => $s->cover_url ?? null,
+                'cover_url'       => $s->thumb_url ?? null,
             ]);
 
         $recentChapters = Chapter::with('series')->latest()->take(5)->get()

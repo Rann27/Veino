@@ -5,9 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Models\Concerns\HasCoverThumbnail;
 
 class EbookSeries extends Model
 {
+    use HasCoverThumbnail;
+
     use HasFactory;
 
     protected $fillable = [
@@ -26,7 +29,7 @@ class EbookSeries extends Model
         'is_mature',
     ];
 
-    protected $appends = ['cover_url', 'price_range'];
+    protected $appends = ['cover_url', 'price_range', 'thumb_url'];
 
     protected $casts = [
         'show_trial_button' => 'boolean',
@@ -115,5 +118,10 @@ class EbookSeries extends Model
         
         // Assume it's in storage and needs storage/ prefix
         return asset('storage/' . $this->cover);
+    }
+
+    protected function thumbnailSource(): ?string
+    {
+        return $this->cover;
     }
 }

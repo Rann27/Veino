@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
+use App\Services\ThumbnailService;
 
 class AccountController extends Controller
 {
@@ -75,7 +76,7 @@ class AccountController extends Controller
                     'series_id' => $history->series_id,
                     'series_title' => $history->series->title,
                     'series_slug' => $history->series->slug,
-                    'series_cover_url' => $history->series->cover_image_url,
+                    'series_cover_url' => $history->series->thumb_url,
                     'chapter_id' => $history->chapter_id,
                     'chapter_number' => $history->chapter->chapter_number,
                     'chapter_title' => $history->chapter->title,
@@ -187,6 +188,7 @@ class AccountController extends Controller
             }
 
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
+            app(ThumbnailService::class)->generate($avatarPath);
             $validated['avatar'] = $avatarPath;
         }
 

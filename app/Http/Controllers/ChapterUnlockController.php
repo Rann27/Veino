@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Chapter;
+use App\Models\ChapterUnlockAttempt;
 use App\Models\Series;
+use App\Models\User;
 use App\Services\ChapterUnlockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +14,21 @@ use Illuminate\Support\Facades\Auth;
 
 class ChapterUnlockController extends Controller
 {
+    /**
+     * The only thing a refused reader is ever told.
+     *
+     * Deliberately says what to do without saying what went wrong. An honest
+     * reader needs a way forward, and this gives them one; someone testing
+     * where the boundaries sit learns nothing they can act on, because every
+     * failure looks identical from the outside.
+     */
+    private const REFUSAL_MESSAGE = "We couldn't verify that unlock. Open the chapter and start the free unlock again.";
+
+    /** Refusals within the window before a reader is made to slow down. */
+    private const REFUSAL_LIMIT = 5;
+
+    private const REFUSAL_WINDOW_MINUTES = 60;
+
     public function __construct(private ChapterUnlockService $unlock) {}
 
     /**
@@ -61,7 +78,20 @@ class ChapterUnlockController extends Controller
             ], 503);
         }
 
-        $this->unlock->startChallenge($user, $chapter);
+        $fresh = $this->unlock->startChallenge($user, $chapter);
+
+        // Logged here too, not only on the way back. Without a row at the start
+        // a reader who presses the button and wanders off leaves no trace at
+        // all, so the monitor cannot tell a gate nobody finishes from a gate
+        // nobody tries.
+        //
+        // Only genuinely new runs are recorded. Pressing the button again while
+        // a run is already going does not start a second one, and counting it
+        // would inflate both the start tally and the abandonment figure derived
+        // from it.
+        if ($fresh) {
+            $this->log($request, $user->id, $chapter->id, 'started');
+        }
 
         return response()->json([
             'shortlink' => $shortlink,
@@ -104,10 +134,15 @@ class ChapterUnlockController extends Controller
      */
     public function claim(Request $request, string $token): RedirectResponse
     {
-        $chapter = Chapter::where('unlock_token', $token)->firstOrFail();
-        $series = $chapter->series;
+        // Retired tokens resolve too. A 404 for those and a redirect for live
+        // ones would let anyone holding a saved URL check whether it still works
+        // without spending anything — the free reconnaissance the single refusal
+        // message exists to deny. Only a token that never existed 404s, and
+        // guessing one of those is not a route anybody takes.
+        [$chapter, $tokenLive] = $this->unlock->resolveToken($token);
+        $series = $chapter?->series;
 
-        if (! $series) {
+        if (! $chapter || ! $series) {
             abort(404);
         }
 
@@ -125,10 +160,41 @@ class ChapterUnlockController extends Controller
         }
 
         if (! $this->unlock->claimable()) {
+            $this->log($request, $user->id, $chapter->id, 'disabled');
+
             return redirect()->to($chapterUrl)->with('error', 'The free challenge is not available right now.');
         }
 
-        [$ok, $reason] = $this->unlock->consumeChallenge(
+        // Checked before the challenge is consumed, not after.
+        //
+        // Run the other way round it becomes an oracle: someone probing the
+        // rules could deliberately spend their daily grants, and from then on a
+        // "daily limit" reply means the timing check passed while the generic
+        // reply means it failed. Answering the quota question first keeps this
+        // message honest for readers without it ever reporting on the challenge.
+        if ($this->unlock->reachedDailyLimit($user)) {
+            $this->log($request, $user->id, $chapter->id, 'daily_limit');
+
+            return redirect()->to($chapterUrl)->with('error', "You've reached today's free unlock limit.");
+        }
+
+        if ($this->throttled($user)) {
+            $this->log($request, $user->id, $chapter->id, 'throttled');
+
+            return redirect()->to($chapterUrl)->with('error', self::REFUSAL_MESSAGE);
+        }
+
+        // Past the grace window, so this is a URL kept from an earlier run
+        // rather than a reader still on their way back. Answered exactly like
+        // every other failure, and the pending record is left alone — it is not
+        // this token's to spend.
+        if (! $tokenLive) {
+            $this->log($request, $user->id, $chapter->id, 'expired_token');
+
+            return redirect()->to($chapterUrl)->with('error', self::REFUSAL_MESSAGE);
+        }
+
+        [$ok, $reason, $elapsed] = $this->unlock->consumeChallenge(
             $user,
             $chapter,
             $request->headers->get('referer'),
@@ -136,19 +202,60 @@ class ChapterUnlockController extends Controller
         );
 
         if (! $ok) {
-            return redirect()->to($chapterUrl)->with('error', match ($reason) {
-                'too_fast' => 'That was too quick — please complete the challenge to unlock.',
-                'bad_referer' => 'Please complete the challenge from the start.',
-                default => 'Start the challenge from the chapter page first.',
-            });
-        }
+            // The real reason goes to the log, never to the reader. Distinct
+            // wording per failure told anyone testing the boundaries exactly
+            // which rule they had tripped, which is the one thing that makes
+            // the rules cheap to map.
+            $this->log($request, $user->id, $chapter->id, $reason, $elapsed);
 
-        if ($this->unlock->reachedDailyLimit($user)) {
-            return redirect()->to($chapterUrl)->with('error', "You've reached today's free unlock limit.");
+            return redirect()->to($chapterUrl)->with('error', self::REFUSAL_MESSAGE);
         }
 
         $this->unlock->grant($user, $chapter);
+        $this->log($request, $user->id, $chapter->id, 'granted', $elapsed);
 
         return redirect()->to($chapterUrl.'?unlocked=1');
+    }
+
+    /**
+     * Whether this reader has been refused often enough to be made to wait.
+     *
+     * With every refusal now wearing the same wording, the way to map the rules
+     * is to try repeatedly and watch which attempts get through. That costs the
+     * prober almost nothing today. Capping refusals puts a price on it while
+     * staying clear of honest readers, who trip a refusal once and move on.
+     *
+     * Grants are excluded so a heavy but legitimate reader is never caught, and
+     * so are 'started' rows, which are presses rather than verdicts.
+     */
+    private function throttled(User $user): bool
+    {
+        return ChapterUnlockAttempt::where('user_id', $user->id)
+            ->whereNotIn('outcome', ['granted', ChapterUnlockAttempt::STARTED])
+            ->where('created_at', '>=', now()->subMinutes(self::REFUSAL_WINDOW_MINUTES))
+            ->count() >= self::REFUSAL_LIMIT;
+    }
+
+    /**
+     * Records the attempt.
+     *
+     * Never allowed to break the claim: an audit row failing to write must not
+     * cost a reader the access they just earned.
+     */
+    private function log(Request $request, ?int $userId, ?int $chapterId, string $outcome, ?int $elapsed = null): void
+    {
+        try {
+            ChapterUnlockAttempt::create([
+                'user_id' => $userId,
+                'chapter_id' => $chapterId,
+                'outcome' => $outcome,
+                'elapsed_seconds' => $elapsed,
+                'source' => $this->unlock->sandbox() ? 'sandbox' : 'shortlink',
+                'ip' => $request->ip(),
+                'created_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Unlock attempt not logged: '.$e->getMessage());
+        }
     }
 }

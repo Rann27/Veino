@@ -31,7 +31,7 @@ class ChartController extends Controller
                 'chart_item_id' => $chartItem->id,
                 'id' => $item->id,
                 'title' => $item->title,
-                'cover_url' => $item->cover_url,
+                'cover_url' => $item->thumb_url,
                 'price_coins' => $item->price_coins,
                 'series_title' => $item->ebookSeries->title,
                 'series_slug' => $item->ebookSeries->slug,

@@ -6,7 +6,7 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import axios from 'axios';
 import { appendFile } from '@/lib/upload';
 
-interface Series { id: number; title: string; slug: string; cover_url?: string | null; }
+interface Series { id: number; title: string; slug: string; cover_url?: string | null; thumb_url?: string | null; }
 interface BannerData { image_path: string; image_url: string; link_url: string; alt: string; }
 interface Props {
     allSeries: Series[];
@@ -164,7 +164,7 @@ function SeriesCombobox({
                 >
                     {selectedSeries?.cover_url ? (
                         <img
-                            src={selectedSeries.cover_url}
+                            src={selectedSeries.thumb_url ?? selectedSeries.cover_url}
                             alt=""
                             style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                             onError={(event) => { event.currentTarget.style.display = 'none'; }}
@@ -318,7 +318,7 @@ function SeriesCombobox({
                             >
                                 {series.cover_url && (
                                     <img
-                                        src={series.cover_url}
+                                        src={series.thumb_url ?? series.cover_url}
                                         alt=""
                                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                         onError={(event) => { event.currentTarget.style.display = 'none'; }}

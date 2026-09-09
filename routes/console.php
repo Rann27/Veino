@@ -37,3 +37,15 @@ Schedule::command('analytics:prune')
 Schedule::command('storage:purge-trash')
     ->dailyAt('03:30')
     ->timezone('UTC');
+
+// Catches any image the upload hooks missed — a file placed by FTP, or one
+// whose generation failed at the time. Cheap because anything that already has
+// a thumbnail is skipped, so on a normal night this does almost nothing.
+//
+// --skip-remote on purpose: CDN covers cost a download each and a permanently
+// dead link would be retried every single night. Those stay a deliberate,
+// manual run.
+Schedule::command('thumbs:generate --skip-remote')
+    ->dailyAt('04:10')
+    ->timezone('UTC')
+    ->withoutOverlapping();

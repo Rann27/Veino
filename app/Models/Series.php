@@ -8,9 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use App\Models\Concerns\HasCoverThumbnail;
 
 class Series extends Model
 {
+    use HasCoverThumbnail;
+
+    protected $appends = ['thumb_url'];
+
     use HasFactory;
 
     protected $fillable = [
@@ -144,5 +149,10 @@ class Series extends Model
     public function reactions()
     {
         return $this->morphMany(Reaction::class, 'reactable');
+    }
+
+    protected function thumbnailSource(): ?string
+    {
+        return $this->attributes['cover_url'] ?? null;
     }
 }

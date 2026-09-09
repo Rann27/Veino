@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use HTMLPurifier;
 use HTMLPurifier_Config;
+use App\Services\ThumbnailService;
 
 class SeriesController extends Controller
 {
@@ -110,7 +111,7 @@ class SeriesController extends Controller
                             'id'               => $s->id,
                             'title'            => $s->title,
                             'alternative_title'=> $s->alternative_title,
-                            'cover_url'        => $s->cover_url,
+                            'cover_url'        => $s->thumb_url,
                             'status'           => $s->status,
                             'type'             => $s->type,
                             'slug'             => $s->slug,
@@ -137,6 +138,7 @@ class SeriesController extends Controller
                 'enabled' => (bool) PaymentSetting::get('unlock_challenge_enabled', true),
                 'days' => (int) PaymentSetting::get('unlock_challenge_days', 7),
                 'daily_limit' => (int) PaymentSetting::get('unlock_challenge_daily_limit', 10),
+                'rotate_after' => (int) PaymentSetting::get('unlock_rotate_after', 0),
                 'sandbox' => app(\App\Services\ChapterUnlockService::class)->sandbox(),
                 // False outside local, so the modal can say the switch is inert
                 // here rather than showing a toggle that quietly does nothing.
@@ -202,6 +204,7 @@ class SeriesController extends Controller
         // Handle cover based on type
         if ($validated['cover_type'] === 'file' && $request->hasFile('cover_file')) {
             $path = $request->file('cover_file')->store('series-covers', 'public');
+            app(ThumbnailService::class)->generate($path);
             $validated['cover_url'] = $path;
         } elseif ($validated['cover_type'] === 'cdn' && empty($validated['cover_url'])) {
             $validated['cover_url'] = null;
@@ -249,6 +252,7 @@ class SeriesController extends Controller
                 \Storage::disk('public')->delete($series->cover_url);
             }
             $path = $request->file('cover_file')->store('series-covers', 'public');
+            app(ThumbnailService::class)->generate($path);
             $validated['cover_url'] = $path;
         } elseif ($validated['cover_type'] === 'cdn' && empty($validated['cover_url'])) {
             // If switching to CDN with no URL, keep existing if it's CDN type
@@ -301,6 +305,8 @@ class SeriesController extends Controller
             // 0 means unlimited, which is why the floor is 0 rather than 1.
             'challenge_days' => 'required|integer|min:1|max:365',
             'challenge_daily_limit' => 'required|integer|min:0|max:100',
+            // 0 disables rotation, which is why the floor is 0 rather than 1.
+            'challenge_rotate_after' => 'required|integer|min:0|max:100',
             'challenge_sandbox' => 'required|boolean',
         ]);
 
@@ -308,6 +314,7 @@ class SeriesController extends Controller
         PaymentSetting::set('unlock_challenge_enabled', $validated['challenge_enabled'] ? 1 : 0, 'boolean', 'Offer free chapter access through the Move2Link challenge');
         PaymentSetting::set('unlock_challenge_days', $validated['challenge_days'], 'integer', 'How many days challenge-earned access lasts');
         PaymentSetting::set('unlock_challenge_daily_limit', $validated['challenge_daily_limit'], 'integer', 'Free unlocks a reader may earn per day (0 = unlimited)');
+        PaymentSetting::set('unlock_rotate_after', $validated['challenge_rotate_after'], 'integer', 'Grants a claim token may serve before it is retired (0 = never rotate)');
         PaymentSetting::set('unlock_challenge_sandbox', $validated['challenge_sandbox'] ? 1 : 0, 'boolean', 'Bypass Move2Link with a local stand-in gate — testing only');
 
         return back()->with('success', $validated['challenge_sandbox']

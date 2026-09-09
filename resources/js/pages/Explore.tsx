@@ -23,6 +23,7 @@ interface Series {
     slug: string;
     synopsis: string;
     cover_url: string | null;
+    thumb_url?: string | null;
     rating: number;
     status: string;
     chapters_count: number;
@@ -510,7 +511,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                         {/* Cover */}
                                         <div className="relative overflow-hidden">
                                             <CoverImage
-                                                src={item.cover_url}
+                                                src={item.thumb_url ?? item.cover_url}
                                                 alt={item.title}
                                                 containerClassName="cover-zoom"
                                                 hoverScale={false}

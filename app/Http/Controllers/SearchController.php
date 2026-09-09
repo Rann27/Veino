@@ -71,7 +71,7 @@ class SearchController extends Controller
                     'id' => $series->id,
                     'title' => $series->title,
                     'slug' => $series->slug,
-                    'cover_url' => $series->cover_url,
+                    'cover_url' => $series->thumb_url,
                     'author' => $series->author,
                     'rating' => $series->rating,
                     'status' => $series->status,
