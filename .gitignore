@@ -27,6 +27,8 @@ yarn-error.log
 # Ignore all markdown files except README
 *.md
 !README.md
+# Design spec — must survive a UI remaster, so it belongs in history.
+!DESIGN-PALETTE.md
 
 # Batch Panel (Python third-party tool)
 /batch-panel
