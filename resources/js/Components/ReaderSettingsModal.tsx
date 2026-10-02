@@ -149,9 +149,7 @@ export default function ReaderSettingsModal({
         <div
             className="fixed inset-0 z-50 pointer-events-auto"
             style={{
-                backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                backdropFilter: 'blur(2px)',
-                WebkitBackdropFilter: 'blur(2px)',
+                backgroundColor: 'rgba(0, 0, 0, 0.4)',
             }}
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) onClose();
@@ -160,15 +158,13 @@ export default function ReaderSettingsModal({
             {/* Floating Modal */}
             <div 
                 ref={modalRef}
-                className="absolute rounded-2xl shadow-2xl w-[calc(100vw-2rem)] sm:w-80 max-h-[calc(100vh-5rem)] sm:max-h-[32rem] flex flex-col overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200"
+                className="absolute rounded-lg shadow-2xl w-[calc(100vw-2rem)] sm:w-80 max-h-[calc(100vh-5rem)] sm:max-h-[32rem] flex flex-col overflow-hidden pointer-events-auto animate-in fade-in-0 zoom-in-95 duration-200"
                 style={{
                     top: `${position.top}px`,
                     left: `${position.left}px`,
-                    backgroundColor: `${currentTheme.background}CC`,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    border: `1px solid ${currentTheme.foreground}12`,
-                    boxShadow: `0 20px 60px ${currentTheme.foreground}15`,
+                    backgroundColor: currentTheme.background,
+                    border: `1px solid ${currentTheme.foreground}15`,
+                    boxShadow: `0 8px 32px ${currentTheme.foreground}15`,
                     '--scrollbar-thumb': `${currentTheme.foreground}25`,
                     '--scrollbar-thumb-hover': `${currentTheme.foreground}40`,
                     '--scrollbar-track': `${currentTheme.foreground}06`,
@@ -443,12 +439,10 @@ export default function ReaderSettingsModal({
                             <span>Word Hyphenation</span>
                             <button
                                 onClick={() => handleSettingChange('hyphenation', !settings.hyphenation)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                                    settings.hyphenation ? 'bg-blue-600' : ''
-                                }`}
+                                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                                 style={{
                                     backgroundColor: settings.hyphenation 
-                                        ? '#3b82f6' 
+                                        ? currentTheme.foreground 
                                         : `${currentTheme.foreground}30`
                                 }}
                             >
@@ -456,6 +450,11 @@ export default function ReaderSettingsModal({
                                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                                         settings.hyphenation ? 'translate-x-6' : 'translate-x-1'
                                     }`}
+                                    style={{
+                                        backgroundColor: settings.hyphenation
+                                            ? currentTheme.background
+                                            : '#ffffff'
+                                    }}
                                 />
                             </button>
                         </label>
@@ -491,7 +490,7 @@ export default function ReaderSettingsModal({
                                         className="p-2.5 rounded-lg text-left transition-all hover:opacity-90"
                                         style={{
                                             backgroundColor: isActive ? `${currentTheme.foreground}10` : `${currentTheme.foreground}03`,
-                                            border: `1.5px solid ${isActive ? '#7c3aed' : `${currentTheme.foreground}15`}`,
+                                            border: `1.5px solid ${isActive ? currentTheme.foreground : `${currentTheme.foreground}15`}`,
                                             color: currentTheme.foreground,
                                         }}
                                     >

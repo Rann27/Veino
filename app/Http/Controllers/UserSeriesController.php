@@ -21,8 +21,14 @@ class UserSeriesController extends Controller
             ->withCount('chapters')
             ->firstOrFail();
 
-        // Defer view increment to after response is sent (non-blocking)
-        defer(fn() => $series->increment('views'));
+        // Defer view increment to after response is sent (non-blocking).
+        //
+        // withoutTimestamps for the same reason the chapter counter uses it:
+        // a plain increment() drags updated_at along, and reading a page is
+        // not an edit. Only a tiebreaker on the homepage depends on this
+        // column today, but a counter that quietly rewrites "last modified"
+        // is a trap for whatever reads it next.
+        defer(fn () => Series::withoutTimestamps(fn () => $series->increment('views')));
 
         $chapters = Chapter::where('series_id', $series->id)
             ->orderBy('volume')

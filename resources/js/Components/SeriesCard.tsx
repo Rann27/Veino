@@ -3,7 +3,6 @@ import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import CoverImage from '@/Components/CoverImage';
-import { getCardBg } from '@/constants/colors';
 
 interface Genre {
   id: number;
@@ -48,17 +47,16 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
   return (
     <Link
       href={`/series/${series.slug}`}
-      className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 6)}`}
+      className="group block h-full"
     >
       <div
-        className="series-card rounded-lg p-4 sm:p-5 h-full flex flex-col min-h-[280px]"
+        className="series-card rounded-lg p-3.5 sm:p-4 h-full flex flex-col min-h-[280px] transition-all duration-200"
         style={{
-          backgroundColor: getCardBg(currentTheme.name),
-          border: `1px solid ${currentTheme.foreground}10`,
-          boxShadow: `0 1px 3px ${currentTheme.foreground}10`,
+          backgroundColor: `${currentTheme.foreground}08`,
+          border: `1px solid ${currentTheme.foreground}15`,
         }}
       >
-        {/* Cover Image with zoom on card hover */}
+        {/* Cover Image — the only saturated element */}
         <div className="mb-3 overflow-hidden rounded-lg">
           <CoverImage
             src={series.thumb_url ?? series.cover_url}
@@ -68,9 +66,9 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
           />
         </div>
 
-        {/* Title */}
+        {/* Title — quiet editorial typography */}
         <h3
-          className="series-card-title font-semibold text-sm md:text-base line-clamp-2 mb-3 leading-tight transition-colors duration-200"
+          className="series-card-title font-medium text-sm md:text-base line-clamp-2 mb-2.5 leading-snug group-hover:opacity-80 transition-opacity duration-150"
           style={{ color: currentTheme.foreground }}
         >
           {series.title}
@@ -90,9 +88,9 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
                 .map((c: any, idx: number) => (
                   <div
                     key={`fallback-${idx}`}
-                    className="interactive-scale flex items-center justify-between gap-2 p-1.5 rounded transition-all cursor-pointer hover:shadow-sm"
-                    style={{ 
-                      backgroundColor: `${currentTheme.foreground}05`,
+                    className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                    style={{
+                      backgroundColor: `${currentTheme.foreground}06`,
                     }}
                     onClick={(e) => {
                       e.preventDefault();
@@ -101,13 +99,13 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
                     }}
                   >
                     <span
-                      className="text-sm font-medium"
-                      style={{ color: currentTheme.foreground }}
+                      className="font-medium truncate"
+                      style={{ color: `${currentTheme.foreground}90` }}
                     >
                       {formatChapterDisplay(c)}
                     </span>
                     {c.is_premium && (
-                      <PremiumDiamond size={16} className="flex-shrink-0" />
+                      <PremiumDiamond size={14} className="flex-shrink-0" />
                     )}
                   </div>
                 ));
@@ -117,9 +115,9 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
             return chsDesc.map((c) => (
               <div
                 key={c.id ?? c.chapter_number}
-                className="interactive-scale flex items-center justify-between gap-2 p-1.5 rounded transition-all cursor-pointer hover:shadow-sm"
-                style={{ 
-                  backgroundColor: `${currentTheme.foreground}05`,
+                className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                style={{
+                  backgroundColor: `${currentTheme.foreground}06`,
                 }}
                 onClick={(e) => {
                   e.preventDefault();
@@ -128,13 +126,13 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
                 }}
               >
                 <span
-                  className="text-sm font-medium"
-                  style={{ color: currentTheme.foreground }}
+                  className="font-medium truncate"
+                  style={{ color: `${currentTheme.foreground}90` }}
                 >
                   {formatChapterDisplay(c)}
                 </span>
                 {c.is_premium && (
-                  <PremiumDiamond size={16} className="flex-shrink-0" />
+                  <PremiumDiamond size={14} className="flex-shrink-0" />
                 )}
               </div>
             ));
@@ -142,11 +140,11 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
         </div>
 
         {/* Rating */}
-        <div className="flex items-center mt-auto">
-          <span className="star-icon text-yellow-500 text-sm inline-block">★</span>
-          <span 
-            className="text-sm ml-1 font-medium"
-            style={{ color: `${currentTheme.foreground}80` }}
+        <div className="flex items-center mt-auto pt-2" style={{ borderTop: `1px solid ${currentTheme.foreground}08` }}>
+          <span className="text-amber-500 text-xs inline-block">★</span>
+          <span
+            className="text-xs ml-1 font-medium"
+            style={{ color: `${currentTheme.foreground}70` }}
           >
             {series.rating}
           </span>

@@ -1,9 +1,8 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
-import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
+import { useTheme } from '@/Contexts/ThemeContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import CoverImage from '@/Components/CoverImage';
-import { getCardBg } from '@/constants/colors';
 
 interface Chapter {
   id: number;
@@ -38,27 +37,22 @@ interface LatestUpdateCardProps {
 }
 
 /**
- * Horizontal card for Latest Updates section
- * Displays: Cover (left) + Title & 4 chapter list (right)
- * Shows 2 latest premium + 2 latest free chapters (with fallback)
+ * Horizontal card for Latest Updates section in quiet editorial style
  */
-export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCardProps) {
+export default function LatestUpdateCard({ series }: LatestUpdateCardProps) {
   const { currentTheme } = useTheme();
 
   const formatChapterDisplay = (chapter: Chapter): string => {
     if (series.type === 'light-novel') {
       const title = chapter.title.trim();
       const titlePrefix = title.includes(':') ? title.slice(0, title.indexOf(':')).trim() : title;
-
       return `Vol ${chapter.volume ?? chapter.chapter_number} ${titlePrefix || title}`;
     }
-
     return `Chapter ${chapter.chapter_number}`;
   };
 
   const timeAgo = (dateStr?: string): string => {
     if (!dateStr) return '';
-    // Clamped: a timestamp ahead of the client clock must not render as "-12238s ago".
     const diff = Math.max(0, Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000));
     if (diff < 60) return `${diff}s ago`;
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
@@ -66,17 +60,10 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
     return `${Math.floor(diff / 86400)}d ago`;
   };
 
-  /**
-   * Get chapters to display in 2 groups:
-   * - premiumGroup: 2 latest premium chapters (or filled with free if none)
-   * - freeGroup: 2 latest free chapters (or filled with premium if none)
-   * - hasBothTypes: whether both premium and free exist (to show separator)
-   */
   const getChapterGroups = (): { premiumGroup: Chapter[]; freeGroup: Chapter[]; hasBothTypes: boolean } => {
     const allChapters = series.chapters || [];
     if (allChapters.length === 0) return { premiumGroup: [], freeGroup: [], hasBothTypes: false };
 
-    // Sort by volume desc then chapter_number desc
     const sorted = [...allChapters].sort((a, b) => {
       const volDiff = (b.volume || 0) - (a.volume || 0);
       return volDiff !== 0 ? volDiff : b.chapter_number - a.chapter_number;
@@ -91,15 +78,12 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
     let freeGroup: Chapter[];
 
     if (premiumChs.length === 0) {
-      // No premium → all 4 slots go to free, no split
       premiumGroup = [];
       freeGroup = freeChs.slice(0, 4);
     } else if (freeChs.length === 0) {
-      // No free → all 4 slots go to premium, no split
       premiumGroup = premiumChs.slice(0, 4);
       freeGroup = [];
     } else {
-      // Both exist: up to 2 premium, free fills remaining slots to total 4
       premiumGroup = premiumChs.slice(0, 2);
       freeGroup = freeChs.slice(0, 4 - premiumGroup.length);
     }
@@ -108,14 +92,10 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
   };
 
   const { premiumGroup, freeGroup, hasBothTypes } = getChapterGroups();
-
-  // Dummy rows to pad total to 4 slots
-  // Premium group: no padding — separator sits right after however many premium chapters exist
-  const premiumDummies = 0;
   const freeDummies = Math.max(0, 4 - premiumGroup.length - freeGroup.length);
 
   const DummyRow = () => (
-    <div className="px-2.5 py-1.5 rounded-lg">
+    <div className="px-2 py-1 rounded-lg">
       <span className="invisible text-xs">placeholder</span>
     </div>
   );
@@ -123,25 +103,25 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
   const ChapterRow = ({ chapter }: { chapter: Chapter }) => (
     <Link
       href={`/series/${series.slug}/chapter/${chapter.chapter_link}`}
-      className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg transition-all hover:opacity-70"
-      style={{ backgroundColor: `${currentTheme.foreground}04` }}
+      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg transition-colors hover:opacity-75"
+      style={{ backgroundColor: `${currentTheme.foreground}05` }}
     >
-      <div className="flex items-center gap-1 min-w-0">
+      <div className="flex items-center gap-1.5 min-w-0">
         <span
-          className="text-xs sm:text-[13px] font-medium truncate"
-          style={{ color: `${currentTheme.foreground}80` }}
+          className="text-xs font-medium truncate"
+          style={{ color: `${currentTheme.foreground}85` }}
         >
           {formatChapterDisplay(chapter)}
         </span>
         {chapter.is_premium && (
           <span className="flex-shrink-0">
-            <PremiumDiamond size={12} />
+            <PremiumDiamond size={13} />
           </span>
         )}
       </div>
       <span
-        className="text-[10px] sm:text-xs flex-shrink-0 tabular-nums"
-        style={{ color: `${currentTheme.foreground}40` }}
+        className="text-[10px] flex-shrink-0 tabular-nums"
+        style={{ color: `${currentTheme.foreground}45` }}
       >
         {timeAgo(chapter.created_at)}
       </span>
@@ -149,53 +129,49 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
   );
 
   return (
-    <div className={`group animate-in fade-in-up stagger-${Math.min(index + 1, 8)}`}>
+    <div className="group h-full">
       <div
-        className="rounded-xl overflow-hidden flex h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+        className="rounded-lg overflow-hidden flex h-full border transition-transform duration-180 ease-out hover:-translate-y-0.5"
         style={{
-          backgroundColor: getCardBg(currentTheme.name),
-          border: `1px solid ${currentTheme.foreground}08`,
+          backgroundColor: `${currentTheme.foreground}08`,
+          borderColor: `${currentTheme.foreground}15`,
         }}
       >
         {/* Cover - Left */}
-        <Link href={`/series/${series.slug}`} className="flex-shrink-0 w-[110px] sm:w-[120px] self-stretch">
+        <Link href={`/series/${series.slug}`} className="flex-shrink-0 w-[105px] sm:w-[115px] self-stretch">
           <CoverImage
             src={series.thumb_url ?? series.cover_url}
             alt={series.title}
             aspectClass=""
-            containerClassName="h-full min-h-[180px] rounded-none"
-            hoverScale={true}
+            containerClassName="h-full min-h-[175px] rounded-none"
+            hoverScale={false}
           />
         </Link>
 
         {/* Info - Right */}
-        <div className="flex-1 p-3 sm:p-4 flex flex-col min-w-0">
+        <div className="flex-1 p-3 flex flex-col min-w-0">
           <Link href={`/series/${series.slug}`}>
             <h3
-              className="font-semibold text-sm sm:text-[15px] line-clamp-2 mb-3 leading-snug group-hover:opacity-80 transition-opacity min-h-[2.5rem]"
+              className="font-medium text-sm line-clamp-2 mb-2.5 leading-snug group-hover:opacity-80 transition-opacity min-h-[2.25rem]"
               style={{ color: currentTheme.foreground }}
             >
               {series.title}
             </h3>
           </Link>
 
-          {/* Chapter List — 2 premium + separator + 2 free, padded with dummies */}
-          <div className="flex-1 flex flex-col">
-            {/* Top group (premium or fallback) */}
+          {/* Chapter List */}
+          <div className="flex-1 flex flex-col justify-center">
             <div className="space-y-1">
               {premiumGroup.map((chapter) => <ChapterRow key={chapter.id} chapter={chapter} />)}
-              {Array.from({ length: premiumDummies }).map((_, i) => <DummyRow key={`pd-${i}`} />)}
             </div>
 
-            {/* Dashed separator — only when both types exist */}
             {hasBothTypes && (
               <div
-                className="my-1.5 mx-2.5 border-t border-dashed"
-                style={{ borderColor: `${currentTheme.foreground}18` }}
+                className="my-1.5 mx-1 border-t"
+                style={{ borderColor: `${currentTheme.foreground}12` }}
               />
             )}
 
-            {/* Bottom group (free or fallback) */}
             <div className="space-y-1">
               {freeGroup.map((chapter) => <ChapterRow key={chapter.id} chapter={chapter} />)}
               {Array.from({ length: freeDummies }).map((_, i) => <DummyRow key={`fd-${i}`} />)}
@@ -203,8 +179,8 @@ export default function LatestUpdateCard({ series, index = 0 }: LatestUpdateCard
 
             {premiumGroup.length === 0 && freeGroup.length === 0 && (
               <p
-                className="text-xs px-2.5 py-1.5"
-                style={{ color: `${currentTheme.foreground}30` }}
+                className="text-xs px-2 py-1"
+                style={{ color: `${currentTheme.foreground}40` }}
               >
                 No chapters yet
               </p>

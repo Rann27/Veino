@@ -82,7 +82,8 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
     };
 
     const sortOptions = [
-        { value: 'latest',     label: 'Latest' },
+        { value: 'latest',     label: 'Latest Update' },
+        { value: 'added',      label: 'Latest Added' },
         { value: 'title_asc',  label: 'Title: A–Z' },
         { value: 'title_desc', label: 'Title: Z–A' },
         { value: 'popular',    label: 'Popular' },

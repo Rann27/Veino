@@ -124,4 +124,28 @@ class EbookSeries extends Model
     {
         return $this->cover;
     }
+
+    /**
+     * Newest volume first.
+     *
+     * Ranked by when a volume was *added* (ebook_items.created_at), never by
+     * updated_at — editing an old volume's price or blurb is not news, and
+     * letting it count would shove a series to the top for a typo fix, the
+     * same trap Latest Updates fell into with chapters.
+     *
+     * Series with no volumes yet sort last (MySQL places NULL last on DESC),
+     * and the series' own created_at breaks ties so the order is stable.
+     */
+    public function scopeOrderByLatestVolume($query)
+    {
+        return $query
+            ->select('ebook_series.*')
+            ->selectSub(
+                EbookItem::selectRaw('MAX(created_at)')
+                    ->whereColumn('ebook_items.ebook_series_id', 'ebook_series.id'),
+                'latest_volume_at'
+            )
+            ->orderByDesc('latest_volume_at')
+            ->orderByDesc('ebook_series.created_at');
+    }
 }

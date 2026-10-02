@@ -192,10 +192,11 @@ export default function BannerSlider({ banners }: BannerSliderProps) {
       <div
         key={`${index}-${banner.image_url}`}
         data-banner-slide
-        className="flex-shrink-0 overflow-hidden rounded-lg"
+        className="flex-shrink-0 overflow-hidden rounded-lg border"
         style={{
           width: isMobile ? '100%' : 'min(720px, 78vw)',
           aspectRatio: '2 / 1',
+          borderColor: `${currentTheme.foreground}15`,
           scrollSnapAlign: isDragging ? 'none' : 'center',
         }}
       >

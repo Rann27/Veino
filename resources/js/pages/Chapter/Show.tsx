@@ -173,9 +173,9 @@ function MarksModal({
 
     return (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
-            style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}>
+            style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}>
             {/* mb-16 = 64px — clears the bottom reading bar on mobile */}
-            <div className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col mb-16 sm:mb-0"
+            <div className="w-full sm:max-w-md rounded-t-lg sm:rounded-lg shadow-2xl overflow-hidden flex flex-col mb-16 sm:mb-0"
                 style={{ backgroundColor: bg, border: `1px solid ${border}`, maxHeight: '75vh' }}>
 
                 {/* Header */}
@@ -640,50 +640,31 @@ function ChapterShowContent({
         const hasEnough  = userCoins >= coinPrice;
         return (
             <div className="h-[calc(100vh-4rem)] overflow-hidden relative flex items-center justify-center" style={{ backgroundColor: currentTheme.background }}>
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: SHINY_PURPLE }} />
-                    <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl" style={{ backgroundColor: '#e879f9' }} />
-                </div>
                 <div className="relative z-10 max-w-sm w-full mx-auto px-6 py-12 text-center">
                     <div className="mb-6 flex justify-center">
-                        <svg className="w-20 h-20 animate-pulse" viewBox="0 0 24 24" fill="none">
-                            <defs>
-                                <linearGradient id="paywallDiamond" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" style={{ stopColor: '#c084fc' }} />
-                                    <stop offset="50%" style={{ stopColor: '#e879f9' }} />
-                                    <stop offset="100%" style={{ stopColor: '#a78bfa' }} />
-                                </linearGradient>
-                                <radialGradient id="diamondGlow" cx="50%" cy="50%" r="50%">
-                                    <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.8 }} />
-                                    <stop offset="100%" style={{ stopColor: '#a78bfa', stopOpacity: 0 }} />
-                                </radialGradient>
-                            </defs>
-                            <circle cx="12" cy="12" r="10" fill="url(#diamondGlow)" opacity="0.3" />
-                            <path d="M12 2L3 9L12 22L21 9L12 2Z" fill="url(#paywallDiamond)" stroke="#fff" strokeWidth="0.5" />
-                            <path d="M12 2L12 22M3 9L21 9M7 5.5L17 5.5M7 9L12 22M17 9L12 22" stroke="#fff" strokeWidth="0.3" opacity="0.6" />
-                        </svg>
+                        <PremiumDiamond size={48} className="text-[#a78bfa]" />
                     </div>
-                    <h1 className="text-3xl font-bold mb-3" style={{ color: SHINY_PURPLE, textShadow: `0 0 20px ${SHINY_PURPLE}50` }}>Premium Chapter</h1>
-                    <p className="text-base mb-8 leading-relaxed" style={{ color: `${currentTheme.foreground}80` }}>
+                    <h1 className="text-2xl sm:text-3xl font-bold mb-3" style={{ color: currentTheme.foreground }}>Premium Chapter</h1>
+                    <p className="text-sm sm:text-base mb-8 leading-relaxed" style={{ color: muted }}>
                         This chapter is only available for Premium Members, or you can buy it with coins
                     </p>
                     <div className="flex flex-col gap-3">
-                        <Link href="/shop?tab=membership" className="w-full py-3 px-6 rounded-xl font-semibold text-base text-white transition-all hover:scale-105 hover:opacity-90"
-                            style={{ background: `linear-gradient(135deg,${SHINY_PURPLE} 0%,#e879f9 100%)`, boxShadow: `0 4px 20px ${SHINY_PURPLE}40` }}>
+                        <Link href="/shop?tab=membership" className="w-full py-3 px-6 rounded-lg font-semibold text-sm sm:text-base text-white transition-opacity hover:opacity-90 text-center"
+                            style={{ backgroundColor: '#a78bfa' }}>
                             Get Membership
                         </Link>
                         {!auth?.user ? (
-                            <Link href={route('login')} className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90" style={{ backgroundColor: '#eab308', color: '#000' }}>
+                            <Link href={route('login')} className="w-full py-3 px-6 rounded-lg font-semibold text-sm sm:text-base transition-opacity hover:opacity-90 text-center" style={{ backgroundColor: '#f59e0b', color: '#000' }}>
                                 Login to Buy with ¢{coinPrice}
                             </Link>
                         ) : hasEnough ? (
                             <button onClick={() => confirm(`Unlock this chapter for ¢${coinPrice}?`, () => router.post(route('chapters.purchase', [series.slug, chapter.chapter_link])), 'Buy Chapter', 'purchase')}
-                                className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90" style={{ backgroundColor: '#eab308', color: '#000' }}>
+                                className="w-full py-3 px-6 rounded-lg font-semibold text-sm sm:text-base transition-opacity hover:opacity-90" style={{ backgroundColor: '#f59e0b', color: '#000' }}>
                                 Buy with ¢{coinPrice}
                             </button>
                         ) : (
-                            <Link href="/shop?tab=coins" className="w-full py-3 px-6 rounded-xl font-semibold text-base text-center transition-all hover:scale-105 hover:opacity-90"
-                                style={{ backgroundColor: 'rgba(234,179,8,0.15)', color: '#eab308', border: '1px solid rgba(234,179,8,0.4)' }}>
+                            <Link href="/shop?tab=coins" className="w-full py-3 px-6 rounded-lg font-semibold text-sm sm:text-base text-center transition-opacity hover:opacity-90"
+                                style={{ backgroundColor: '#f59e0b15', color: '#f59e0b', border: '1px solid #f59e0b40' }}>
                                 ¢{coinPrice} — Top Up Coins
                             </Link>
                         )}
@@ -694,15 +675,15 @@ function ChapterShowContent({
                         {challenge?.available && (
                             <>
                                 <div className="flex items-center gap-3 py-1">
-                                    <span className="h-px flex-1" style={{ backgroundColor: `${currentTheme.foreground}15` }} />
-                                    <span className="text-xs font-medium uppercase tracking-wider" style={{ color: `${currentTheme.foreground}40` }}>or</span>
-                                    <span className="h-px flex-1" style={{ backgroundColor: `${currentTheme.foreground}15` }} />
+                                    <span className="h-px flex-1" style={{ backgroundColor: border }} />
+                                    <span className="text-xs font-medium uppercase tracking-wider" style={{ color: muted }}>or</span>
+                                    <span className="h-px flex-1" style={{ backgroundColor: border }} />
                                 </div>
                                 <button
                                     onClick={startChallenge}
                                     disabled={startingChallenge}
-                                    className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all hover:scale-105 hover:opacity-90 disabled:opacity-60 disabled:hover:scale-100"
-                                    style={{ background: 'linear-gradient(135deg,#1baf7a 0%,#12916a 100%)', color: '#fff', boxShadow: '0 4px 20px rgba(27,175,122,0.35)' }}
+                                    className="w-full py-3 px-6 rounded-lg font-semibold text-sm sm:text-base text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                                    style={{ backgroundColor: '#16a34a' }}
                                 >
                                     {startingChallenge
                                         ? 'Preparing…'
@@ -710,20 +691,20 @@ function ChapterShowContent({
                                             ? `SANDBOX — ${challenge.days}d Free (no ad)`
                                             : `${challenge.days}d Free with challenge`}
                                 </button>
-                                <p className="-mt-1 text-xs" style={{ color: `${currentTheme.foreground}55` }}>
+                                <p className="-mt-1 text-xs" style={{ color: muted }}>
                                     Complete a short sponsored link to read this chapter free for {challenge.days} days.
                                     {challenge.daily_limit > 0 && auth?.user && (
                                         <> {Math.max(0, challenge.daily_limit - challenge.used_today)} of {challenge.daily_limit} left today.</>
                                     )}
                                 </p>
                                 {challengeError && (
-                                    <p className="-mt-1 text-xs font-medium" style={{ color: '#d03b3b' }}>{challengeError}</p>
+                                    <p className="-mt-1 text-xs font-medium" style={{ color: '#ef4444' }}>{challengeError}</p>
                                 )}
                             </>
                         )}
                     </div>
                     <div className="mt-8 text-sm">
-                        <Link href={`/series/${series.slug}`} className="transition-colors hover:opacity-60" style={{ color: `${currentTheme.foreground}60` }}>← Back to Series</Link>
+                        <Link href={`/series/${series.slug}`} className="transition-opacity hover:opacity-60" style={{ color: muted }}>← Back to Series</Link>
                     </div>
                 </div>
             </div>
@@ -747,36 +728,36 @@ function ChapterShowContent({
             {showUnlockedModal && (
                 <div
                     className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+                    style={{ backgroundColor: 'rgba(0,0,0,0.55)' }}
                     onClick={() => setShowUnlockedModal(false)}
                 >
                     <div
                         onClick={e => e.stopPropagation()}
-                        className="w-full max-w-sm rounded-2xl p-6 text-center shadow-2xl"
-                        style={{ backgroundColor: currentTheme.background, border: `1px solid ${currentTheme.foreground}18` }}
+                        className="w-full max-w-sm rounded-lg p-6 text-center shadow-2xl"
+                        style={{ backgroundColor: currentTheme.background, border: `1px solid ${border}` }}
                     >
                         <div
-                            className="w-14 h-14 mx-auto mb-4 rounded-full flex items-center justify-center"
-                            style={{ background: 'linear-gradient(135deg,#1baf7a 0%,#12916a 100%)' }}
+                            className="w-12 h-12 mx-auto mb-4 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: '#16a34a' }}
                         >
-                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M20 6L9 17l-5-5" />
                             </svg>
                         </div>
                         <h2 className="text-lg font-bold mb-2" style={{ color: currentTheme.foreground }}>Chapter unlocked</h2>
-                        <p className="text-sm leading-relaxed mb-1" style={{ color: `${currentTheme.foreground}99` }}>
+                        <p className="text-sm leading-relaxed mb-1" style={{ color: muted }}>
                             You&rsquo;ve unlocked <strong style={{ color: currentTheme.foreground }}>{series.title}</strong>
                             {' — '}
                             <strong style={{ color: currentTheme.foreground }}>{chapterLabel}</strong>
                         </p>
                         {temporaryAccessExpiresAt && (
-                            <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}60` }}>
+                            <p className="text-xs mb-5" style={{ color: muted }}>
                                 Yours until {new Date(temporaryAccessExpiresAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                         )}
                         <button
                             onClick={() => setShowUnlockedModal(false)}
-                            className="w-full py-2.5 rounded-xl font-semibold text-sm transition-opacity hover:opacity-90"
+                            className="w-full py-2.5 rounded-lg font-semibold text-sm transition-opacity hover:opacity-90"
                             style={{ backgroundColor: currentTheme.foreground, color: currentTheme.background }}
                         >
                             Start reading
@@ -791,20 +772,20 @@ function ChapterShowContent({
             {/* Resume prompt — offered, not forced. Sits clear of the bottom bar. */}
             {resumeAt !== null && (
                 <div
-                    className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2.5 rounded-full shadow-xl"
+                    className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-2 rounded-lg shadow-xl"
                     style={{
                         bottom: showNavbar ? '80px' : '18px',
                         backgroundColor: currentTheme.background,
-                        border: `1px solid ${currentTheme.foreground}20`,
+                        border: `1px solid ${border}`,
                         maxWidth: 'calc(100vw - 24px)',
                     }}
                 >
-                    <span className="text-xs whitespace-nowrap" style={{ color: `${currentTheme.foreground}99` }}>
+                    <span className="text-xs whitespace-nowrap" style={{ color: muted }}>
                         Continue from {resumeAt}%?
                     </span>
                     <button
                         onClick={jumpToSaved}
-                        className="text-xs font-bold px-3 py-1 rounded-full transition-opacity hover:opacity-80"
+                        className="text-xs font-bold px-3 py-1 rounded-lg transition-opacity hover:opacity-80"
                         style={{ backgroundColor: currentTheme.foreground, color: currentTheme.background }}
                     >
                         Resume
@@ -813,7 +794,7 @@ function ChapterShowContent({
                         onClick={() => { clearScrollPosition(chapter.id); setResumeAt(null); }}
                         aria-label="Dismiss"
                         className="text-base leading-none px-1 transition-opacity hover:opacity-70"
-                        style={{ color: `${currentTheme.foreground}66` }}
+                        style={{ color: muted }}
                     >
                         ×
                     </button>
@@ -821,10 +802,10 @@ function ChapterShowContent({
             )}
 
             {/* Sticky Back Button */}
-            <div className={`fixed top-3 left-3 sm:top-4 sm:left-4 z-50 transition-all duration-500 ease-in-out ${showNavbar ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
+            <div className={`fixed top-3 left-3 sm:top-4 sm:left-4 z-50 transition-all duration-300 ease-out ${showNavbar ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0 pointer-events-none'}`}>
                 <Link href={route('series.show', series.slug)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full shadow-lg transition-all reading-bar-btn"
-                    style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.background}D9`, border: `1px solid ${currentTheme.foreground}15`, backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+                    className="w-10 h-10 flex items-center justify-center rounded-lg shadow-md transition-opacity hover:opacity-80"
+                    style={{ color: currentTheme.foreground, backgroundColor: currentTheme.background, border: `1px solid ${border}` }}
                     aria-label="Back to series">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -835,14 +816,13 @@ function ChapterShowContent({
             {/* ── Floating Mark Toolbar ───────────────────────────────────── */}
             {toolbar.visible && isAuthenticated && (
                 <div
-                    className="fixed z-[55] flex items-center gap-1 px-2 py-1.5 rounded-xl shadow-xl border"
+                    className="fixed z-[55] flex items-center gap-1 px-2 py-1.5 rounded-lg shadow-lg border"
                     style={{
                         top: Math.max(8, toolbar.top),
                         left: Math.max(8, toolbar.left),
                         maxWidth: Math.min(toolbar.width, window.innerWidth - 16),
                         backgroundColor: currentTheme.background,
-                        borderColor: `${fg}20`,
-                        backdropFilter: 'blur(12px)',
+                        borderColor: border,
                     }}
                 >
                     <button
@@ -878,11 +858,10 @@ function ChapterShowContent({
 
             {/* ── Bottom Reading Bar ──────────────────────────────────────── */}
             <div
-                className={`fixed bottom-0 left-0 right-0 z-50 border-t transition-all duration-500 ease-in-out ${showNavbar ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`fixed bottom-0 left-0 right-0 z-50 border-t transition-all duration-300 ease-out ${showNavbar ? 'translate-y-0' : 'translate-y-full'}`}
                 style={{
-                    backgroundColor: `${currentTheme.background}E6`,
-                    borderColor: `${currentTheme.foreground}20`,
-                    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+                    backgroundColor: currentTheme.background,
+                    borderColor: border,
                     paddingBottom: 'env(safe-area-inset-bottom,0px)',
                 }}
             >
@@ -892,14 +871,14 @@ function ChapterShowContent({
                         {/* Prev chapter */}
                         {prevChapter ? (
                             <Link prefetch href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
-                                className="order-1 h-full flex items-center justify-center rounded transition-all reading-bar-btn"
+                                className="order-1 h-full flex items-center justify-center rounded-lg transition-opacity hover:opacity-75 reading-bar-btn"
                                 style={{ color: currentTheme.foreground }} title={`Previous: ${prevChapter.title}`}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
                             </Link>
                         ) : (
-                            <button disabled className="order-1 h-full flex items-center justify-center rounded opacity-30" style={{ color: currentTheme.foreground }}>
+                            <button disabled className="order-1 h-full flex items-center justify-center rounded-lg opacity-30" style={{ color: currentTheme.foreground }}>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
@@ -909,19 +888,19 @@ function ChapterShowContent({
                         {/* Chapter list */}
                         <div className="relative order-2 h-full">
                             <button onClick={() => setShowChapterList(!showChapterList)}
-                                className="h-full w-full flex items-center justify-center rounded transition-all reading-bar-btn"
+                                className="h-full w-full flex items-center justify-center rounded-lg transition-opacity hover:opacity-75 reading-bar-btn"
                                 style={{ color: currentTheme.foreground }} title="Chapter list">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </button>
                             {showChapterList && (
-                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 sm:w-80 border rounded-xl shadow-2xl max-h-96 overflow-y-auto z-10 themed-scrollbar"
-                                    style={{ backgroundColor: currentTheme.background, borderColor: `${currentTheme.foreground}15` }}>
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-72 sm:w-80 border rounded-lg shadow-xl max-h-96 overflow-y-auto z-10 themed-scrollbar"
+                                    style={{ backgroundColor: currentTheme.background, borderColor: border }}>
                                     {allChapters.map(ch => (
                                         <button key={ch.chapter_link} onClick={() => jumpToChapter(ch.chapter_link)}
-                                            className={`w-full text-left px-3 sm:px-4 py-2 transition-colors hover:opacity-70 flex items-center justify-between ${ch.chapter_link === chapter.chapter_link ? 'opacity-80' : ''}`}
-                                            style={{ color: ch.chapter_link === chapter.chapter_link ? SHINY_PURPLE : currentTheme.foreground, backgroundColor: ch.chapter_link === chapter.chapter_link ? `${currentTheme.foreground}10` : 'transparent' }}>
+                                            className={`w-full text-left px-3 sm:px-4 py-2 transition-colors hover:opacity-80 flex items-center justify-between ${ch.chapter_link === chapter.chapter_link ? 'font-semibold' : ''}`}
+                                            style={{ color: currentTheme.foreground, backgroundColor: ch.chapter_link === chapter.chapter_link ? `${currentTheme.foreground}12` : 'transparent' }}>
                                             <span className="truncate text-sm sm:text-base">{formatChapterLabel(ch)}</span>
                                             {ch.is_premium && <span className="ml-2 flex-shrink-0"><PremiumDiamond size={16} /></span>}
                                         </button>
@@ -983,31 +962,31 @@ function ChapterShowContent({
             </div>
 
             {/* ── Chapter Content ─────────────────────────────────────────── */}
-            <div className="min-h-screen pt-4 pb-20" style={{ backgroundColor: currentTheme.background }}>
-                <div className="mx-auto px-4 sm:px-8 lg:px-12 py-10 rounded-2xl"
-                    style={{ maxWidth: `${effectiveContentWidth}%`, width: '100%', backgroundColor: `${currentTheme.foreground}03`, border: `1px solid ${currentTheme.foreground}08`, boxShadow: `0 4px 24px ${currentTheme.foreground}04` }}>
+            <div className="min-h-screen pt-4 pb-24" style={{ backgroundColor: currentTheme.background }}>
+                <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6"
+                    style={{ maxWidth: `${effectiveContentWidth}%`, width: '100%' }}>
 
                     {/* Chapter Header */}
                     <div className="mb-10 text-center">
                         <h1 className="text-2xl sm:text-3xl font-bold mb-2" style={{ color: currentTheme.foreground }}>{chapter.title}</h1>
-                        <Link href={route('series.show', series.slug)} className="text-base sm:text-lg transition-colors hover:opacity-70" style={{ color: SHINY_PURPLE }}>
+                        <Link href={route('series.show', series.slug)} className="text-base sm:text-lg transition-opacity hover:opacity-70" style={{ color: muted }}>
                             {series.title}
                         </Link>
                         {chapter.is_premium && (
                             <div className="mt-4">
-                                <span className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full"
-                                    style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}40` }}>
-                                    <PremiumDiamond size={16} className="mr-1.5" /> Premium Chapter
+                                <span className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-lg"
+                                    style={{ backgroundColor: '#a78bfa15', color: '#a78bfa', border: '1px solid #a78bfa35' }}>
+                                    <PremiumDiamond size={14} className="mr-1.5" /> Premium Chapter
                                 </span>
                             </div>
                         )}
-                        <div className="mt-6 mx-auto w-16 h-px" style={{ backgroundColor: `${currentTheme.foreground}15` }} />
+                        <div className="mt-6 mx-auto w-16 h-px" style={{ backgroundColor: border }} />
                     </div>
 
                     {/* Mark hint — only for auth users */}
                     {isAuthenticated && (
-                        <div className="mb-6 flex items-center gap-2 text-xs px-3 py-2 rounded-xl"
-                            style={{ color: muted, backgroundColor: `${fg}06`, border: `1px solid ${fg}0a` }}>
+                        <div className="mb-6 flex items-center gap-2 text-xs px-3 py-2 rounded-lg"
+                            style={{ color: muted, backgroundColor: `${fg}08`, border: `1px solid ${border}` }}>
                             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
                             </svg>
@@ -1041,23 +1020,23 @@ function ChapterShowContent({
                     </div>
 
                     {/* Chapter Navigation Footer */}
-                    <div className="mt-14 pt-8" style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
+                    <div className="mt-14 pt-8" style={{ borderTop: `1px solid ${border}` }}>
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                             {prevChapter ? (
                                 <Link prefetch href={route('chapters.show', [series.slug, prevChapter.chapter_link])}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-xl transition-all hover:opacity-80 text-center text-sm font-medium"
-                                    style={{ backgroundColor: `${currentTheme.foreground}08`, color: currentTheme.foreground, border: `1px solid ${currentTheme.foreground}10` }}>
+                                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg transition-opacity hover:opacity-80 text-center text-sm font-medium"
+                                    style={{ backgroundColor: `${currentTheme.foreground}08`, color: currentTheme.foreground, border: `1px solid ${border}` }}>
                                     ← Previous Chapter
                                 </Link>
                             ) : <div className="w-full sm:w-auto" />}
                             <Link href={route('series.show', series.slug)}
-                                className="px-6 py-3 rounded-xl transition-all hover:opacity-80 text-sm font-medium"
-                                style={{ border: `1px solid ${currentTheme.foreground}15`, color: `${currentTheme.foreground}80` }}>
+                                className="w-full sm:w-auto px-5 py-2.5 rounded-lg transition-opacity hover:opacity-80 text-center text-sm font-medium"
+                                style={{ border: `1px solid ${border}`, color: muted }}>
                                 Back to Series
                             </Link>
                             {nextChapter ? (
                                 <Link prefetch href={route('chapters.show', [series.slug, nextChapter.chapter_link])}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-xl transition-all hover:opacity-90 hover:shadow-lg text-center text-sm font-semibold"
+                                    className="w-full sm:w-auto px-5 py-2.5 rounded-lg transition-opacity hover:opacity-90 text-center text-sm font-semibold"
                                     style={{ backgroundColor: currentTheme.foreground, color: currentTheme.background }}>
                                     Next Chapter →
                                 </Link>
@@ -1066,9 +1045,9 @@ function ChapterShowContent({
 
                         {/* Reactions */}
                         <div className="mt-10">
-                            <div className="rounded-2xl p-8 text-center"
-                                style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
-                                <h3 className="text-xl sm:text-2xl font-bold mb-6" style={{ color: currentTheme.foreground }}>How was this chapter?</h3>
+                            <div className="rounded-lg p-6 sm:p-8 text-center"
+                                style={{ backgroundColor: `${currentTheme.foreground}08`, border: `1px solid ${border}` }}>
+                                <h3 className="text-lg sm:text-xl font-bold mb-6" style={{ color: currentTheme.foreground }}>How was this chapter?</h3>
                                 <Suspense fallback={null}>
                                     <ReactionBar reactableType="chapter" reactableId={chapter.id} isAuthenticated={isAuthenticated} size="large" />
                                 </Suspense>

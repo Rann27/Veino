@@ -46,7 +46,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
       setDirection(forward ? 1 : -1);
       setIsTransitioning(true);
       setCurrent(index);
-      setTimeout(() => setIsTransitioning(false), 650);
+      setTimeout(() => setIsTransitioning(false), 300);
     },
     [current, heroSeries.length, isTransitioning]
   );
@@ -81,51 +81,31 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
 
   const series = heroSeries[current];
 
-  // Theme-aware gradient
+  // Theme-aware overlay
   const getOverlayGradient = () => {
     const bg = currentTheme.background;
-    return `linear-gradient(90deg, ${bg} 0%, ${bg}E6 25%, ${bg}80 50%, ${bg}40 70%, transparent 100%)`;
+    return `linear-gradient(90deg, ${bg} 0%, ${bg}F0 30%, ${bg}90 60%, ${bg}40 100%)`;
   };
 
   return (
     <section
-      className="relative w-full overflow-hidden"
-      style={{ backgroundColor: currentTheme.background }}
+      className="relative w-full overflow-hidden border-b"
+      style={{
+        backgroundColor: currentTheme.background,
+        borderColor: `${currentTheme.foreground}12`,
+      }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <div className="relative h-[320px] sm:h-[380px] md:h-[420px] lg:h-[460px]">
-        <style>
-          {`
-            @keyframes heroContentSlideIn {
-              from {
-                opacity: 0;
-                transform: translateX(var(--hero-slide-from, 36px));
-              }
-              to {
-                opacity: 1;
-                transform: translateX(0);
-              }
-            }
-
-            @keyframes heroBackgroundSlideIn {
-              from {
-                transform: translateX(var(--hero-bg-slide-from, 28px)) scale(1.18);
-              }
-              to {
-                transform: translateX(0) scale(1.15);
-              }
-            }
-          `}
-        </style>
-        {/* Background Cover - full bleed */}
+      <div className="relative h-[300px] sm:h-[360px] md:h-[400px] lg:h-[430px]">
+        {/* Background Cover — full bleed but subdued */}
         {heroSeries.map((s, i) => (
           <div
             key={s.id}
-            className="absolute inset-0 transition-opacity duration-700"
+            className="absolute inset-0 transition-opacity duration-300 ease-out"
             style={{ opacity: i === current ? 1 : 0 }}
           >
             {s.cover_url && (
@@ -133,16 +113,11 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
                   backgroundImage: `url(${s.cover_url})`,
-                  transform: 'scale(1.15)',
-                  filter: 'blur(2px)',
-                  ['--hero-bg-slide-from' as string]: `${direction * 28}px`,
-                  animation: i === current
-                    ? 'heroBackgroundSlideIn 720ms cubic-bezier(0.22, 1, 0.36, 1) both'
-                    : undefined,
+                  transform: 'scale(1.05)',
+                  filter: 'blur(4px) brightness(0.7)',
                 }}
               />
             )}
-            {/* Dark overlay for readability */}
             <div className="absolute inset-0" style={{ background: getOverlayGradient() }} />
             <div
               className="absolute inset-0"
@@ -153,31 +128,26 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
           </div>
         ))}
 
-        {/* Content — entire area is clickable */}
+        {/* Content — clickable editorial banner */}
         <div
           key={series.id}
-          className="relative h-full flex items-center z-10 cursor-pointer will-change-transform"
-          style={{
-            ['--hero-slide-from' as string]: `${direction * 42}px`,
-            animation: 'heroContentSlideIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both',
-          }}
+          className="relative h-full flex items-center z-10 cursor-pointer"
           onClick={() => router.visit(`/series/${series.slug}`)}
         >
-          <div className="w-full px-6 sm:px-8 lg:px-12 xl:px-20">
-            <div className="flex items-center max-w-[1600px] mx-auto">
-              {/* Left: Info — takes most space on desktop */}
-              <div className="flex-1 min-w-0 lg:pr-10 xl:pr-16">
-                {/* Genre pills */}
-                <div className="flex flex-wrap gap-2 mb-3">
+          <div className="w-full px-5 sm:px-8 lg:px-12 xl:px-16">
+            <div className="flex items-center max-w-[1400px] mx-auto">
+              {/* Left: Info */}
+              <div className="flex-1 min-w-0 lg:pr-10 xl:pr-14">
+                {/* Genre chips */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
                   {series.genres.slice(0, 4).map((genre) => (
                     <span
                       key={genre.id}
-                      className="px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full uppercase tracking-wider"
+                      className="px-2.5 py-1 text-[11px] font-medium rounded-lg uppercase tracking-wider"
                       style={{
-                        backgroundColor: `${currentTheme.foreground}12`,
+                        backgroundColor: `${currentTheme.foreground}10`,
                         color: `${currentTheme.foreground}90`,
                         border: `1px solid ${currentTheme.foreground}15`,
-                        backdropFilter: 'blur(10px)',
                       }}
                     >
                       {genre.name}
@@ -185,10 +155,13 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                   ))}
                 </div>
 
-                {/* Title */}
+                {/* Title — quiet editorial typography */}
                 <h1
-                  className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-5xl font-extrabold leading-tight mb-3 line-clamp-2"
-                  style={{ color: currentTheme.foreground }}
+                  className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold leading-tight mb-2.5 line-clamp-2"
+                  style={{
+                    fontFamily: 'Poppins, sans-serif',
+                    color: currentTheme.foreground,
+                  }}
                 >
                   {series.title}
                 </h1>
@@ -196,7 +169,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                 {/* Synopsis */}
                 {series.synopsis && (
                   <p
-                    className="text-sm sm:text-base lg:text-lg leading-relaxed mb-5 line-clamp-2 sm:line-clamp-3 max-w-2xl"
+                    className="text-xs sm:text-sm md:text-base leading-relaxed mb-4 line-clamp-2 sm:line-clamp-3 max-w-2xl"
                     style={{ color: `${currentTheme.foreground}80` }}
                   >
                     {series.synopsis}
@@ -205,49 +178,39 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
 
                 {/* Meta info row */}
                 <div
-                  className="flex items-center flex-wrap gap-4 mb-5"
+                  className="flex items-center flex-wrap gap-3 text-xs"
                   style={{ color: `${currentTheme.foreground}70` }}
                 >
-                  <span className="flex items-center gap-1 text-sm">
-                    <span className="text-yellow-500 text-base">★</span>
-                    <span className="font-semibold">{series.rating}</span>
+                  <span className="flex items-center gap-1 font-medium">
+                    <span className="text-amber-500">★</span>
+                    <span>{series.rating}</span>
                   </span>
-                  <span className="w-1 h-1 rounded-full" style={{ backgroundColor: `${currentTheme.foreground}30` }} />
-                  <span className="capitalize text-sm">{series.status}</span>
+                  <span className="opacity-30">•</span>
+                  <span className="capitalize">{series.status}</span>
                   {series.chapters_count && (
                     <>
-                      <span className="w-1 h-1 rounded-full" style={{ backgroundColor: `${currentTheme.foreground}30` }} />
-                      <span className="text-sm">{series.chapters_count} Chapters</span>
+                      <span className="opacity-30">•</span>
+                      <span>{series.chapters_count} Chapters</span>
                     </>
                   )}
                 </div>
-
-
               </div>
 
-              {/* Right: Cover Image (desktop only) — prominent display */}
+              {/* Right: Cover Image (desktop only) — vivid focal point */}
               <div className="hidden lg:flex flex-shrink-0 items-center justify-center">
                 <Link href={`/series/${series.slug}`} className="block group/cover" onClick={(e) => e.stopPropagation()}>
                   <div
-                    className="relative rounded-2xl overflow-hidden shadow-2xl transition-transform duration-500 group-hover/cover:scale-[1.03]"
+                    className="relative rounded-lg overflow-hidden border shadow-lg transition-transform duration-200 ease-out group-hover/cover:scale-[1.02]"
                     style={{
-                      boxShadow: `0 30px 70px ${currentTheme.foreground}20, 0 0 0 1px ${currentTheme.foreground}08`,
+                      borderColor: `${currentTheme.foreground}15`,
                     }}
                   >
-                    {/* Always the visible hero slide, so always the LCP candidate. */}
                     <CoverImage
                       priority
                       src={series.cover_url}
                       alt={series.title}
-                      containerClassName="w-52 xl:w-60 2xl:w-64"
+                      containerClassName="w-48 xl:w-56"
                       hoverScale={false}
-                    />
-                    {/* Reflection/shine effect */}
-                    <div
-                      className="absolute inset-0 opacity-20 pointer-events-none"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%)',
-                      }}
                     />
                   </div>
                 </Link>
@@ -261,27 +224,29 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
           <>
             <button
               onClick={(e) => { e.stopPropagation(); prev(); }}
-              className="hidden sm:flex absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center transition-all opacity-60 hover:opacity-100"
+              className="hidden sm:flex absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg items-center justify-center transition-opacity opacity-70 hover:opacity-100 border"
               style={{
-                backgroundColor: `${currentTheme.background}80`,
+                backgroundColor: currentTheme.background,
+                borderColor: `${currentTheme.foreground}15`,
                 color: currentTheme.foreground,
-                backdropFilter: 'blur(8px)',
               }}
+              aria-label="Previous slide"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); next(); }}
-              className="hidden sm:flex absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center transition-all opacity-60 hover:opacity-100"
+              className="hidden sm:flex absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-lg items-center justify-center transition-opacity opacity-70 hover:opacity-100 border"
               style={{
-                backgroundColor: `${currentTheme.background}80`,
+                backgroundColor: currentTheme.background,
+                borderColor: `${currentTheme.foreground}15`,
                 color: currentTheme.foreground,
-                backdropFilter: 'blur(8px)',
               }}
+              aria-label="Next slide"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -290,18 +255,19 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
 
         {/* Slide Indicators */}
         {heroSeries.length > 1 && (
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
             {heroSeries.map((_, i) => (
               <button
                 key={i}
                 onClick={(e) => { e.stopPropagation(); slideTo(i); }}
-                className="transition-all duration-300 rounded-full"
+                className="transition-all duration-200 rounded-lg"
                 style={{
-                  width: i === current ? '24px' : '8px',
-                  height: '8px',
+                  width: i === current ? '20px' : '6px',
+                  height: '4px',
                   backgroundColor:
                     i === current ? currentTheme.foreground : `${currentTheme.foreground}30`,
                 }}
+                aria-label={`Go to slide ${i + 1}`}
               />
             ))}
           </div>

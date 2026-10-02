@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
+            // First of the appended set: a banned account should be turned
+            // away before anything else bothers to do work for it.
+            \App\Http\Middleware\EnsureNotBanned::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\CheckMembershipExpiration::class,

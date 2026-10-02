@@ -330,11 +330,10 @@ function HomeContent({
 
       {/* ─── Continue Reading Widget (logged-in users only) ─── */}
       {continueReading.length > 0 && (
-        <section className="py-6 sm:py-8" style={{ backgroundColor: currentTheme.background }}>
+        <section className="py-6 sm:py-8 border-b" style={{ backgroundColor: currentTheme.background, borderColor: `${currentTheme.foreground}10` }}>
           <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1 h-6 rounded-full" style={{ backgroundColor: SHINY_PURPLE }} />
-              <h2 className="text-xl sm:text-2xl font-bold section-title" style={{ color: currentTheme.foreground }}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold tracking-tight section-title" style={{ fontFamily: 'Poppins, sans-serif', color: currentTheme.foreground }}>
                 Continue Reading
               </h2>
             </div>
@@ -349,42 +348,43 @@ function HomeContent({
                 onMouseLeave={dragScroll.onMouseLeave}
                 onClickCapture={dragScroll.onClickCapture}
             >
-              {continueReading.map((entry, i) => (
+              {continueReading.map((entry) => (
                 <Link
                   key={entry.series_id}
                   href={`/series/${entry.series_slug}/chapter/${entry.chapter_link}`}
                   draggable={false}
-                  className={`group flex-shrink-0 w-[140px] sm:w-[160px] animate-in fade-in-up stagger-${Math.min(i + 1, 6)}`}
+                  className="group flex-shrink-0 w-[130px] sm:w-[150px]"
                 >
                   <div
-                    className="rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                    className="rounded-lg overflow-hidden border transition-transform duration-180 ease-out hover:-translate-y-0.5"
                     style={{
-                      backgroundColor: getCardBg(currentTheme.name),
-                      border: `1px solid ${currentTheme.foreground}10`,
+                      backgroundColor: `${currentTheme.foreground}08`,
+                      borderColor: `${currentTheme.foreground}15`,
                     }}
                   >
                     <CoverImage
                       src={entry.cover_url}
                       alt={entry.series_title}
                       aspectClass="aspect-[2/3]"
-                      hoverScale={true}
+                      hoverScale={false}
+                      containerClassName="rounded-none"
                     />
-                    <div className="p-2.5">
+                    <div className="p-2 sm:p-2.5">
                       <p
-                        className="text-xs font-semibold line-clamp-2 mb-1 leading-snug"
+                        className="text-xs font-medium line-clamp-2 mb-1 leading-snug group-hover:opacity-80 transition-opacity"
                         style={{ color: currentTheme.foreground }}
                       >
                         {entry.series_title}
                       </p>
                       <p
-                        className="text-[10px] font-medium"
-                        style={{ color: SHINY_PURPLE }}
+                        className="text-[11px] font-medium"
+                        style={{ color: `${currentTheme.foreground}85` }}
                       >
                         Ch. {entry.chapter_number}
                       </p>
                       <p
-                        className="text-[10px] mt-0.5"
-                        style={{ color: `${currentTheme.foreground}40` }}
+                        className="text-[10px] mt-0.5 tabular-nums"
+                        style={{ color: `${currentTheme.foreground}45` }}
                       >
                         {timeAgo(entry.last_read_at)}
                       </p>
@@ -398,21 +398,15 @@ function HomeContent({
       )}
 
       {/* ─── 3. Featured Series Section ─── */}
-      <section className="py-8 sm:py-12" style={{ backgroundColor: currentTheme.background }}>
+      <section className="py-8 sm:py-10 border-b" style={{ backgroundColor: currentTheme.background, borderColor: `${currentTheme.foreground}10` }}>
         <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div
-                className="w-1 h-6 rounded-full"
-                style={{ backgroundColor: currentTheme.foreground }}
-              />
-              <h2
-                className="text-xl sm:text-2xl font-bold section-title"
-                style={{ color: currentTheme.foreground }}
-              >
-                Featured Series
-              </h2>
-            </div>
+          <div className="flex items-center justify-between mb-5">
+            <h2
+              className="text-lg sm:text-xl font-semibold tracking-tight section-title"
+              style={{ fontFamily: 'Poppins, sans-serif', color: currentTheme.foreground }}
+            >
+              Featured Series
+            </h2>
           </div>
 
           {/* Mobile: Horizontal scroll slider */}

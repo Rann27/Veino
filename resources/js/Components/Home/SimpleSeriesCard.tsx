@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
-import { getCardBg } from '@/constants/colors';
 
 interface NativeLanguage {
   id: number;
@@ -24,49 +23,48 @@ interface SimpleSeriesCardProps {
 }
 
 /**
- * Simple card for Featured Series & New Series sections
- * Displays: Cover, Title, Rating, Language
+ * Simple card for Featured Series & New Series sections in quiet editorial style
  */
-export default function SimpleSeriesCard({ series, index = 0 }: SimpleSeriesCardProps) {
+export default function SimpleSeriesCard({ series }: SimpleSeriesCardProps) {
   const { currentTheme } = useTheme();
 
   return (
     <Link
       href={`/series/${series.slug}`}
-      className={`group block animate-in fade-in-up stagger-${Math.min(index + 1, 8)}`}
+      className="group block h-full"
     >
       <div
-        className="series-card rounded-xl overflow-hidden h-full flex flex-col"
+        className="series-card rounded-lg overflow-hidden h-full flex flex-col border transition-transform duration-180 ease-out hover:-translate-y-0.5"
         style={{
-          backgroundColor: getCardBg(currentTheme.name),
-          border: `1px solid ${currentTheme.foreground}08`,
+          backgroundColor: `${currentTheme.foreground}08`,
+          borderColor: `${currentTheme.foreground}15`,
         }}
       >
-        {/* Cover Image with zoom */}
+        {/* Cover Image */}
         <div className="overflow-hidden">
           <CoverImage
             src={series.thumb_url ?? series.cover_url}
             alt={series.title}
             aspectClass="aspect-[2/3]"
-            containerClassName="cover-zoom"
+            containerClassName="cover-zoom rounded-none"
             hoverScale={false}
           />
         </div>
 
         {/* Info */}
-        <div className="p-3 flex flex-col flex-1">
+        <div className="p-2.5 sm:p-3 flex flex-col flex-1">
           {/* Title */}
           <h3
-            className="series-card-title font-semibold text-[13px] sm:text-sm line-clamp-2 mb-2 leading-snug transition-colors duration-200"
+            className="font-medium text-xs sm:text-sm line-clamp-2 mb-2 leading-snug group-hover:opacity-80 transition-opacity"
             style={{ color: currentTheme.foreground }}
           >
             {series.title}
           </h3>
 
           {/* Rating + Language */}
-          <div className="flex items-center justify-between mt-auto gap-2">
+          <div className="flex items-center justify-between mt-auto gap-2 pt-1">
             <div className="flex items-center gap-1">
-              <span className="text-yellow-500 text-xs">★</span>
+              <span className="text-amber-500 text-xs">★</span>
               <span
                 className="text-xs font-medium"
                 style={{ color: `${currentTheme.foreground}70` }}
@@ -76,11 +74,11 @@ export default function SimpleSeriesCard({ series, index = 0 }: SimpleSeriesCard
             </div>
             {series.native_language && (
               <span
-                className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-medium truncate max-w-[80px]"
+                className="text-[10px] px-1.5 py-0.5 rounded-md font-medium truncate max-w-[80px]"
                 style={{
                   backgroundColor: `${currentTheme.foreground}06`,
-                  color: `${currentTheme.foreground}50`,
-                  border: `1px solid ${currentTheme.foreground}08`,
+                  color: `${currentTheme.foreground}60`,
+                  border: `1px solid ${currentTheme.foreground}10`,
                 }}
               >
                 {series.native_language.name}

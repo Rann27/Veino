@@ -54,9 +54,15 @@ class EbookSeriesController extends Controller
                 $query->withCount('items')
                       ->orderBy('items_count', 'desc');
                 break;
+            // Newest series first — what "latest" used to mean.
+            case 'added':
+                $query->orderBy('created_at', 'desc');
+                break;
+            // Newest volume first. Default, and kept on the old key so links
+            // and bookmarks with ?sort=latest land on the new behaviour.
             case 'latest':
             default:
-                $query->orderBy('created_at', 'desc');
+                $query->orderByLatestVolume();
                 break;
         }
 

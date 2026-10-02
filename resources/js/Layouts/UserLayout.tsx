@@ -288,12 +288,12 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
 
       {/* Navbar */}
       <nav 
-        className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-[50px] border-b transition-all duration-500 ease-in-out ${hideSiteChrome ? 'hidden' : ''} ${
+        className={`fixed top-0 left-0 right-0 z-50 border-b transition-transform duration-200 ease-out ${hideSiteChrome ? 'hidden' : ''} ${
           showNavbar ? 'translate-y-0' : '-translate-y-full'
         }`}
         style={{ 
-          backgroundColor: `${currentTheme.background}80`,
-          borderColor: `${currentTheme.foreground}20`
+          backgroundColor: currentTheme.background,
+          borderColor: `${currentTheme.foreground}15`
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -302,7 +302,7 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
             <div className="flex-shrink-0">
               <Link 
                 href="/" 
-                className="flex items-center space-x-3 text-2xl font-semibold nav-link rounded-lg px-3 py-2" 
+                className="flex items-center space-x-3 text-xl font-semibold tracking-tight rounded-lg px-2.5 py-1.5 transition-opacity hover:opacity-80" 
                 style={{ 
                   fontFamily: 'Poppins, sans-serif',
                   color: currentTheme.foreground
@@ -367,34 +367,33 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
 
                   {showShopDropdown && (
                     <div
-                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-40 rounded-xl border overflow-hidden shadow-2xl z-50"
+                      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-44 rounded-lg border overflow-hidden shadow-lg z-50 py-1"
                       style={{
                         backgroundColor: currentTheme.background,
-                        borderColor: `${currentTheme.foreground}18`,
-                        backdropFilter: 'blur(20px)',
+                        borderColor: `${currentTheme.foreground}15`,
                       }}
                     >
                       <Link
                         href="/shop?tab=coins"
                         prefetch
-                        className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-all hover:opacity-80"
-                        style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors hover:opacity-75"
+                        style={{ color: currentTheme.foreground }}
                         onClick={() => setShowShopDropdown(false)}
                       >
-                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         Coins
                       </Link>
-                      <div style={{ height: '1px', backgroundColor: `${currentTheme.foreground}10` }} />
+                      <div style={{ height: '1px', backgroundColor: `${currentTheme.foreground}10`, margin: '4px 0' }} />
                       <Link
                         href="/shop?tab=membership"
                         prefetch
-                        className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium transition-all hover:opacity-80"
-                        style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium transition-colors hover:opacity-75"
+                        style={{ color: currentTheme.foreground }}
                         onClick={() => setShowShopDropdown(false)}
                       >
-                        <svg className="w-4 h-4 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                         </svg>
                         Membership
@@ -662,18 +661,18 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 z-[70] backdrop-blur-sm bg-black/25 md:hidden"
+            className="fixed inset-0 z-[70] bg-black/50 md:hidden"
             onClick={toggleMobileSidebar}
           />
           
           {/* Sidebar */}
           <div
-            className={`fixed top-0 left-0 h-full w-80 z-[75] transform transition-transform duration-300 ease-in-out md:hidden overflow-hidden flex flex-col ${
+            className={`fixed top-0 left-0 h-full w-80 z-[75] transform transition-transform duration-200 ease-out md:hidden overflow-hidden flex flex-col ${
               showMobileSidebar ? 'translate-x-0' : '-translate-x-full'
             }`}
             style={{ 
               backgroundColor: currentTheme.background,
-              borderRight: `1px solid ${currentTheme.foreground}20`
+              borderRight: `1px solid ${currentTheme.foreground}15`
             }}
           >
             <div className="h-full overflow-y-auto p-6 scrollbar-hide">
@@ -967,49 +966,46 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
       {/* Search Bar */}
       {showSearch && (
         <div 
-          className={`fixed z-[60] backdrop-blur-[50px] border-b p-4 transition-all duration-300 ${
+          className={`fixed z-[60] border-b p-4 transition-all duration-200 ${
             showNavbar ? 'top-16' : 'top-0'
           } left-0 right-0`}
           style={{
-            backgroundColor: `${currentTheme.background}80`,
-            borderColor: `${currentTheme.foreground}20`,
+            backgroundColor: currentTheme.background,
+            borderColor: `${currentTheme.foreground}15`,
             pointerEvents: 'auto'
           }}
         >
           <div className="max-w-7xl mx-auto">
-            <div className="w-3/4 mx-auto">
+            <div className="w-full sm:w-3/4 mx-auto">
               <div id="search-container" className="relative" style={{ pointerEvents: 'auto' }}>
                 <form onSubmit={handleSearchSubmit}>
                   <input
                     type="text"
                     value={searchQuery}
                     onChange={(e) => {
-                      console.log('Input changed:', e.target.value);
                       setSearchQuery(e.target.value);
                     }}
                     onFocus={() => {
-                      console.log('Input focused, query:', searchQuery);
                       searchQuery.trim() && setShowSuggestions(true);
                     }}
                     onKeyDown={(e) => {
-                      console.log('Key pressed:', e.key);
                       if (e.key === 'Enter') {
                         e.preventDefault();
                         handleSearchSubmit(e);
                       }
                     }}
                     placeholder="Search novels..."
-                    className="w-full px-4 py-3 pl-10 pr-20 backdrop-blur-[50px] border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent"
+                    className="w-full px-4 py-2.5 pl-10 pr-20 border rounded-lg focus:outline-none focus-ring text-sm"
                     style={{
-                      backgroundColor: `${currentTheme.background}60`,
-                      borderColor: `${currentTheme.foreground}30`,
+                      backgroundColor: `${currentTheme.foreground}06`,
+                      borderColor: `${currentTheme.foreground}15`,
                       color: currentTheme.foreground,
                       pointerEvents: 'auto'
                     }}
                     autoFocus
                   />
                   <svg 
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5"
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
                     style={{ color: `${currentTheme.foreground}60` }}
                     fill="none" 
                     stroke="currentColor" 
@@ -1031,10 +1027,9 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
                   <button
                     type="submit"
                     onClick={(e) => {
-                      console.log('Search button clicked');
                       handleSearchSubmit(e);
                     }}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 px-4 py-1 rounded text-sm transition-colors cursor-pointer"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 px-3 py-1 rounded-md text-xs font-medium transition-opacity hover:opacity-85 cursor-pointer"
                     style={{
                       backgroundColor: currentTheme.foreground,
                       color: currentTheme.background,
@@ -1062,7 +1057,7 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
       <div className={hideSiteChrome ? 'h-0' : 'h-16'} />
 
       {/* Main Content */}
-      <main className={`transition-all duration-300 has-bottom-nav ${
+      <main className={`transition-all duration-200 has-bottom-nav ${
         showSearch
           ? (showNavbar ? 'pt-16' : 'pt-4')
           : 'pt-0'
@@ -1072,10 +1067,10 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
 
       {/* Footer */}
       <footer
-        className={`backdrop-blur-[50px] border-t py-6 ${hideSiteChrome ? 'hidden' : ''}`}
+        className={`border-t py-8 ${hideSiteChrome ? 'hidden' : ''}`}
         style={{
-          backgroundColor: `${currentTheme.background}80`,
-          borderColor: `${currentTheme.foreground}20`
+          backgroundColor: currentTheme.background,
+          borderColor: `${currentTheme.foreground}15`
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1351,53 +1346,50 @@ function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { 
           />
           <div
             ref={shopPopupRef}
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 rounded-2xl border shadow-2xl overflow-hidden"
+            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 rounded-lg border shadow-xl overflow-hidden py-1"
             style={{
               backgroundColor: currentTheme.background,
-              borderColor: `${currentTheme.foreground}20`,
-              backdropFilter: 'blur(30px)',
+              borderColor: `${currentTheme.foreground}15`,
               minWidth: '200px',
             }}
           >
-            <div className="px-4 pt-3 pb-2">
-              <p className="text-xs font-semibold uppercase tracking-wider opacity-40" style={{ color: currentTheme.foreground }}>Shop</p>
+            <div className="px-4 pt-2 pb-1.5">
+              <p className="text-[11px] font-medium uppercase tracking-wider opacity-45" style={{ color: currentTheme.foreground }}>Shop</p>
             </div>
             <Link
               href="/shop?tab=coins"
               prefetch
-              className="flex items-center gap-3 px-4 py-3 transition-all active:opacity-60"
-              style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+              className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:opacity-75"
+              style={{ color: currentTheme.foreground }}
               onClick={() => setShowShopPopup(false)}
             >
-              <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-base font-medium">Coins</span>
+              <span className="text-sm font-medium">Coins</span>
             </Link>
-            <div style={{ height: '1px', backgroundColor: `${currentTheme.foreground}10` }} />
+            <div style={{ height: '1px', backgroundColor: `${currentTheme.foreground}10`, margin: '4px 0' }} />
             <Link
               href="/shop?tab=membership"
               prefetch
-              className="flex items-center gap-3 px-4 py-3 transition-all active:opacity-60"
-              style={{ color: currentTheme.foreground, backgroundColor: `${currentTheme.foreground}05` }}
+              className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:opacity-75"
+              style={{ color: currentTheme.foreground }}
               onClick={() => setShowShopPopup(false)}
             >
-              <svg className="w-5 h-5 opacity-70" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
-              <span className="text-base font-medium">Membership</span>
+              <span className="text-sm font-medium">Membership</span>
             </Link>
           </div>
         </>
       )}
 
       <nav
-        className={`mobile-bottom-nav transition-transform duration-300 ease-in-out ${visible ? 'translate-y-0' : 'translate-y-full'}`}
+        className={`mobile-bottom-nav transition-transform duration-200 ease-out ${visible ? 'translate-y-0' : 'translate-y-full'}`}
         style={{
-          backgroundColor: `${currentTheme.background}33`,
-          backdropFilter: 'blur(50px)',
-          WebkitBackdropFilter: 'blur(50px)',
-          borderColor: `${currentTheme.foreground}18`,
+          backgroundColor: currentTheme.background,
+          borderColor: `${currentTheme.foreground}15`,
         }}
       >
         {navItems.map(item => {
@@ -1407,7 +1399,7 @@ function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { 
               key={item.path}
               href={item.path}
               className={`mobile-nav-item${active ? ' active' : ''}`}
-              style={{ color: active ? '#a78bfa' : `${currentTheme.foreground}70` }}
+              style={{ color: active ? currentTheme.foreground : `${currentTheme.foreground}60` }}
             >
               <span className="mobile-nav-icon">{item.icon}</span>
               <span className="mobile-nav-label">{item.label}</span>
@@ -1419,7 +1411,7 @@ function MobileBottomNav({ currentPath, user }: { currentPath: string; user?: { 
         {/* Shop button with popup */}
         <button
           className={`mobile-nav-item${shopActive || showShopPopup ? ' active' : ''}`}
-          style={{ color: shopActive || showShopPopup ? '#a78bfa' : `${currentTheme.foreground}70` }}
+          style={{ color: shopActive || showShopPopup ? currentTheme.foreground : `${currentTheme.foreground}60` }}
           onClick={() => setShowShopPopup(v => !v)}
         >
           <span className="mobile-nav-icon">

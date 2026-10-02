@@ -14,6 +14,19 @@ interface User {
     membership_expires_at: string | null;
     is_banned: boolean;
     created_at: string;
+    /** Most recent addresses first, capped server-side. */
+    ips: { ip: string; last_seen: string; logins: number }[];
+    ip_total: number;
+}
+
+interface SharedGroup {
+    ip: string;
+    accounts: number;
+    last_seen: string;
+    users: {
+        id: number; display_name: string; email: string;
+        is_banned: boolean; joined: string; last_seen: string; logins: number;
+    }[];
 }
 
 interface UsersIndexProps {
@@ -86,6 +99,11 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
     const [coinAmount, setCoinAmount] = useState('');
     const [coinReason, setCoinReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showBanModal, setShowBanModal] = useState(false);
+    const [banReason, setBanReason] = useState('');
+    const [showSharedModal, setShowSharedModal] = useState(false);
+    const [sharedGroups, setSharedGroups] = useState<SharedGroup[]>([]);
+    const [sharedLoading, setSharedLoading] = useState(false);
     const isFirstRender = useRef(true);
 
     // Debounced auto-search
@@ -105,9 +123,38 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
         router.get('/admin/user-management', { search: searchTerm }, { preserveState: true, replace: true });
     };
 
-    const handleBanUser = (user: User) => {
-        if (confirm(`Are you sure you want to ban ${user.display_name}?`)) {
-            router.post(`/admin/users/${user.id}/ban`);
+    const openBanModal = (user: User) => {
+        setSelectedUser(user);
+        setBanReason('');
+        setShowBanModal(true);
+    };
+
+    const submitBan = () => {
+        if (!selectedUser || banReason.trim().length < 3) return;
+        setIsSubmitting(true);
+        router.post(`/admin/users/${selectedUser.id}/ban`, { reason: banReason.trim() }, {
+            preserveScroll: true,
+            onSuccess: () => { setShowBanModal(false); setBanReason(''); },
+            onFinish: () => setIsSubmitting(false),
+        });
+    };
+
+    // Loaded on demand — the grouping query is not worth running on every
+    // visit to the user list when it is only consulted now and then.
+    const openSharedIps = async () => {
+        setShowSharedModal(true);
+        setSharedLoading(true);
+        try {
+            const res = await fetch('/admin/users/shared-ips?min=2', {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            const data = await res.json();
+            setSharedGroups(data.groups ?? []);
+        } catch {
+            setSharedGroups([]);
+        } finally {
+            setSharedLoading(false);
         }
     };
 
@@ -169,8 +216,13 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
 
     return (
         <div>
-            <div style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                 <h1 style={{ fontSize: '24px', fontWeight: 700, color: fg }}>User Management</h1>
+                <button type="button" onClick={openSharedIps}
+                    title="Accounts signing in from the same address"
+                    style={{ padding: '8px 14px', fontSize: '13px', fontWeight: 600, color: fg, background: panelBg, border: `1px solid ${border}`, borderRadius: '8px', cursor: 'pointer' }}>
+                    Shared IPs
+                </button>
             </div>
 
             {/* Search */}
@@ -211,6 +263,7 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
                                         </button>
                                     </th>
                                 ))}
+                                <th style={thStyle}>IP History</th>
                                 <th style={thStyle}>Actions</th>
                             </tr>
                         </thead>
@@ -231,12 +284,34 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
                                     </td>
                                     <td style={tdStyle}>{badge(user.is_banned ? '#ef4444' : '#22c55e', user.is_banned ? 'Banned' : 'Active')}</td>
                                     <td style={{ ...tdStyle, color: muted }}>{new Date(user.created_at).toLocaleDateString()}</td>
+                                    <td style={{ ...tdStyle, verticalAlign: 'top' }}>
+                                        {user.ips.length === 0 ? (
+                                            <span style={{ fontSize: '12px', color: muted }}>&mdash;</span>
+                                        ) : (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '130px' }}>
+                                                {user.ips.map(entry => (
+                                                    // Hover carries the date, so the column stays a list of
+                                                    // places rather than a wall of timestamps.
+                                                    <span key={entry.ip}
+                                                        title={`Last login ${new Date(entry.last_seen).toLocaleString()} · ${entry.logins} login${entry.logins === 1 ? '' : 's'}`}
+                                                        style={{ fontFamily: 'ui-monospace, monospace', fontSize: '11px', color: fg, cursor: 'help', whiteSpace: 'nowrap' }}>
+                                                        {entry.ip}
+                                                    </span>
+                                                ))}
+                                                {user.ip_total > user.ips.length && (
+                                                    <span style={{ fontSize: '11px', color: muted }}>
+                                                        +{user.ip_total - user.ips.length} more
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
+                                    </td>
                                     <td style={{ ...tdStyle, minWidth: '180px' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                             {user.is_banned ? (
                                                 <button onClick={() => handleUnbanUser(user)} style={{ padding: '5px 10px', fontSize: '11px', fontWeight: 600, color: '#fff', background: '#22c55e', border: 'none', borderRadius: '5px', cursor: 'pointer', textAlign: 'center' }}>Unban User</button>
                                             ) : (
-                                                <button onClick={() => handleBanUser(user)} disabled={user.role === 'admin'} style={{ padding: '5px 10px', fontSize: '11px', fontWeight: 600, color: '#fff', background: user.role === 'admin' ? 'rgba(239,68,68,0.25)' : '#ef4444', border: 'none', borderRadius: '5px', cursor: user.role === 'admin' ? 'not-allowed' : 'pointer', textAlign: 'center' }}>Ban User</button>
+                                                <button onClick={() => openBanModal(user)} disabled={user.role === 'admin'} style={{ padding: '5px 10px', fontSize: '11px', fontWeight: 600, color: '#fff', background: user.role === 'admin' ? 'rgba(239,68,68,0.25)' : '#ef4444', border: 'none', borderRadius: '5px', cursor: user.role === 'admin' ? 'not-allowed' : 'pointer', textAlign: 'center' }}>Ban User</button>
                                             )}
                                             <button onClick={() => openAddMembershipModal(user)} style={{ padding: '5px 10px', fontSize: '11px', fontWeight: 600, color: '#fff', background: '#7c3aed', border: 'none', borderRadius: '5px', cursor: 'pointer', textAlign: 'center' }}>+ Membership</button>
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px' }}>
@@ -347,6 +422,116 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Ban, with the reason the reader will be shown ── */}
+            {showBanModal && selectedUser && (
+                <div style={modalOverlay} onClick={() => !isSubmitting && setShowBanModal(false)}>
+                    <div style={modalBox} onClick={e => e.stopPropagation()}>
+                        <h3 style={modalTitle}>Ban {selectedUser.display_name}</h3>
+
+                        <p style={{ fontSize: '13px', color: muted, marginBottom: '16px', lineHeight: 1.6 }}>
+                            They will be held on a notice screen and blocked from every other page.
+                            The reason below is shown to them there, so write it for them to read.
+                        </p>
+
+                        <label style={lbl}>Reason</label>
+                        <textarea
+                            value={banReason}
+                            onChange={e => setBanReason(e.target.value)}
+                            rows={4}
+                            autoFocus
+                            placeholder="e.g. Operating multiple accounts to farm free chapter unlocks."
+                            style={{ ...inp, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
+                        />
+                        <p style={{ fontSize: '11px', color: muted, marginTop: '6px' }}>
+                            {banReason.trim().length < 3 ? 'At least 3 characters.' : `${banReason.trim().length} / 1000`}
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                            <button type="button" onClick={() => setShowBanModal(false)} disabled={isSubmitting} style={btnCancel}>
+                                Cancel
+                            </button>
+                            <button type="button" onClick={submitBan}
+                                disabled={isSubmitting || banReason.trim().length < 3}
+                                style={{
+                                    padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: '#fff',
+                                    background: banReason.trim().length < 3 ? 'rgba(239,68,68,0.35)' : '#ef4444',
+                                    border: 'none', borderRadius: '6px',
+                                    cursor: banReason.trim().length < 3 ? 'not-allowed' : 'pointer',
+                                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                }}>
+                                {isSubmitting && <Spinner />}
+                                Ban User
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Accounts behind one address ── */}
+            {showSharedModal && (
+                <div style={modalOverlay} onClick={() => setShowSharedModal(false)}>
+                    <div style={{ ...modalBox, maxWidth: '720px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}
+                        onClick={e => e.stopPropagation()}>
+                        <div style={{ flexShrink: 0 }}>
+                            <h3 style={{ ...modalTitle, marginBottom: '6px' }}>Accounts sharing an IP</h3>
+                            <p style={{ fontSize: '12px', color: muted, marginBottom: '18px', lineHeight: 1.6 }}>
+                                Grouped by sign-in address, most accounts first. A household or a phone on
+                                shared mobile data will legitimately show two or three — it is the larger
+                                groups, registered close together, that are worth a look.
+                            </p>
+                        </div>
+
+                        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', marginRight: '-8px', paddingRight: '8px' }}>
+                            {sharedLoading ? (
+                                <p style={{ fontSize: '13px', color: muted, textAlign: 'center', padding: '28px 0' }}>Loading…</p>
+                            ) : sharedGroups.length === 0 ? (
+                                <p style={{ fontSize: '13px', color: muted, textAlign: 'center', padding: '28px 0' }}>
+                                    No address has more than one account signed in from it.
+                                </p>
+                            ) : (
+                                sharedGroups.map(group => (
+                                    <div key={group.ip} style={{ border: `1px solid ${border}`, borderRadius: '10px', marginBottom: '12px', overflow: 'hidden' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '10px 14px', background: panelBg, borderBottom: `1px solid ${border}` }}>
+                                            <span style={{ fontFamily: 'ui-monospace, monospace', fontSize: '12px', fontWeight: 600, color: fg }}>
+                                                {group.ip}
+                                            </span>
+                                            {badge(group.accounts >= 4 ? '#ef4444' : group.accounts === 3 ? '#f59e0b' : '#6b7280',
+                                                `${group.accounts} accounts`)}
+                                        </div>
+                                        <div>
+                                            {group.users.map(u => (
+                                                <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '8px 14px', borderTop: `1px solid ${border}` }}>
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <p style={{ fontSize: '13px', fontWeight: 600, color: fg, margin: 0 }}>
+                                                            {u.display_name}
+                                                            {u.is_banned && <span style={{ marginLeft: '8px' }}>{badge('#ef4444', 'Banned')}</span>}
+                                                        </p>
+                                                        <p style={{ fontSize: '11px', color: muted, margin: 0, wordBreak: 'break-all' }}>{u.email}</p>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                                        <p style={{ fontSize: '11px', color: muted, margin: 0 }}>
+                                                            joined {new Date(u.joined).toLocaleDateString()}
+                                                        </p>
+                                                        <p style={{ fontSize: '11px', color: muted, margin: 0 }}
+                                                            title={new Date(u.last_seen).toLocaleString()}>
+                                                            last login {new Date(u.last_seen).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                            <button type="button" onClick={() => setShowSharedModal(false)} style={btnCancel}>Close</button>
+                        </div>
                     </div>
                 </div>
             )}

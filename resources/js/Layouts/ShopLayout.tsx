@@ -106,10 +106,10 @@ export default function ShopLayout({ children, chartItems = [], totalPrice = 0, 
             {/* Sticky Bottom Bar - Chart Summary */}
             {chartItems.length > 0 && (
                 <div 
-                    className="fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md border-t"
+                    className="fixed bottom-0 left-0 right-0 z-40 border-t shadow-lg"
                     style={{
-                        backgroundColor: `${currentTheme.background}95`,
-                        borderColor: `${currentTheme.foreground}20`
+                        backgroundColor: currentTheme.background,
+                        borderColor: `${currentTheme.foreground}15`
                     }}
                 >
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

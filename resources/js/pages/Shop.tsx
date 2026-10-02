@@ -156,57 +156,56 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
             {showPendingModal && pendingPurchase && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
                     onClick={() => setShowPendingModal(false)}
                 >
                     <div
-                        className="rounded-2xl p-8 max-w-sm w-full border-2 shadow-2xl"
+                        className="rounded-lg p-6 max-w-sm w-full border"
                         style={{
                             backgroundColor: currentTheme.background,
-                            borderColor: '#f59e0b80',
-                            boxShadow: '0 0 40px rgba(245,158,11,0.25)',
+                            borderColor: '#f59e0b40',
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Icon */}
                         <div className="flex justify-center mb-4">
-                            <div className="w-14 h-14 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
-                                <svg className="w-7 h-7" style={{ color: '#f59e0b' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: 'rgba(245,158,11,0.12)' }}>
+                                <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
                         </div>
 
-                        <h2 className="text-xl font-bold text-center mb-2" style={{ color: '#f59e0b' }}>
+                        <h2 className="text-lg font-bold text-center mb-1 text-amber-500">
                             Pending Transaction
                         </h2>
-                        <p className="text-sm text-center mb-5 opacity-60" style={{ color: currentTheme.foreground }}>
+                        <p className="text-xs text-center mb-5" style={{ color: `${currentTheme.foreground}70` }}>
                             You have an unfinished payment of{' '}
-                            <span className="font-semibold" style={{ color: '#f59e0b' }}>
+                            <span className="font-semibold text-amber-500">
                                 ¢{pendingPurchase.coins_amount.toLocaleString()}
                             </span>
                             {' '}(${pendingPurchase.price_usd} via{' '}
-                            <span className="capitalize">{pendingPurchase.payment_method}</span>).
+                            <span className="capitalize font-medium">{pendingPurchase.payment_method}</span>).
                             Please complete or cancel it before starting a new one.
                         </p>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-2.5">
                             <button
                                 onClick={() => router.visit(pendingPurchase.status_url)}
-                                className="w-full py-3 rounded-xl font-bold transition-all"
-                                style={{ backgroundColor: '#f59e0b', color: '#fff' }}
+                                className="w-full py-2.5 rounded-lg font-bold text-sm transition-opacity hover:opacity-90"
+                                style={{ backgroundColor: '#f59e0b', color: '#000' }}
                             >
                                 Continue Payment
                             </button>
                             <button
                                 onClick={() => setShowPendingModal(false)}
-                                className="w-full py-3 rounded-xl font-semibold border transition-all"
+                                className="w-full py-2.5 rounded-lg font-medium text-sm border transition-opacity hover:opacity-80"
                                 style={{
                                     backgroundColor: 'transparent',
-                                    color: `${currentTheme.foreground}80`,
-                                    borderColor: `${currentTheme.foreground}20`,
+                                    color: `${currentTheme.foreground}70`,
+                                    borderColor: `${currentTheme.foreground}15`,
                                 }}
                             >
                                 Dismiss
@@ -220,55 +219,54 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
             {showPendingMembershipModal && pendingMembershipPurchase && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
                     onClick={() => setShowPendingMembershipModal(false)}
                 >
                     <div
-                        className="rounded-2xl p-8 max-w-sm w-full border-2 shadow-2xl"
+                        className="rounded-lg p-6 max-w-sm w-full border"
                         style={{
                             backgroundColor: currentTheme.background,
-                            borderColor: `${SHINY_PURPLE}60`,
-                            boxShadow: `0 0 40px ${SHINY_PURPLE}25`,
+                            borderColor: `${SHINY_PURPLE}40`,
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex justify-center mb-4">
-                            <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center"
                                 style={{ backgroundColor: `${SHINY_PURPLE}15` }}>
-                                <svg className="w-7 h-7" style={{ color: SHINY_PURPLE }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-6 h-6" style={{ color: SHINY_PURPLE }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                             </div>
                         </div>
 
-                        <h2 className="text-xl font-bold text-center mb-2" style={{ color: SHINY_PURPLE }}>
+                        <h2 className="text-lg font-bold text-center mb-1" style={{ color: SHINY_PURPLE }}>
                             Pending Membership
                         </h2>
-                        <p className="text-sm text-center mb-5 opacity-60" style={{ color: currentTheme.foreground }}>
+                        <p className="text-xs text-center mb-5" style={{ color: `${currentTheme.foreground}70` }}>
                             You have an unfinished membership payment of{' '}
                             <span className="font-semibold" style={{ color: SHINY_PURPLE }}>
                                 ${pendingMembershipPurchase.amount_usd}
                             </span>
-                            {' '}via <span className="capitalize">{pendingMembershipPurchase.payment_method}</span>.
+                            {' '}via <span className="capitalize font-medium">{pendingMembershipPurchase.payment_method}</span>.
                             Please complete or cancel it before starting a new one.
                         </p>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-2.5">
                             <button
                                 onClick={() => router.visit(pendingMembershipPurchase.status_url)}
-                                className="w-full py-3 rounded-xl font-bold transition-all"
-                                style={{ background: `linear-gradient(135deg, #a78bfa, #e879f9)`, color: '#fff' }}
+                                className="w-full py-2.5 rounded-lg font-bold text-sm transition-opacity hover:opacity-90"
+                                style={{ backgroundColor: '#a78bfa', color: '#000' }}
                             >
                                 Continue Payment
                             </button>
                             <button
                                 onClick={() => setShowPendingMembershipModal(false)}
-                                className="w-full py-3 rounded-xl font-semibold border transition-all"
+                                className="w-full py-2.5 rounded-lg font-medium text-sm border transition-opacity hover:opacity-80"
                                 style={{
                                     backgroundColor: 'transparent',
-                                    color: `${currentTheme.foreground}80`,
-                                    borderColor: `${currentTheme.foreground}20`,
+                                    color: `${currentTheme.foreground}70`,
+                                    borderColor: `${currentTheme.foreground}15`,
                                 }}
                             >
                                 Dismiss
@@ -282,36 +280,29 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
 
                 {/* ── Hero Banner ── */}
                 <div
-                    className="relative overflow-hidden"
+                    className="border-b"
                     style={{
-                        background: activeTab === 'coins'
-                            ? `linear-gradient(135deg, rgba(120,53,15,0.45) 0%, rgba(217,119,6,0.25) 40%, ${currentTheme.background} 80%)`
-                            : `linear-gradient(135deg, rgba(109,40,217,0.45) 0%, rgba(167,139,250,0.2) 40%, ${currentTheme.background} 80%)`,
+                        backgroundColor: `${currentTheme.foreground}04`,
+                        borderColor: `${currentTheme.foreground}15`,
                     }}
                 >
-                    {/* Decorative blobs */}
-                    <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full opacity-20 blur-3xl pointer-events-none"
-                        style={{ backgroundColor: activeTab === 'coins' ? '#f59e0b' : SHINY_PURPLE }} />
-                    <div className="absolute top-4 right-1/3 w-32 h-32 rounded-full opacity-10 blur-2xl pointer-events-none"
-                        style={{ backgroundColor: activeTab === 'coins' ? '#fbbf24' : '#c084fc' }} />
-
-                    <div className="relative w-full px-4 sm:px-6 lg:px-10 xl:px-16 pt-8 pb-6">
+                    <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 py-6">
                         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
                             {/* Title */}
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
                                     {activeTab === 'coins' ? (
-                                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl"
-                                            style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
-                                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
+                                            style={{ backgroundColor: '#f59e0b15', color: '#f59e0b' }}>
+                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                 <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                                                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                                             </svg>
                                         </span>
                                     ) : (
-                                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl"
-                                            style={{ background: `linear-gradient(135deg, ${SHINY_PURPLE}, #7c3aed)` }}>
-                                            <PremiumDiamond size={16} />
+                                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg"
+                                            style={{ backgroundColor: `${SHINY_PURPLE}15`, color: SHINY_PURPLE }}>
+                                            <PremiumDiamond size={15} />
                                         </span>
                                     )}
                                     <span className="text-xs font-bold uppercase tracking-widest"
@@ -319,11 +310,11 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
                                         {activeTab === 'coins' ? 'Coin Store' : 'Premium Club'}
                                     </span>
                                 </div>
-                                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight"
+                                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight"
                                     style={{ color: currentTheme.foreground }}>
                                     {activeTab === 'coins' ? 'Top Up Coins' : 'Membership'}
                                 </h1>
-                                <p className="text-sm mt-1" style={{ color: `${currentTheme.foreground}55` }}>
+                                <p className="text-xs sm:text-sm mt-0.5" style={{ color: `${currentTheme.foreground}70` }}>
                                     {activeTab === 'coins'
                                         ? 'Buy coins to unlock premium chapters instantly'
                                         : 'Unlimited premium access for true readers'}
@@ -333,32 +324,31 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
                             {/* Balance + Tab Switcher */}
                             <div className="flex flex-col sm:items-end gap-3">
                                 {userCoins !== undefined && (
-                                    <div className="flex items-center gap-2 px-4 py-2 rounded-2xl self-start sm:self-auto"
+                                    <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg self-start sm:self-auto border"
                                         style={{
-                                            background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(251,191,36,0.06))',
-                                            border: '1px solid rgba(245,158,11,0.3)',
+                                            backgroundColor: `${currentTheme.foreground}08`,
+                                            borderColor: `${currentTheme.foreground}15`,
                                         }}>
-                                        <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg className="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                                         </svg>
-                                        <span className="text-xs font-medium" style={{ color: `${currentTheme.foreground}60` }}>Balance</span>
-                                        <span className="text-base font-extrabold text-amber-400">¢{userCoins.toLocaleString()}</span>
+                                        <span className="text-xs font-medium" style={{ color: `${currentTheme.foreground}70` }}>Balance</span>
+                                        <span className="text-sm font-bold text-amber-500">¢{userCoins.toLocaleString()}</span>
                                     </div>
                                 )}
 
                                 {/* Tab switcher — fullwidth on mobile, auto on desktop */}
-                                <div className="flex w-full sm:w-auto gap-1 p-1 rounded-2xl"
+                                <div className="flex w-full sm:w-auto gap-1 p-1 rounded-lg border"
                                     style={{
                                         backgroundColor: `${currentTheme.foreground}08`,
-                                        border: `1px solid ${currentTheme.foreground}10`,
+                                        borderColor: `${currentTheme.foreground}15`,
                                     }}>
                                     <button onClick={() => switchTab('coins')}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors duration-150"
                                         style={{
-                                            background: activeTab === 'coins' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'transparent',
-                                            color: activeTab === 'coins' ? '#fff' : `${currentTheme.foreground}55`,
-                                            boxShadow: activeTab === 'coins' ? '0 4px 14px rgba(245,158,11,0.4)' : 'none',
+                                            backgroundColor: activeTab === 'coins' ? '#f59e0b' : 'transparent',
+                                            color: activeTab === 'coins' ? '#000' : `${currentTheme.foreground}70`,
                                         }}>
                                         <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
@@ -367,11 +357,10 @@ function ShopContent({ coinPackages, membershipPackages, activeTab: initialTab, 
                                         Coins
                                     </button>
                                     <button onClick={() => switchTab('membership')}
-                                        className="flex-1 flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-300"
+                                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-colors duration-150"
                                         style={{
-                                            backgroundColor: activeTab === 'membership' ? SHINY_PURPLE : 'transparent',
-                                            color: activeTab === 'membership' ? '#fff' : `${currentTheme.foreground}55`,
-                                            boxShadow: activeTab === 'membership' ? `0 4px 14px ${SHINY_PURPLE}50` : 'none',
+                                            backgroundColor: activeTab === 'membership' ? '#a78bfa' : 'transparent',
+                                            color: activeTab === 'membership' ? '#000' : `${currentTheme.foreground}70`,
                                         }}>
                                         <PremiumDiamond size={13} />
                                         Membership
@@ -435,30 +424,20 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
 
                     return (
                         <button key={pkg.id} type="button" onClick={() => setSelectedPackage(isSelected ? null : pkg.id)}
-                            className="relative rounded-2xl text-center transition-all duration-300 overflow-hidden group"
+                            className="relative rounded-lg text-center transition-colors duration-150 overflow-hidden"
                             style={{
-                                background: isSelected
-                                    ? 'linear-gradient(160deg, #78350f 0%, #92400e 40%, #b45309 100%)'
-                                    : pkg.bonus_premium_days > 0
-                                    ? `linear-gradient(160deg, ${SHINY_PURPLE_DIM}, rgba(109,40,217,0.08))`
-                                    : `${currentTheme.foreground}05`,
-                                border: `1.5px solid ${isSelected ? '#f59e0b' : pkg.bonus_premium_days > 0 ? `${SHINY_PURPLE}30` : `${currentTheme.foreground}10`}`,
-                                boxShadow: isSelected
-                                    ? '0 12px 32px rgba(245,158,11,0.35), inset 0 1px 0 rgba(255,255,255,0.1)'
-                                    : '0 2px 8px rgba(0,0,0,0.06)',
-                                transform: isSelected ? 'translateY(-4px) scale(1.02)' : undefined,
+                                backgroundColor: isSelected
+                                    ? `${currentTheme.foreground}0C`
+                                    : `${currentTheme.foreground}08`,
+                                border: `1.5px solid ${isSelected ? '#f59e0b' : `${currentTheme.foreground}15`}`,
                             }}>
-
-                            {/* Shine overlay on hover */}
-                            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%)' }} />
 
                             {/* Package name tag */}
                             <div className="px-3 pt-3 pb-1">
                                 <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide"
                                     style={{
-                                        background: isSelected ? 'rgba(255,255,255,0.2)' : 'linear-gradient(90deg, #d97706, #f59e0b)',
-                                        color: isSelected ? '#fde68a' : '#fff',
+                                        backgroundColor: isSelected ? 'rgba(245,158,11,0.18)' : `${currentTheme.foreground}10`,
+                                        color: isSelected ? '#f59e0b' : currentTheme.foreground,
                                     }}>
                                     {pkg.name}
                                 </span>
@@ -468,7 +447,7 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
                             {bonusPct > 0 && (
                                 <div className="absolute top-2 right-2 z-10">
                                     <span className="block px-1.5 py-0.5 rounded-full text-[9px] font-extrabold text-white"
-                                        style={{ background: 'linear-gradient(135deg, #059669, #10b981)' }}>
+                                        style={{ backgroundColor: '#10b981' }}>
                                         +{Math.round(bonusPct)}%
                                     </span>
                                 </div>
@@ -477,23 +456,18 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
                             {/* Coin icon */}
                             <div className="flex justify-center py-3">
                                 <div className="relative">
-                                    <div className="w-14 h-14 rounded-full flex items-center justify-center"
+                                    <div className="w-12 h-12 rounded-full flex items-center justify-center border"
                                         style={{
-                                            background: isSelected
-                                                ? 'radial-gradient(circle at 35% 30%, #fde68a 0%, #f59e0b 50%, #d97706 100%)'
-                                                : 'radial-gradient(circle at 35% 30%, rgba(253,230,138,0.5) 0%, rgba(245,158,11,0.25) 60%, rgba(217,119,6,0.1) 100%)',
-                                            boxShadow: isSelected
-                                                ? '0 4px 16px rgba(245,158,11,0.5), inset 0 -2px 4px rgba(180,83,9,0.3), inset 0 2px 4px rgba(254,243,199,0.4)'
-                                                : '0 2px 8px rgba(245,158,11,0.15)',
+                                            backgroundColor: isSelected ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.10)',
+                                            borderColor: isSelected ? '#f59e0b50' : 'rgba(245,158,11,0.25)',
                                         }}>
-                                        <span className="text-xl font-black"
-                                            style={{ color: isSelected ? '#78350f' : '#f59e0b', fontFamily: 'serif' }}>
+                                        <span className="text-lg font-black text-amber-500" style={{ fontFamily: 'serif' }}>
                                             ¢
                                         </span>
                                     </div>
                                     {pkg.bonus_premium_days > 0 && (
                                         <div className="absolute -bottom-1 -right-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full"
-                                            style={{ backgroundColor: `${SHINY_PURPLE}`, boxShadow: `0 2px 6px ${SHINY_PURPLE}60` }}>
+                                            style={{ backgroundColor: SHINY_PURPLE }}>
                                             <PremiumDiamond size={8} />
                                             <span className="text-[8px] font-bold text-white">+{pkg.bonus_premium_days}d</span>
                                         </div>
@@ -503,30 +477,23 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
 
                             {/* Coin amount */}
                             <div className="px-2 pb-1">
-                                <div className="text-2xl font-extrabold leading-none"
-                                    style={{ color: isSelected ? '#fde68a' : '#f59e0b' }}>
+                                <div className="text-xl font-extrabold leading-none text-amber-500">
                                     ¢{pkg.coin_amount.toLocaleString()}
                                 </div>
                                 <div className="text-[9px] uppercase tracking-widest mt-0.5"
-                                    style={{ color: isSelected ? 'rgba(253,230,138,0.5)' : `${currentTheme.foreground}30` }}>
+                                    style={{ color: `${currentTheme.foreground}70` }}>
                                     coins
                                 </div>
                             </div>
 
                             {/* Divider + Price */}
-                            <div className="mx-3 my-2" style={{ height: '1px', backgroundColor: isSelected ? 'rgba(255,255,255,0.12)' : `${currentTheme.foreground}08` }} />
+                            <div className="mx-3 my-2" style={{ height: '1px', backgroundColor: `${currentTheme.foreground}15` }} />
                             <div className="px-3 pb-3">
-                                <div className="text-lg font-extrabold" style={{ color: isSelected ? '#fff' : currentTheme.foreground }}>
+                                <div className="text-base font-extrabold" style={{ color: currentTheme.foreground }}>
                                     ${pkg.price_usd}
                                 </div>
-                                <div className="text-[9px] uppercase tracking-widest" style={{ color: isSelected ? 'rgba(255,255,255,0.4)' : `${currentTheme.foreground}30` }}>USD</div>
+                                <div className="text-[9px] uppercase tracking-widest" style={{ color: `${currentTheme.foreground}70` }}>USD</div>
                             </div>
-
-                            {/* Selected ring pulse */}
-                            {isSelected && (
-                                <div className="absolute inset-0 rounded-2xl pointer-events-none"
-                                    style={{ boxShadow: `inset 0 0 0 1.5px rgba(251,191,36,0.6)` }} />
-                            )}
                         </button>
                     );
                 })}
@@ -536,25 +503,22 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
                 {/* Payment Methods */}
-                <div className="rounded-2xl p-5"
-                    style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
-                    <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}` }}>
+                <div className="rounded-lg p-5 border"
+                    style={{ backgroundColor: `${currentTheme.foreground}08`, borderColor: `${currentTheme.foreground}15` }}>
+                    <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: currentTheme.foreground }}>
                         Payment Method
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                         {/* PayPal */}
                         <button type="button" onClick={() => setPaymentMethod('paypal')}
-                            className="relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200"
+                            className="relative flex flex-col items-center gap-2 p-4 rounded-lg transition-colors duration-150"
                             style={{
-                                background: paymentMethod === 'paypal'
-                                    ? 'linear-gradient(145deg, rgba(37,99,235,0.12), rgba(59,130,246,0.06))'
-                                    : `${currentTheme.foreground}03`,
-                                border: `1.5px solid ${paymentMethod === 'paypal' ? '#3b82f6' : `${currentTheme.foreground}08`}`,
-                                boxShadow: paymentMethod === 'paypal' ? '0 4px 16px rgba(59,130,246,0.2)' : 'none',
+                                backgroundColor: paymentMethod === 'paypal' ? `${currentTheme.foreground}0C` : `${currentTheme.foreground}04`,
+                                border: `1.5px solid ${paymentMethod === 'paypal' ? '#3b82f6' : `${currentTheme.foreground}15`}`,
                             }}>
                             <img src="/images/paymentlogo/paypal.svg" alt="PayPal" className="h-7 object-contain" />
                             <span className="text-xs font-bold text-blue-400">PayPal</span>
-                            <span className="text-[10px]" style={{ color: `${currentTheme.foreground}40` }}>Credit / Debit Card</span>
+                            <span className="text-[10px]" style={{ color: `${currentTheme.foreground}70` }}>Credit / Debit Card</span>
                             {paymentMethod === 'paypal' && (
                                 <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center">
                                     <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -566,19 +530,16 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
 
                         {/* OxaPay */}
                         <button type="button" onClick={() => setPaymentMethod('oxapay')}
-                            className="relative flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200"
+                            className="relative flex flex-col items-center gap-2 p-4 rounded-lg transition-colors duration-150"
                             style={{
-                                background: paymentMethod === 'oxapay'
-                                    ? 'linear-gradient(145deg, rgba(16,185,129,0.12), rgba(5,150,105,0.06))'
-                                    : `${currentTheme.foreground}03`,
-                                border: `1.5px solid ${paymentMethod === 'oxapay' ? '#10b981' : `${currentTheme.foreground}08`}`,
-                                boxShadow: paymentMethod === 'oxapay' ? '0 4px 16px rgba(16,185,129,0.2)' : 'none',
+                                backgroundColor: paymentMethod === 'oxapay' ? `${currentTheme.foreground}0C` : `${currentTheme.foreground}04`,
+                                border: `1.5px solid ${paymentMethod === 'oxapay' ? '#10b981' : `${currentTheme.foreground}15`}`,
                             }}>
                             <img src="/images/paymentlogo/oxapay.svg" alt="OxaPay" className="h-7 object-contain" />
-                            <span className="text-xs font-bold" style={{ color: '#10b981' }}>OxaPay</span>
-                            <span className="text-[10px]" style={{ color: `${currentTheme.foreground}40` }}>Cryptocurrency</span>
+                            <span className="text-xs font-bold text-emerald-500">OxaPay</span>
+                            <span className="text-[10px]" style={{ color: `${currentTheme.foreground}70` }}>Cryptocurrency</span>
                             {paymentMethod === 'oxapay' && (
-                                <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10b981' }}>
+                                <div className="absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center bg-emerald-500">
                                     <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
@@ -589,42 +550,39 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
                 </div>
 
                 {/* Order summary + CTA */}
-                <div className="rounded-2xl p-5 flex flex-col"
+                <div className="rounded-lg p-5 border flex flex-col"
                     style={{
-                        background: selectedPkg
-                            ? 'linear-gradient(145deg, rgba(245,158,11,0.1) 0%, rgba(217,119,6,0.04) 100%)'
-                            : `${currentTheme.foreground}04`,
-                        border: `1.5px solid ${selectedPkg ? 'rgba(245,158,11,0.35)' : `${currentTheme.foreground}08`}`,
-                        transition: 'all 0.3s ease',
+                        backgroundColor: `${currentTheme.foreground}08`,
+                        borderColor: selectedPkg ? '#f59e0b50' : `${currentTheme.foreground}15`,
                     }}>
-                    <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}40` }}>
+                    <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}70` }}>
                         Order Summary
                     </p>
 
                     {selectedPkg ? (
                         <div className="flex-1 space-y-2.5 mb-5">
                             <div className="flex items-center justify-between">
-                                <span className="text-sm" style={{ color: `${currentTheme.foreground}55` }}>Package</span>
+                                <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>Package</span>
                                 <span className="text-sm font-semibold" style={{ color: currentTheme.foreground }}>{selectedPkg.name}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className="text-sm" style={{ color: `${currentTheme.foreground}55` }}>Coins</span>
-                                <span className="text-sm font-bold text-amber-400">¢{selectedPkg.coin_amount.toLocaleString()}</span>
+                                <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>Coins</span>
+                                <span className="text-sm font-bold text-amber-500">¢{selectedPkg.coin_amount.toLocaleString()}</span>
                             </div>
                             {selectedPkg.bonus_premium_days > 0 && (
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm" style={{ color: `${currentTheme.foreground}55` }}>Bonus</span>
+                                    <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>Bonus</span>
                                     <span className="text-sm font-semibold" style={{ color: SHINY_PURPLE }}>+{selectedPkg.bonus_premium_days}d Premium</span>
                                 </div>
                             )}
                             {paymentMethod === 'paypal' && paypalFee?.enabled && (
                                 <>
-                                    <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
-                                        <span className="text-sm" style={{ color: `${currentTheme.foreground}55` }}>Subtotal</span>
+                                    <div className="flex items-center justify-between pt-3" style={{ borderTop: `1px solid ${currentTheme.foreground}15` }}>
+                                        <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>Subtotal</span>
                                         <span className="text-sm" style={{ color: currentTheme.foreground }}>${coinPriceUsd.toFixed(2)}</span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm" style={{ color: `${currentTheme.foreground}55` }}>
+                                        <span className="text-sm" style={{ color: `${currentTheme.foreground}70` }}>
                                             PayPal fee <span className="opacity-60">({paypalFee.rate}% + ${paypalFee.fixed.toFixed(2)})</span>
                                         </span>
                                         <span className="text-sm" style={{ color: currentTheme.foreground }}>+${coinCharge.fee.toFixed(2)}</span>
@@ -632,31 +590,28 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
                                 </>
                             )}
                             <div className="flex items-center justify-between pt-3"
-                                style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
+                                style={{ borderTop: `1px solid ${currentTheme.foreground}15` }}>
                                 <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
-                                <span className="text-2xl font-extrabold" style={{ color: currentTheme.foreground }}>${coinCharge.total.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                <span className="text-xl font-extrabold" style={{ color: currentTheme.foreground }}>${coinCharge.total.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
                             </div>
                         </div>
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center py-5 mb-5 gap-2">
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: 'rgba(245,158,11,0.08)', border: '1.5px dashed rgba(245,158,11,0.25)' }}>
-                                <span className="text-xl font-black text-amber-400/40" style={{ fontFamily: 'serif' }}>¢</span>
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center border"
+                                style={{ backgroundColor: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.2)' }}>
+                                <span className="text-xl font-black text-amber-500/40" style={{ fontFamily: 'serif' }}>¢</span>
                             </div>
-                            <p className="text-sm text-center" style={{ color: `${currentTheme.foreground}35` }}>
+                            <p className="text-xs text-center" style={{ color: `${currentTheme.foreground}70` }}>
                                 Select a package to continue
                             </p>
                         </div>
                     )}
 
                     <button type="button" onClick={handlePurchase} disabled={isProcessing || !selectedPackage}
-                        className="w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-300"
+                        className="w-full py-3 rounded-lg font-bold text-sm transition-opacity"
                         style={{
-                            background: selectedPackage
-                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                                : `${currentTheme.foreground}08`,
-                            color: selectedPackage ? '#fff' : `${currentTheme.foreground}30`,
-                            boxShadow: selectedPackage && !isProcessing ? '0 6px 20px rgba(245,158,11,0.4)' : 'none',
+                            backgroundColor: selectedPackage ? '#f59e0b' : `${currentTheme.foreground}08`,
+                            color: selectedPackage ? '#000' : `${currentTheme.foreground}30`,
                             cursor: !selectedPackage || isProcessing ? 'not-allowed' : 'pointer',
                         }}>
                         {isProcessing ? (
@@ -678,8 +633,8 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
                     </button>
 
                     {selectedPkg && (
-                        <p className="mt-2.5 text-center text-[11px] flex items-center justify-center gap-1" style={{ color: `${currentTheme.foreground}30` }}>
-                            <svg className="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                        <p className="mt-2.5 text-center text-[11px] flex items-center justify-center gap-1" style={{ color: `${currentTheme.foreground}70` }}>
+                            <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                             </svg>
                             Secure payment · SSL encrypted
@@ -689,17 +644,17 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
             </div>
 
             {/* ── What's Coins? ── */}
-            <div className="mt-8 rounded-2xl p-6"
-                style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
-                <div className="flex items-center gap-2.5 mb-4">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.1))' }}>
-                        <span className="text-base font-black" style={{ color: '#f59e0b', fontFamily: 'serif' }}>¢</span>
+            <div className="mt-8 rounded-lg p-6 border"
+                style={{ backgroundColor: `${currentTheme.foreground}08`, borderColor: `${currentTheme.foreground}15` }}>
+                <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: 'rgba(245,158,11,0.15)' }}>
+                        <span className="text-sm font-black text-amber-500" style={{ fontFamily: 'serif' }}>¢</span>
                     </div>
                     <h3 className="text-base font-bold" style={{ color: currentTheme.foreground }}>What's Coins?</h3>
                 </div>
 
-                <p className="text-sm leading-relaxed mb-5" style={{ color: `${currentTheme.foreground}65` }}>
+                <p className="text-sm leading-relaxed mb-5" style={{ color: `${currentTheme.foreground}70` }}>
                     Coins are the base currency of Veinovel. Top up once and spend them however you like — no subscription required.
                 </p>
 
@@ -707,35 +662,35 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
                     {/* Use 1: Membership */}
                     <a
                         href="/shop?tab=membership"
-                        className="flex items-start gap-3 p-4 rounded-xl transition-all hover:opacity-80 group"
-                        style={{ backgroundColor: `${currentTheme.foreground}06`, border: `1px solid ${currentTheme.foreground}08` }}
+                        className="flex items-start gap-3 p-3.5 rounded-lg border transition-opacity hover:opacity-80 group"
+                        style={{ backgroundColor: `${currentTheme.foreground}04`, borderColor: `${currentTheme.foreground}10` }}
                     >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                            style={{ background: `linear-gradient(135deg, ${SHINY_PURPLE_DIM}, rgba(109,40,217,0.12))`, border: `1px solid ${SHINY_PURPLE}30` }}>
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ backgroundColor: `${SHINY_PURPLE}15`, border: `1px solid ${SHINY_PURPLE}30` }}>
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
                                 <path d="M12 2L3 9L12 22L21 9L12 2Z" fill={SHINY_PURPLE} stroke={SHINY_PURPLE} strokeWidth="0.5"/>
                             </svg>
                         </div>
                         <div>
                             <p className="text-sm font-semibold group-hover:underline" style={{ color: SHINY_PURPLE }}>Buy Membership</p>
-                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}70` }}>
                                 Unlock all premium chapters for a set period.
                             </p>
                         </div>
                     </a>
 
                     {/* Use 2: Chapters */}
-                    <div className="flex items-start gap-3 p-4 rounded-xl"
-                        style={{ backgroundColor: `${currentTheme.foreground}06`, border: `1px solid ${currentTheme.foreground}08` }}>
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                            style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(217,119,6,0.08))', border: '1px solid rgba(245,158,11,0.2)' }}>
-                            <svg className="w-4 h-4" fill="none" stroke="#f59e0b" viewBox="0 0 24 24" strokeWidth={2}>
+                    <div className="flex items-start gap-3 p-3.5 rounded-lg border"
+                        style={{ backgroundColor: `${currentTheme.foreground}04`, borderColor: `${currentTheme.foreground}10` }}>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ backgroundColor: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.3)' }}>
+                            <svg className="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                             </svg>
                         </div>
                         <div>
-                            <p className="text-sm font-semibold" style={{ color: '#f59e0b' }}>Unlock Chapters</p>
-                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                            <p className="text-sm font-semibold text-amber-500">Unlock Chapters</p>
+                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}70` }}>
                                 Buy individual premium chapters permanently — no membership needed.
                             </p>
                         </div>
@@ -744,18 +699,18 @@ function CoinShopTab({ packages, paypalFee }: { packages: CoinPackage[]; paypalF
                     {/* Use 3: Ebook */}
                     <a
                         href="/epub-novels"
-                        className="flex items-start gap-3 p-4 rounded-xl transition-all hover:opacity-80 group"
-                        style={{ backgroundColor: `${currentTheme.foreground}06`, border: `1px solid ${currentTheme.foreground}08` }}
+                        className="flex items-start gap-3 p-3.5 rounded-lg border transition-opacity hover:opacity-80 group"
+                        style={{ backgroundColor: `${currentTheme.foreground}04`, borderColor: `${currentTheme.foreground}10` }}
                     >
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
-                            style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.08))', border: '1px solid rgba(16,185,129,0.2)' }}>
-                            <svg className="w-4 h-4" fill="none" stroke="#10b981" viewBox="0 0 24 24" strokeWidth={2}>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
+                            style={{ backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)' }}>
+                            <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                             </svg>
                         </div>
                         <div>
-                            <p className="text-sm font-semibold group-hover:underline" style={{ color: '#10b981' }}>Buy Ebooks</p>
-                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                            <p className="text-sm font-semibold text-emerald-500 group-hover:underline">Buy Ebooks</p>
+                            <p className="text-xs mt-0.5 leading-relaxed" style={{ color: `${currentTheme.foreground}70` }}>
                                 Download EPUB &amp; PDF novels to keep forever.
                             </p>
                         </div>
@@ -951,40 +906,40 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
             {/* ── Downgrade Blocked Modal ── */}
             {blockedPkg && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
                     onClick={() => setBlockedPkg(null)}>
-                    <div className="rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl"
-                        style={{ backgroundColor: currentTheme.background, border: `1.5px solid ${EXCLUSIVE_GOLD}55`, boxShadow: `0 0 50px ${EXCLUSIVE_GOLD}20` }}
+                    <div className="rounded-lg p-6 max-w-sm w-full text-center border"
+                        style={{ backgroundColor: currentTheme.background, borderColor: `${EXCLUSIVE_GOLD}55` }}
                         onClick={(e) => e.stopPropagation()}>
-                        <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4"
-                            style={{ background: `radial-gradient(circle, ${EXCLUSIVE_GOLD}25, ${EXCLUSIVE_GOLD}08)` }}>
-                            <ExclusiveCrownIcon size={30} />
+                        <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3"
+                            style={{ backgroundColor: `${EXCLUSIVE_GOLD}18` }}>
+                            <ExclusiveCrownIcon size={26} />
                         </div>
 
-                        <h2 className="text-lg font-extrabold mb-2" style={{ color: currentTheme.foreground }}>
+                        <h2 className="text-base font-extrabold mb-1.5" style={{ color: currentTheme.foreground }}>
                             You're already on a higher plan
                         </h2>
 
-                        <p className="text-sm leading-relaxed mb-4" style={{ color: `${currentTheme.foreground}70` }}>
+                        <p className="text-xs leading-relaxed mb-4" style={{ color: `${currentTheme.foreground}70` }}>
                             <span className="font-bold" style={{ color: EXCLUSIVE_GOLD }}>Premium Exclusive</span> is active on your
                             account and already includes everything in{' '}
                             <span className="font-semibold" style={{ color: currentTheme.foreground }}>{blockedPkg.name}</span>.
                             Buying it now would replace your plan with the lower tier.
                         </p>
 
-                        <div className="rounded-xl p-3 mb-5 text-sm" style={{ backgroundColor: `${EXCLUSIVE_GOLD}0F`, border: `1px solid ${EXCLUSIVE_GOLD}25` }}>
-                            <span style={{ color: `${currentTheme.foreground}55` }}>Your plan runs until </span>
+                        <div className="rounded-lg p-3 mb-4 text-xs border" style={{ backgroundColor: `${EXCLUSIVE_GOLD}0F`, borderColor: `${EXCLUSIVE_GOLD}25` }}>
+                            <span style={{ color: `${currentTheme.foreground}70` }}>Your plan runs until </span>
                             <span className="font-bold" style={{ color: EXCLUSIVE_GOLD }}>
                                 {exclusiveExpiryLabel ?? 'your current expiry date'}
                             </span>
                         </div>
 
-                        <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}45` }}>
+                        <p className="text-[11px] mb-4" style={{ color: `${currentTheme.foreground}70` }}>
                             To add more time, renew Premium Exclusive instead.
                         </p>
 
                         <button onClick={() => setBlockedPkg(null)}
-                            className="w-full py-2.5 rounded-xl font-bold text-sm transition-all hover:brightness-110"
+                            className="w-full py-2.5 rounded-lg font-bold text-sm transition-opacity hover:opacity-90"
                             style={{ backgroundColor: EXCLUSIVE_GOLD, color: '#3b2a00' }}>
                             Got it
                         </button>
@@ -994,58 +949,56 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
             {/* ── Confirm Modal ── */}
             {showConfirmModal && selectedPkg && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }} onClick={() => setShowConfirmModal(false)}>
-                    <div className={`rounded-3xl p-7 max-w-sm w-full text-center shadow-2xl overflow-hidden backdrop-blur-xl${isExclusivePkg ? ' tier-neon' : ''}`}
-                        style={isExclusivePkg
-                            ? { backgroundColor: currentTheme.background, border: '2px solid transparent', backgroundImage: `linear-gradient(${currentTheme.background}, ${currentTheme.background}), ${TIER_GRADIENT.exclusive}`, backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', backgroundSize: 'auto, 300% 300%', boxShadow: TIER_GLOW.exclusive }
-                            : { backgroundColor: currentTheme.background, border: `2px solid ${SHINY_PURPLE}`, boxShadow: `0 0 60px ${SHINY_PURPLE}50` }}
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={() => setShowConfirmModal(false)}>
+                    <div className="rounded-lg p-6 max-w-sm w-full text-center border"
+                        style={{ backgroundColor: currentTheme.background, borderColor: isExclusivePkg ? `${EXCLUSIVE_GOLD}60` : `${SHINY_PURPLE}60` }}
                         onClick={(e) => e.stopPropagation()}>
-                        <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4"
-                            style={{ background: `radial-gradient(circle, ${pkgAccent}30, ${pkgAccent}10)`, boxShadow: `0 0 24px ${pkgAccent}40` }}>
-                            <TierIcon tier={pkgTier} size={28} />
+                        <div className="w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-3"
+                            style={{ backgroundColor: `${pkgAccent}20` }}>
+                            <TierIcon tier={pkgTier} size={24} />
                         </div>
-                        <h2 className="text-lg font-extrabold mb-1" style={{ color: currentTheme.foreground }}>Confirm Purchase</h2>
-                        <p className="text-sm mb-4" style={{ color: `${currentTheme.foreground}60` }}>
+                        <h2 className="text-base font-extrabold mb-1" style={{ color: currentTheme.foreground }}>Confirm Purchase</h2>
+                        <p className="text-xs mb-4" style={{ color: `${currentTheme.foreground}70` }}>
                             <span className="font-bold" style={{ color: pkgAccent }}>{selectedPkg.name}</span> — {selectedPkg.duration_days} days
                         </p>
 
-                        <div className="rounded-xl p-4 mb-4 text-left space-y-2 text-sm" style={{ backgroundColor: `${currentTheme.foreground}06` }}>
+                        <div className="rounded-lg p-3.5 mb-4 text-left space-y-2 text-xs border" style={{ backgroundColor: `${currentTheme.foreground}06`, borderColor: `${currentTheme.foreground}12` }}>
                             {isRealCurrency ? (
                                 <>
                                     {gimmickUsd > priceUsd && (
                                         <div className="flex justify-between">
-                                            <span style={{ color: `${currentTheme.foreground}50` }}>Regular Price</span>
+                                            <span style={{ color: `${currentTheme.foreground}70` }}>Regular Price</span>
                                             <span className="line-through opacity-40" style={{ color: currentTheme.foreground }}>${gimmickUsd.toFixed(2)}</span>
                                         </div>
                                     )}
-                                    <div className="flex justify-between pt-2" style={{ borderTop: gimmickUsd > priceUsd ? `1px solid ${currentTheme.foreground}10` : undefined }}>
+                                    <div className="flex justify-between pt-2" style={{ borderTop: gimmickUsd > priceUsd ? `1px solid ${currentTheme.foreground}12` : undefined }}>
                                         <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
-                                        <span className="text-xl font-extrabold" style={{ color: pkgAccent }}>${priceUsd.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                        <span className="text-lg font-extrabold" style={{ color: pkgAccent }}>${priceUsd.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
                                     </div>
-                                    <p className="text-[11px] pt-1" style={{ color: `${currentTheme.foreground}40` }}>
+                                    <p className="text-[11px] pt-1" style={{ color: `${currentTheme.foreground}70` }}>
                                         You'll be redirected to {paymentMethod === 'paypal' ? 'PayPal' : 'OxaPay'} to complete your payment.
                                     </p>
                                 </>
                             ) : voucherData ? (
                                 <>
-                                    <div className="flex justify-between"><span style={{ color: `${currentTheme.foreground}50` }}>Original</span><span className="line-through opacity-40" style={{ color: currentTheme.foreground }}>¢{selectedPkg.coin_price.toLocaleString()}</span></div>
-                                    <div className="flex justify-between"><span className="text-emerald-400">Voucher ({voucherCode})</span><span className="text-emerald-400">−¢{voucherData.discount_amount.toLocaleString()}</span></div>
-                                    <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}><span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span><span className="text-xl font-extrabold text-amber-400">¢{voucherData.final_amount.toLocaleString()}</span></div>
+                                    <div className="flex justify-between"><span style={{ color: `${currentTheme.foreground}70` }}>Original</span><span className="line-through opacity-40" style={{ color: currentTheme.foreground }}>¢{selectedPkg.coin_price.toLocaleString()}</span></div>
+                                    <div className="flex justify-between"><span className="text-emerald-500">Voucher ({voucherCode})</span><span className="text-emerald-500">−¢{voucherData.discount_amount.toLocaleString()}</span></div>
+                                    <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${currentTheme.foreground}12` }}><span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span><span className="text-lg font-extrabold text-amber-500">¢{voucherData.final_amount.toLocaleString()}</span></div>
                                 </>
                             ) : (
-                                <div className="flex justify-between"><span style={{ color: `${currentTheme.foreground}50` }}>Total Cost</span><span className="text-xl font-extrabold text-amber-400">¢{selectedPkg.coin_price.toLocaleString()}</span></div>
+                                <div className="flex justify-between"><span style={{ color: `${currentTheme.foreground}70` }}>Total Cost</span><span className="text-lg font-extrabold text-amber-500">¢{selectedPkg.coin_price.toLocaleString()}</span></div>
                             )}
                         </div>
 
                         {!isRealCurrency && (
-                            <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}40` }}>
-                                After purchase: <span className="font-bold text-amber-400">¢{(userCoins - finalCost).toLocaleString()}</span> remaining
+                            <p className="text-xs mb-4" style={{ color: `${currentTheme.foreground}70` }}>
+                                After purchase: <span className="font-bold text-amber-500">¢{(userCoins - finalCost).toLocaleString()}</span> remaining
                             </p>
                         )}
 
-                        <div className="flex gap-3">
-                            <button onClick={() => setShowConfirmModal(false)} className="flex-1 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-70" style={{ border: `1px solid ${currentTheme.foreground}15`, color: `${currentTheme.foreground}60` }}>Cancel</button>
-                            <button onClick={handleConfirmPurchase} disabled={isProcessing} className="flex-1 py-2.5 rounded-xl font-bold text-sm transition-all hover:brightness-110 disabled:opacity-50" style={{ backgroundColor: pkgAccent, color: isExclusivePkg ? '#3b2a00' : '#fff' }}>
+                        <div className="flex gap-2.5">
+                            <button onClick={() => setShowConfirmModal(false)} className="flex-1 py-2 rounded-lg font-medium text-xs border transition-opacity hover:opacity-80" style={{ borderColor: `${currentTheme.foreground}15`, color: `${currentTheme.foreground}70` }}>Cancel</button>
+                            <button onClick={handleConfirmPurchase} disabled={isProcessing} className="flex-1 py-2 rounded-lg font-bold text-xs transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: pkgAccent, color: isExclusivePkg ? '#3b2a00' : '#000' }}>
                                 {isProcessing ? 'Processing...' : isRealCurrency ? 'Continue →' : 'Confirm'}
                             </button>
                         </div>
@@ -1062,46 +1015,44 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                 const accent = isExcl ? EXCLUSIVE_GOLD : SHINY_PURPLE;
 
                 return (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.65)' }} onClick={() => setShowSuccess(false)}>
-                        <div className={`relative rounded-3xl p-[2px] max-w-sm w-full shadow-2xl ${isExcl ? 'tier-neon' : ''}`}
-                            style={{ background: isExcl ? TIER_GRADIENT.exclusive : SHINY_PURPLE, boxShadow: `0 0 60px ${accent}50` }}
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={() => setShowSuccess(false)}>
+                        <div className="rounded-lg p-6 max-w-sm w-full text-center border"
+                            style={{ backgroundColor: currentTheme.background, borderColor: `${accent}60` }}
                             onClick={(e) => e.stopPropagation()}>
-                            <div className="rounded-3xl p-8 text-center" style={{ backgroundColor: currentTheme.background }}>
-                                <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4"
-                                    style={{ background: `${accent}20`, boxShadow: `0 0 30px ${accent}50` }}>
-                                    <TierIcon tier={boughtTier === 'basic' ? 'premium' : boughtTier} size={36} />
-                                </div>
-                                <h2 className="text-2xl font-extrabold mb-2" style={{ color: accent }}>Congratulations!</h2>
-
-                                {premiumGranted ? (
-                                    <>
-                                        <p className="text-base mb-1" style={{ color: currentTheme.foreground }}>
-                                            <span className="font-bold" style={{ color: accent }}>{premiumGranted.days} {premiumGranted.days === 1 ? 'Day' : 'Days'}</span> of {TIER_LABEL[boughtTier === 'basic' ? 'premium' : boughtTier]}
-                                        </p>
-                                        <p className="font-semibold mb-3" style={{ color: accent }}>Has Been Added!</p>
-                                        <div className="inline-block px-4 py-1.5 rounded-xl mb-3" style={{ backgroundColor: `${accent}15`, border: `1px solid ${accent}35` }}>
-                                            <p className="text-sm font-semibold" style={{ color: accent }}>{premiumGranted.package_name}</p>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p className="text-base mb-1" style={{ color: currentTheme.foreground }}>
-                                            Your {TIER_LABEL[boughtTier === 'basic' ? 'premium' : boughtTier]} Membership
-                                        </p>
-                                        <p className="font-semibold mb-3" style={{ color: accent }}>Has Been Activated!</p>
-                                    </>
-                                )}
-
-                                <p className="text-xs mb-6" style={{ color: `${currentTheme.foreground}50` }}>
-                                    {isExcl
-                                        ? 'Every premium chapter, every EPUB volume, and no ads — all yours.'
-                                        : 'Enjoy unlimited access to all premium chapters and an ad-free experience.'}
-                                </p>
-                                <button onClick={() => setShowSuccess(false)} className="w-full py-2.5 rounded-xl font-bold transition-all hover:brightness-110"
-                                    style={{ background: isExcl ? `linear-gradient(90deg, ${SHINY_PURPLE}, ${EXCLUSIVE_GOLD})` : SHINY_PURPLE, color: isExcl ? '#1a1206' : '#fff' }}>
-                                    Start Reading {isExcl ? '♛' : '✦'}
-                                </button>
+                            <div className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-3"
+                                style={{ backgroundColor: `${accent}18` }}>
+                                <TierIcon tier={boughtTier === 'basic' ? 'premium' : boughtTier} size={30} />
                             </div>
+                            <h2 className="text-xl font-extrabold mb-1.5" style={{ color: accent }}>Congratulations!</h2>
+
+                            {premiumGranted ? (
+                                <>
+                                    <p className="text-sm mb-0.5" style={{ color: currentTheme.foreground }}>
+                                        <span className="font-bold" style={{ color: accent }}>{premiumGranted.days} {premiumGranted.days === 1 ? 'Day' : 'Days'}</span> of {TIER_LABEL[boughtTier === 'basic' ? 'premium' : boughtTier]}
+                                    </p>
+                                    <p className="text-xs font-semibold mb-3" style={{ color: accent }}>Has Been Added!</p>
+                                    <div className="inline-block px-3 py-1 rounded-lg mb-3 border" style={{ backgroundColor: `${accent}12`, borderColor: `${accent}30` }}>
+                                        <p className="text-xs font-semibold" style={{ color: accent }}>{premiumGranted.package_name}</p>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm mb-0.5" style={{ color: currentTheme.foreground }}>
+                                        Your {TIER_LABEL[boughtTier === 'basic' ? 'premium' : boughtTier]} Membership
+                                    </p>
+                                    <p className="text-xs font-semibold mb-3" style={{ color: accent }}>Has Been Activated!</p>
+                                </>
+                            )}
+
+                            <p className="text-xs mb-5" style={{ color: `${currentTheme.foreground}70` }}>
+                                {isExcl
+                                    ? 'Every premium chapter, every EPUB volume, and no ads — all yours.'
+                                    : 'Enjoy unlimited access to all premium chapters and an ad-free experience.'}
+                            </p>
+                            <button onClick={() => setShowSuccess(false)} className="w-full py-2.5 rounded-lg font-bold text-sm transition-opacity hover:opacity-90"
+                                style={{ backgroundColor: accent, color: isExcl ? '#1a1206' : '#000' }}>
+                                Start Reading {isExcl ? '♛' : '✦'}
+                            </button>
                         </div>
                     </div>
                 );
@@ -1109,7 +1060,7 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
             <form onSubmit={handleSubmit}>
                 {errorMessage && (
-                    <div className="rounded-xl px-4 py-3 flex items-center gap-3 mb-6" style={{ border: '1px solid #ef444440', backgroundColor: 'rgba(239,68,68,0.08)' }}>
+                    <div className="rounded-lg px-4 py-3 flex items-center gap-3 mb-6" style={{ border: '1px solid #ef444440', backgroundColor: 'rgba(239,68,68,0.08)' }}>
                         <svg className="w-4 h-4 text-red-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" /></svg>
                         <p className="flex-1 text-sm text-red-400">{errorMessage}</p>
                         <button type="button" onClick={() => setErrorMessage(null)} className="text-red-400 opacity-50 hover:opacity-100"><svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg></button>
@@ -1121,7 +1072,7 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                     {/* ── Left: Package Cards ── */}
                     <div>
                         <style>{EXCLUSIVE_STYLES}</style>
-                        <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}40` }}>
+                        <p className="text-xs uppercase tracking-widest font-bold mb-4" style={{ color: `${currentTheme.foreground}70` }}>
                             Choose Your Plan
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1135,84 +1086,85 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                                 const isBestValue = pkg.duration_days === 365;
                                 const canAfford = isRealCurrency ? true : userCoins >= coinPrice;
 
-                                // Exclusive gets its own card: full width across the
-                                // grid, and a neon treatment that sets it apart from
-                                // the Premium tier rather than blending into it.
+                                // Exclusive gets its own card: full width across the grid
                                 if (pkg.tier === 'exclusive') {
                                     return (
                                         <button key={pkg.id} type="button" onClick={() => setSelectedPackage(isSelected ? null : pkg.id)}
-                                            className="relative sm:col-span-2 p-[1.5px] rounded-2xl text-left transition-all duration-300 overflow-hidden group"
-                                            style={{ opacity: canAfford ? 1 : 0.45, transform: isSelected ? 'translateY(-2px)' : undefined }}>
+                                            className="excl-neon relative sm:col-span-2 p-5 rounded-lg text-left transition-shadow duration-150"
+                                            style={{
+                                                // Exclusive is Premium *plus* something, so its mark has to keep the
+                                                // Premium violet rather than replace it with gold. Three layers: the
+                                                // card tint, an opaque base under it, and the sweeping gradient —
+                                                // the first two clipped to the padding box so the gradient is only
+                                                // ever visible as the border. .excl-neon animates its position.
+                                                border: '1px solid transparent',
+                                                backgroundImage: [
+                                                    `linear-gradient(${currentTheme.foreground}${isSelected ? '0C' : '08'}, ${currentTheme.foreground}${isSelected ? '0C' : '08'})`,
+                                                    `linear-gradient(${currentTheme.background}, ${currentTheme.background})`,
+                                                    TIER_GRADIENT.exclusive,
+                                                ].join(', '),
+                                                backgroundOrigin: 'border-box',
+                                                backgroundClip: 'padding-box, padding-box, border-box',
+                                                backgroundSize: 'auto, auto, 260% 260%',
+                                                boxShadow: isSelected ? TIER_GLOW.exclusive : 'none',
+                                                opacity: canAfford ? 1 : 0.45,
+                                            }}>
 
-                                            {/* Animated neon border */}
-                                            <span className="excl-neon absolute inset-0 rounded-2xl"
-                                                style={{ background: `linear-gradient(115deg, ${SHINY_PURPLE}, ${EXCLUSIVE_GOLD}, #e879f9, ${EXCLUSIVE_GOLD}, ${SHINY_PURPLE})` }} />
-                                            {isSelected && (
-                                                <span className="excl-glow absolute -inset-1 rounded-2xl pointer-events-none"
-                                                    style={{ boxShadow: `0 0 26px ${SHINY_PURPLE}70, 0 0 46px ${EXCLUSIVE_GOLD}45` }} />
-                                            )}
-
-                                            <div className="relative rounded-2xl p-5 h-full" style={{ backgroundColor: currentTheme.background }}>
-                                                <div className="excl-neon absolute inset-0 rounded-2xl pointer-events-none"
-                                                    style={{ background: `linear-gradient(115deg, ${SHINY_PURPLE}1F, ${EXCLUSIVE_GOLD}14, transparent 70%)` }} />
-
-                                                <div className="relative flex items-start justify-between gap-4 flex-wrap">
-                                                    <div className="min-w-0">
-                                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide"
-                                                                style={{ background: `linear-gradient(90deg, ${SHINY_PURPLE}, ${EXCLUSIVE_GOLD})`, color: '#1a1206' }}>
-                                                                ♛ EXCLUSIVE
+                                            <div className="flex items-start justify-between gap-4 flex-wrap">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide"
+                                                            style={{ backgroundColor: `${EXCLUSIVE_GOLD}20`, color: EXCLUSIVE_GOLD, border: `1px solid ${EXCLUSIVE_GOLD}40` }}>
+                                                            ♛ EXCLUSIVE
+                                                        </span>
+                                                        {!isRealCurrency && !canAfford && (
+                                                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/20">
+                                                                NEED MORE COINS
                                                             </span>
-                                                            {!isRealCurrency && !canAfford && (
-                                                                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/20">
-                                                                    NEED MORE COINS
-                                                                </span>
-                                                            )}
-                                                        </div>
-
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <ExclusiveCrown size={22} />
-                                                            <h3 className="font-extrabold text-lg" style={{ color: currentTheme.foreground }}>{pkg.name}</h3>
-                                                        </div>
-                                                        <p className="text-xs mb-3" style={{ color: `${currentTheme.foreground}45` }}>
-                                                            {pkg.duration_days} days · everything in Premium, plus every EPUB volume free
-                                                        </p>
-
+                                                        )}
                                                     </div>
 
-                                                    <div className="text-right flex-shrink-0">
-                                                        {isRealCurrency ? (
-                                                            <>
-                                                                <div className="flex items-end gap-2 justify-end">
-                                                                    <span className="text-3xl font-extrabold" style={{ color: EXCLUSIVE_GOLD }}>${pkgPriceUsd.toFixed(2)}</span>
-                                                                    {pkgGimmickUsd > pkgPriceUsd && (
-                                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>${pkgGimmickUsd.toFixed(2)}</span>
-                                                                    )}
-                                                                </div>
-                                                                {pkgUsdSavePct > 0 && (
-                                                                    <div className="mt-2 inline-flex px-2.5 py-1 rounded-lg text-xs font-bold"
-                                                                        style={{ backgroundColor: `${EXCLUSIVE_GOLD}18`, color: EXCLUSIVE_GOLD, border: `1px solid ${EXCLUSIVE_GOLD}30` }}>
-                                                                        Save {pkgUsdSavePct}%
-                                                                    </div>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <ExclusiveCrown size={20} />
+                                                        <h3 className="font-extrabold text-base sm:text-lg" style={{ color: currentTheme.foreground }}>{pkg.name}</h3>
+                                                    </div>
+                                                    <p className="text-xs mb-1" style={{ color: `${currentTheme.foreground}70` }}>
+                                                        {pkg.duration_days} days · everything in Premium, plus every EPUB volume free
+                                                    </p>
+                                                </div>
+
+                                                <div className="text-right flex-shrink-0">
+                                                    {isRealCurrency ? (
+                                                        <>
+                                                            <div className="flex items-end gap-2 justify-end">
+                                                                <span className="text-2xl sm:text-3xl font-extrabold" style={{ color: EXCLUSIVE_GOLD }}>${pkgPriceUsd.toFixed(2)}</span>
+                                                                {pkgGimmickUsd > pkgPriceUsd && (
+                                                                    <span className="text-xs line-through mb-1" style={{ color: `${currentTheme.foreground}50` }}>${pkgGimmickUsd.toFixed(2)}</span>
                                                                 )}
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className="flex items-end gap-2 justify-end">
-                                                                    <span className="text-3xl font-extrabold" style={{ color: EXCLUSIVE_GOLD }}>¢{coinPrice.toLocaleString()}</span>
-                                                                    {originalCoinPrice > 0 && (
-                                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>¢{originalCoinPrice.toLocaleString()}</span>
-                                                                    )}
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                        {isSelected && (
-                                                            <div className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold" style={{ color: EXCLUSIVE_GOLD }}>
-                                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                                                                Selected
                                                             </div>
-                                                        )}
-                                                    </div>
+                                                            {pkgUsdSavePct > 0 && (
+                                                                <div className="mt-1 inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                                    style={{ backgroundColor: `${EXCLUSIVE_GOLD}18`, color: EXCLUSIVE_GOLD, border: `1px solid ${EXCLUSIVE_GOLD}30` }}>
+                                                                    Save {pkgUsdSavePct}%
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className="flex items-end gap-2 justify-end">
+                                                                <span className="text-2xl sm:text-3xl font-extrabold" style={{ color: EXCLUSIVE_GOLD }}>¢{coinPrice.toLocaleString()}</span>
+                                                                {originalCoinPrice > 0 && (
+                                                                    <span className="text-xs line-through mb-1" style={{ color: `${currentTheme.foreground}50` }}>¢{originalCoinPrice.toLocaleString()}</span>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                    {isSelected && (
+                                                        <div className="mt-2 inline-flex items-center gap-1 text-xs font-bold" style={{ color: EXCLUSIVE_GOLD }}>
+                                                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                                            Selected
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </button>
@@ -1221,25 +1173,21 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
                                 return (
                                     <button key={pkg.id} type="button" onClick={() => setSelectedPackage(isSelected ? null : pkg.id)}
-                                        className="relative p-5 rounded-2xl text-left transition-all duration-300 overflow-hidden group"
+                                        className="relative p-5 rounded-lg text-left transition-colors duration-150 border"
                                         style={{
-                                            background: isSelected
-                                                ? `linear-gradient(145deg, ${SHINY_PURPLE}18 0%, ${SHINY_PURPLE}08 100%)`
-                                                : `${currentTheme.foreground}03`,
-                                            border: `1.5px solid ${isSelected ? SHINY_PURPLE : `${currentTheme.foreground}08`}`,
-                                            boxShadow: isSelected ? `0 8px 28px ${SHINY_PURPLE}25` : '0 2px 8px rgba(0,0,0,0.04)',
-                                            transform: isSelected ? 'translateY(-2px)' : undefined,
+                                            backgroundColor: isSelected
+                                                ? `${currentTheme.foreground}0C`
+                                                : `${currentTheme.foreground}08`,
+                                            borderColor: isSelected ? SHINY_PURPLE : `${currentTheme.foreground}15`,
                                             opacity: canAfford ? 1 : 0.45,
                                         }}>
-
-                                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                                            style={{ background: 'linear-gradient(135deg, rgba(167,139,250,0.04) 0%, transparent 70%)' }} />
 
                                         {/* Badges */}
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 {isBestValue && (
-                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide" style={{ background: `linear-gradient(90deg, ${SHINY_PURPLE}, #7c3aed)`, color: '#fff' }}>
+                                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide"
+                                                        style={{ backgroundColor: `${SHINY_PURPLE}20`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}40` }}>
                                                         ✦ BEST VALUE
                                                     </span>
                                                 )}
@@ -1250,27 +1198,27 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                                                 )}
                                             </div>
                                             {isSelected && (
-                                                <div className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: SHINY_PURPLE }}>
-                                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                                <div className="w-4 h-4 rounded-full flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: SHINY_PURPLE }}>
+                                                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                                                 </div>
                                             )}
                                         </div>
 
                                         <h3 className="font-extrabold text-base mb-1" style={{ color: currentTheme.foreground }}>{pkg.name}</h3>
-                                        <p className="text-xs mb-3" style={{ color: `${currentTheme.foreground}45` }}>{pkg.duration_days} days of unlimited access</p>
+                                        <p className="text-xs mb-3" style={{ color: `${currentTheme.foreground}70` }}>{pkg.duration_days} days of unlimited access</p>
 
                                         {/* Price display — switches based on payment method */}
                                         {isRealCurrency ? (
                                             <div>
                                                 <div className="flex items-end gap-2">
-                                                    <span className="text-3xl font-extrabold" style={{ color: SHINY_PURPLE }}>${pkgPriceUsd.toFixed(2)}</span>
+                                                    <span className="text-2xl font-extrabold" style={{ color: SHINY_PURPLE }}>${pkgPriceUsd.toFixed(2)}</span>
                                                     {pkgGimmickUsd > pkgPriceUsd && (
-                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>${pkgGimmickUsd.toFixed(2)}</span>
+                                                        <span className="text-xs line-through mb-1" style={{ color: `${currentTheme.foreground}50` }}>${pkgGimmickUsd.toFixed(2)}</span>
                                                     )}
                                                 </div>
                                                 {pkgUsdSavePct > 0 && (
-                                                    <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
-                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}20` }}>
+                                                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}25` }}>
                                                         Save {pkgUsdSavePct}%
                                                     </div>
                                                 )}
@@ -1278,14 +1226,14 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                                         ) : (
                                             <div>
                                                 <div className="flex items-end gap-2">
-                                                    <span className="text-3xl font-extrabold text-amber-400">¢{coinPrice.toLocaleString()}</span>
+                                                    <span className="text-2xl font-extrabold text-amber-500">¢{coinPrice.toLocaleString()}</span>
                                                     {originalCoinPrice > 0 && (
-                                                        <span className="text-sm line-through mb-1" style={{ color: `${currentTheme.foreground}30` }}>¢{originalCoinPrice.toLocaleString()}</span>
+                                                        <span className="text-xs line-through mb-1" style={{ color: `${currentTheme.foreground}50` }}>¢{originalCoinPrice.toLocaleString()}</span>
                                                     )}
                                                 </div>
                                                 {pkg.discount_percentage > 0 && (
-                                                    <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold"
-                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}20` }}>
+                                                    <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE, border: `1px solid ${SHINY_PURPLE}25` }}>
                                                         Save {pkg.discount_percentage}%
                                                     </div>
                                                 )}
@@ -1300,30 +1248,35 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                     {/* ── Right Sidebar ── */}
                     <div className="flex flex-col gap-4">
 
-                        {/* What You'll Get — follows the selected plan, so the
-                            panel answers "what am I buying" rather than listing
-                            one tier's perks next to another tier's price. */}
-                        <div className={`rounded-2xl overflow-hidden${isExclusivePkg ? ' tier-neon' : ''}`}
-                            style={isExclusivePkg
-                                ? { border: '1px solid transparent', backgroundImage: `linear-gradient(${currentTheme.background}, ${currentTheme.background}), ${TIER_GRADIENT.exclusive}`, backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', backgroundSize: 'auto, 300% 300%' }
-                                : { border: `1px solid ${SHINY_PURPLE}20` }}>
-                            <div className="px-5 py-3 flex items-center gap-2"
-                                style={{ background: isExclusivePkg
-                                    ? `linear-gradient(90deg, ${EXCLUSIVE_GOLD}22, ${EXCLUSIVE_GOLD}08)`
-                                    : `linear-gradient(90deg, ${SHINY_PURPLE}18, ${SHINY_PURPLE}08)` }}>
+                        {/* What You'll Get */}
+                        <div className={`rounded-lg overflow-hidden${isExclusivePkg ? ' excl-neon' : ' border'}`}
+                            style={isExclusivePkg ? {
+                                // Same violet-and-gold edge as the plan card, so the perks panel
+                                // reads as belonging to the tier it is describing.
+                                border: '1px solid transparent',
+                                backgroundImage: `linear-gradient(${currentTheme.background}, ${currentTheme.background}), ${TIER_GRADIENT.exclusive}`,
+                                backgroundOrigin: 'border-box',
+                                backgroundClip: 'padding-box, border-box',
+                                backgroundSize: 'auto, 260% 260%',
+                            } : { borderColor: `${SHINY_PURPLE}30` }}>
+                            <div className="px-4 py-2.5 flex items-center gap-2 border-b"
+                                style={{
+                                    backgroundColor: isExclusivePkg ? `${EXCLUSIVE_GOLD}12` : `${SHINY_PURPLE}12`,
+                                    borderColor: isExclusivePkg ? `${EXCLUSIVE_GOLD}25` : `${SHINY_PURPLE}20`,
+                                }}>
                                 <TierIcon tier={pkgTier} size={14} />
                                 <span className="text-xs font-extrabold uppercase tracking-wider" style={{ color: pkgAccent }}>
                                     {isExclusivePkg ? "What You'll Get — Exclusive" : "What You'll Get"}
                                 </span>
                             </div>
-                            <div className="px-5 py-4" style={{ backgroundColor: `${currentTheme.foreground}03` }}>
-                                <ul className="space-y-2.5">
+                            <div className="px-4 py-3.5" style={{ backgroundColor: `${currentTheme.foreground}04` }}>
+                                <ul className="space-y-2">
                                     {(isExclusivePkg
                                         ? ['All in Premium', 'Access Exclusive Epubs download']
                                         : ['Unlock all premium chapters', 'Completely ad-free reading', 'Access to EPUB downloads']
                                     ).map((text) => (
-                                        <li key={text} className="flex items-center gap-3 text-sm" style={{ color: currentTheme.foreground }}>
-                                            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 16 16" fill="none">
+                                        <li key={text} className="flex items-center gap-2.5 text-xs" style={{ color: currentTheme.foreground }}>
+                                            <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 16 16" fill="none">
                                                 <circle cx="8" cy="8" r="8" fill={`${pkgAccent}25`} />
                                                 <path d="M4.5 8l2.5 2.5 4.5-5" stroke={pkgAccent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                             </svg>
@@ -1335,25 +1288,22 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                         </div>
 
                         {/* ── Payment Method Selector ── */}
-                        <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${currentTheme.foreground}10` }}>
-                            <div className="px-5 py-3" style={{ backgroundColor: `${currentTheme.foreground}04` }}>
-                                <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: `${currentTheme.foreground}40` }}>Payment Method</p>
+                        <div className="rounded-lg overflow-hidden border" style={{ borderColor: `${currentTheme.foreground}15` }}>
+                            <div className="px-4 py-2.5 border-b" style={{ backgroundColor: `${currentTheme.foreground}06`, borderColor: `${currentTheme.foreground}15` }}>
+                                <p className="text-[10px] uppercase tracking-widest font-bold" style={{ color: `${currentTheme.foreground}70` }}>Payment Method</p>
                             </div>
-                            <div className="p-3 grid grid-cols-3 gap-2" style={{ backgroundColor: `${currentTheme.foreground}02` }}>
+                            <div className="p-2.5 grid grid-cols-3 gap-2" style={{ backgroundColor: `${currentTheme.foreground}02` }}>
                                 {/* Coins */}
                                 <button type="button" onClick={() => handlePaymentMethodChange('coins')}
-                                    className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200"
+                                    className="relative flex flex-col items-center gap-1 p-2.5 rounded-lg transition-colors duration-150"
                                     style={{
-                                        background: paymentMethod === 'coins'
-                                            ? `linear-gradient(145deg, ${SHINY_PURPLE}15, ${SHINY_PURPLE}06)`
-                                            : `${currentTheme.foreground}03`,
-                                        border: `1.5px solid ${paymentMethod === 'coins' ? SHINY_PURPLE : `${currentTheme.foreground}08`}`,
-                                        boxShadow: paymentMethod === 'coins' ? `0 4px 16px ${SHINY_PURPLE}20` : 'none',
+                                        backgroundColor: paymentMethod === 'coins' ? `${currentTheme.foreground}0C` : `${currentTheme.foreground}04`,
+                                        border: `1.5px solid ${paymentMethod === 'coins' ? SHINY_PURPLE : `${currentTheme.foreground}10`}`,
                                     }}>
-                                    <span className="text-lg font-black text-amber-400" style={{ fontFamily: 'serif' }}>¢</span>
-                                    <span className="text-[10px] font-bold" style={{ color: paymentMethod === 'coins' ? SHINY_PURPLE : `${currentTheme.foreground}50` }}>Coins</span>
+                                    <span className="text-base font-black text-amber-500" style={{ fontFamily: 'serif' }}>¢</span>
+                                    <span className="text-[10px] font-bold" style={{ color: paymentMethod === 'coins' ? SHINY_PURPLE : `${currentTheme.foreground}70` }}>Coins</span>
                                     {paymentMethod === 'coins' && (
-                                        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ backgroundColor: SHINY_PURPLE }}>
+                                        <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: SHINY_PURPLE }}>
                                             <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                                         </div>
                                     )}
@@ -1361,18 +1311,15 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
                                 {/* PayPal */}
                                 <button type="button" onClick={() => handlePaymentMethodChange('paypal')}
-                                    className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200"
+                                    className="relative flex flex-col items-center gap-1 p-2.5 rounded-lg transition-colors duration-150"
                                     style={{
-                                        background: paymentMethod === 'paypal'
-                                            ? 'linear-gradient(145deg, rgba(37,99,235,0.12), rgba(59,130,246,0.05))'
-                                            : `${currentTheme.foreground}03`,
-                                        border: `1.5px solid ${paymentMethod === 'paypal' ? '#3b82f6' : `${currentTheme.foreground}08`}`,
-                                        boxShadow: paymentMethod === 'paypal' ? '0 4px 16px rgba(59,130,246,0.2)' : 'none',
+                                        backgroundColor: paymentMethod === 'paypal' ? `${currentTheme.foreground}0C` : `${currentTheme.foreground}04`,
+                                        border: `1.5px solid ${paymentMethod === 'paypal' ? '#3b82f6' : `${currentTheme.foreground}10`}`,
                                     }}>
                                     <img src="/images/paymentlogo/paypal.svg" alt="PayPal" className="h-5 object-contain" />
                                     <span className="text-[10px] font-bold text-blue-400">PayPal</span>
                                     {paymentMethod === 'paypal' && (
-                                        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-blue-500 flex items-center justify-center">
+                                        <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-blue-500 flex items-center justify-center">
                                             <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                                         </div>
                                     )}
@@ -1380,18 +1327,15 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
                                 {/* OxaPay */}
                                 <button type="button" onClick={() => handlePaymentMethodChange('oxapay')}
-                                    className="relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200"
+                                    className="relative flex flex-col items-center gap-1 p-2.5 rounded-lg transition-colors duration-150"
                                     style={{
-                                        background: paymentMethod === 'oxapay'
-                                            ? 'linear-gradient(145deg, rgba(16,185,129,0.12), rgba(5,150,105,0.05))'
-                                            : `${currentTheme.foreground}03`,
-                                        border: `1.5px solid ${paymentMethod === 'oxapay' ? '#10b981' : `${currentTheme.foreground}08`}`,
-                                        boxShadow: paymentMethod === 'oxapay' ? '0 4px 16px rgba(16,185,129,0.2)' : 'none',
+                                        backgroundColor: paymentMethod === 'oxapay' ? `${currentTheme.foreground}0C` : `${currentTheme.foreground}04`,
+                                        border: `1.5px solid ${paymentMethod === 'oxapay' ? '#10b981' : `${currentTheme.foreground}10`}`,
                                     }}>
                                     <img src="/images/paymentlogo/oxapay.svg" alt="OxaPay" className="h-5 object-contain" />
-                                    <span className="text-[10px] font-bold" style={{ color: '#10b981' }}>OxaPay</span>
+                                    <span className="text-[10px] font-bold text-emerald-500">OxaPay</span>
                                     {paymentMethod === 'oxapay' && (
-                                        <div className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full flex items-center justify-center" style={{ backgroundColor: '#10b981' }}>
+                                        <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full flex items-center justify-center bg-emerald-500">
                                             <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
                                         </div>
                                     )}
@@ -1400,9 +1344,9 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
                             {/* Real-currency note */}
                             {isRealCurrency && (
-                                <div className="px-4 pb-3 flex items-center gap-2">
-                                    <svg className="w-3 h-3 text-emerald-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
-                                    <p className="text-[10px]" style={{ color: `${currentTheme.foreground}40` }}>
+                                <div className="px-3 pb-2.5 flex items-center gap-1.5">
+                                    <svg className="w-3 h-3 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                                    <p className="text-[10px]" style={{ color: `${currentTheme.foreground}70` }}>
                                         Secure payment · Vouchers not applicable for real currency
                                     </p>
                                 </div>
@@ -1412,59 +1356,59 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                         {/* ── Coins method: Balance + Voucher ── */}
                         {!isRealCurrency && (
                             <>
-                                <div className="rounded-2xl p-4 flex items-center justify-between"
-                                    style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
+                                <div className="rounded-lg p-3.5 border flex items-center justify-between"
+                                    style={{ backgroundColor: `${currentTheme.foreground}08`, borderColor: `${currentTheme.foreground}15` }}>
                                     <div>
-                                        <p className="text-[10px] uppercase tracking-widest font-bold mb-1" style={{ color: `${currentTheme.foreground}40` }}>Your Balance</p>
-                                        <p className="text-2xl font-extrabold text-amber-400">¢{userCoins.toLocaleString()}</p>
+                                        <p className="text-[10px] uppercase tracking-widest font-bold mb-0.5" style={{ color: `${currentTheme.foreground}70` }}>Your Balance</p>
+                                        <p className="text-xl font-extrabold text-amber-500">¢{userCoins.toLocaleString()}</p>
                                     </div>
                                     {selectedPkg && !canAffordSelected && (
                                         <div className="text-right">
-                                            <p className="text-xs text-red-400 mb-2">Need ¢{(finalCost - userCoins).toLocaleString()} more</p>
-                                            <a href="/shop?tab=coins" className="inline-block px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:brightness-110"
-                                                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+                                            <p className="text-xs text-red-400 mb-1">Need ¢{(finalCost - userCoins).toLocaleString()} more</p>
+                                            <a href="/shop?tab=coins" className="inline-block px-2.5 py-1 rounded-lg text-xs font-bold text-black transition-opacity hover:opacity-90"
+                                                style={{ backgroundColor: '#f59e0b' }}>
                                                 Buy Coins
                                             </a>
                                         </div>
                                     )}
                                     {selectedPkg && canAffordSelected && (
                                         <div className="text-right">
-                                            <p className="text-[10px] uppercase tracking-widest font-medium mb-0.5" style={{ color: `${currentTheme.foreground}35` }}>After purchase</p>
-                                            <p className="text-lg font-bold" style={{ color: `${currentTheme.foreground}60` }}>¢{(userCoins - finalCost).toLocaleString()}</p>
+                                            <p className="text-[10px] uppercase tracking-widest font-medium mb-0.5" style={{ color: `${currentTheme.foreground}70` }}>After purchase</p>
+                                            <p className="text-base font-bold" style={{ color: `${currentTheme.foreground}70` }}>¢{(userCoins - finalCost).toLocaleString()}</p>
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Voucher */}
-                                <div className="rounded-2xl p-4" style={{ backgroundColor: `${currentTheme.foreground}04`, border: `1px solid ${currentTheme.foreground}08` }}>
-                                    <p className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: `${currentTheme.foreground}40` }}>Have a Voucher?</p>
+                                <div className="rounded-lg p-3.5 border" style={{ backgroundColor: `${currentTheme.foreground}08`, borderColor: `${currentTheme.foreground}15` }}>
+                                    <p className="text-[10px] uppercase tracking-widest font-bold mb-2.5" style={{ color: `${currentTheme.foreground}70` }}>Have a Voucher?</p>
                                     {!voucherData ? (
                                         <>
                                             <div className="flex gap-2">
                                                 <input type="text" value={voucherCode} onChange={(e) => setVoucherCode(e.target.value.toUpperCase())}
                                                     placeholder={selectedPackage ? 'Enter code…' : 'Select a plan first'}
                                                     disabled={!selectedPackage || isApplyingVoucher}
-                                                    className="flex-1 px-3 py-2 rounded-xl text-sm focus:outline-none uppercase disabled:cursor-not-allowed"
+                                                    className="flex-1 px-2.5 py-1.5 rounded-lg text-xs focus:outline-none uppercase disabled:cursor-not-allowed"
                                                     style={{
-                                                        border: `1px solid ${voucherError ? '#ef4444' : `${currentTheme.foreground}12`}`,
-                                                        backgroundColor: `${currentTheme.foreground}05`,
+                                                        border: `1px solid ${voucherError ? '#ef4444' : `${currentTheme.foreground}15`}`,
+                                                        backgroundColor: `${currentTheme.foreground}04`,
                                                         color: currentTheme.foreground,
                                                         opacity: selectedPackage ? 1 : 0.45,
                                                     }} />
                                                 <button type="button" onClick={handleApplyVoucher} disabled={!voucherCode.trim() || isApplyingVoucher || !selectedPackage}
-                                                    className="px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-40"
-                                                    style={{ backgroundColor: SHINY_PURPLE, color: '#fff' }}>
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-bold transition-opacity disabled:opacity-40"
+                                                    style={{ backgroundColor: SHINY_PURPLE, color: '#000' }}>
                                                     {isApplyingVoucher ? '…' : 'Apply'}
                                                 </button>
                                             </div>
                                             {voucherError && <p className="mt-1.5 text-xs text-red-400">{voucherError}</p>}
                                         </>
                                     ) : (
-                                        <div className="flex items-center justify-between px-3 py-2 rounded-xl"
-                                            style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                        <div className="flex items-center justify-between px-3 py-2 rounded-lg border"
+                                            style={{ backgroundColor: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.2)' }}>
                                             <div>
-                                                <p className="text-xs font-extrabold text-emerald-400">{voucherCode}</p>
-                                                <p className="text-[10px] text-emerald-400 opacity-70">−{voucherData.discount_type === 'percent' ? `${voucherData.discount_value}%` : `¢${voucherData.discount_value}`} applied</p>
+                                                <p className="text-xs font-extrabold text-emerald-500">{voucherCode}</p>
+                                                <p className="text-[10px] text-emerald-500 opacity-80">−{voucherData.discount_type === 'percent' ? `${voucherData.discount_value}%` : `¢${voucherData.discount_value}`} applied</p>
                                             </div>
                                             <button type="button" onClick={handleRemoveVoucher} className="text-xs font-bold text-red-400 hover:opacity-70 transition-opacity">Remove</button>
                                         </div>
@@ -1475,49 +1419,46 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
                         {/* ── Real currency: USD summary ── */}
                         {isRealCurrency && selectedPkg && (
-                            <div className="rounded-2xl p-4" style={{ background: `linear-gradient(145deg, ${SHINY_PURPLE}10, ${SHINY_PURPLE}04)`, border: `1px solid ${SHINY_PURPLE}20` }}>
-                                <p className="text-[10px] uppercase tracking-widest font-bold mb-3" style={{ color: SHINY_PURPLE }}>Order Summary</p>
-                                <div className="space-y-2 text-sm">
+                            <div className="rounded-lg p-3.5 border" style={{ backgroundColor: `${currentTheme.foreground}08`, borderColor: `${SHINY_PURPLE}30` }}>
+                                <p className="text-[10px] uppercase tracking-widest font-bold mb-2.5" style={{ color: SHINY_PURPLE }}>Order Summary</p>
+                                <div className="space-y-1.5 text-xs">
                                     <div className="flex justify-between">
-                                        <span style={{ color: `${currentTheme.foreground}55` }}>Plan</span>
+                                        <span style={{ color: `${currentTheme.foreground}70` }}>Plan</span>
                                         <span className="font-semibold" style={{ color: currentTheme.foreground }}>{selectedPkg.name}</span>
                                     </div>
                                     {gimmickUsd > priceUsd && (
                                         <div className="flex justify-between">
-                                            <span style={{ color: `${currentTheme.foreground}55` }}>Regular Price</span>
+                                            <span style={{ color: `${currentTheme.foreground}70` }}>Regular Price</span>
                                             <span className="line-through opacity-40" style={{ color: currentTheme.foreground }}>${gimmickUsd.toFixed(2)}</span>
                                         </div>
                                     )}
                                     {usdSavePct > 0 && (
                                         <div className="flex justify-between">
-                                            <span className="text-emerald-400">Discount</span>
-                                            <span className="text-emerald-400">−{usdSavePct}%</span>
+                                            <span className="text-emerald-500">Discount</span>
+                                            <span className="text-emerald-500">−{usdSavePct}%</span>
                                         </div>
                                     )}
-                                    {/* PayPal's cut, itemised — the buyer should never
-                                        meet a total they cannot account for. */}
                                     {paymentMethod === 'paypal' && paypalFee?.enabled && (
                                         <>
-                                            <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${currentTheme.foreground}10` }}>
-                                                <span style={{ color: `${currentTheme.foreground}55` }}>Subtotal</span>
+                                            <div className="flex justify-between pt-1.5" style={{ borderTop: `1px solid ${currentTheme.foreground}15` }}>
+                                                <span style={{ color: `${currentTheme.foreground}70` }}>Subtotal</span>
                                                 <span style={{ color: currentTheme.foreground }}>${priceUsd.toFixed(2)}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span style={{ color: `${currentTheme.foreground}55` }}>
+                                                <span style={{ color: `${currentTheme.foreground}70` }}>
                                                     PayPal fee <span className="opacity-60">({paypalFee.rate}% + ${paypalFee.fixed.toFixed(2)})</span>
                                                 </span>
                                                 <span style={{ color: currentTheme.foreground }}>+${payTotal.fee.toFixed(2)}</span>
                                             </div>
                                         </>
                                     )}
-                                    <div className="flex justify-between pt-2" style={{ borderTop: `1px solid ${SHINY_PURPLE}20` }}>
+                                    <div className="flex justify-between pt-1.5" style={{ borderTop: `1px solid ${currentTheme.foreground}15` }}>
                                         <span className="font-bold" style={{ color: currentTheme.foreground }}>Total</span>
-                                        <span className="text-xl font-extrabold" style={{ color: SHINY_PURPLE }}>${payTotal.total.toFixed(2)} <span className="text-xs font-normal opacity-50">USD</span></span>
+                                        <span className="text-lg font-extrabold" style={{ color: SHINY_PURPLE }}>${payTotal.total.toFixed(2)} <span className="text-[10px] font-normal opacity-50">USD</span></span>
                                     </div>
 
-                                    {/* Brief, on purpose — the full rule belongs in help, not checkout. */}
                                     {currentTier && selectedPkg.tier !== currentTier && tierSwitchCarryOverDays > 0 && (
-                                        <p className="pt-2 text-xs leading-relaxed" style={{ color: `${currentTheme.foreground}50` }}>
+                                        <p className="pt-1.5 text-[11px] leading-relaxed" style={{ color: `${currentTheme.foreground}70` }}>
                                             Switching tiers: half your unused days carry over — <strong style={{ color: EXCLUSIVE_GOLD }}>+{tierSwitchCarryOverDays} day{tierSwitchCarryOverDays === 1 ? '' : 's'}</strong> added.
                                         </p>
                                     )}
@@ -1527,12 +1468,11 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
                         {/* ── Submit Button ── */}
                         <button type="submit" disabled={!selectedPackage || !canAffordSelected || isProcessing}
-                            className="w-full py-4 rounded-2xl font-extrabold text-base transition-all duration-300"
+                            className="w-full py-3 rounded-lg font-bold text-sm transition-opacity"
                             style={{
                                 backgroundColor: SHINY_PURPLE,
-                                color: '#fff',
-                                boxShadow: selectedPackage && canAffordSelected ? `0 8px 28px ${SHINY_PURPLE}45` : 'none',
-                                opacity: (!selectedPackage || !canAffordSelected || isProcessing) ? 0.4 : 1,
+                                color: '#000',
+                                opacity: (!selectedPackage || !canAffordSelected || isProcessing) ? 0.35 : 1,
                                 cursor: (!selectedPackage || !canAffordSelected || isProcessing) ? 'not-allowed' : 'pointer',
                             }}>
                             {isProcessing ? (
@@ -1548,8 +1488,8 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                         </button>
 
                         {selectedPkg && (
-                            <p className="text-center text-[11px] flex items-center justify-center gap-1" style={{ color: `${currentTheme.foreground}30` }}>
-                                <svg className="w-3 h-3 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                            <p className="text-center text-[11px] flex items-center justify-center gap-1" style={{ color: `${currentTheme.foreground}70` }}>
+                                <svg className="w-3 h-3 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                 Secure payment · SSL encrypted
                             </p>
                         )}

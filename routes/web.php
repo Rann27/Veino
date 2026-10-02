@@ -85,6 +85,23 @@ Route::post('/logout', function (Illuminate\Http\Request $request) {
     return redirect('/');
 })->name('logout');
 
+// Where a banned account is held. Outside the auth middleware on purpose: a
+// reader who signs out here should see the site's front page, not a loop.
+Route::get('/user-banned', function () {
+    $user = Auth::user();
+
+    // Not banned (or not signed in) — nothing to see.
+    if (! $user || ! $user->is_banned) {
+        return redirect('/');
+    }
+
+    return Inertia::render('UserBanned', [
+        'reason' => $user->ban_reason,
+        'bannedAt' => $user->banned_at?->toIso8601String(),
+        'discordUrl' => 'https://discord.gg/5HcJf7p3ZG',
+    ]);
+})->middleware('auth')->name('user.banned');
+
 // User-facing routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/api/home/latest-updates', [HomeController::class, 'latestUpdates'])->name('home.latest-updates');
@@ -267,6 +284,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/user-management', [UserController::class, 'index'])->name('users.index');
     Route::post('/users/{user}/ban', [UserController::class, 'banUser'])->name('users.ban');
     Route::post('/users/{user}/unban', [UserController::class, 'unbanUser'])->name('users.unban');
+    // Which accounts share a sign-in address — the multi-account check.
+    Route::get('/users/shared-ips', [UserController::class, 'sharedIps'])->name('users.shared-ips');
     Route::post('/users/{user}/add-membership', [UserController::class, 'addMembership'])->name('users.add-membership');
     Route::post('/users/{user}/add-coins', [UserController::class, 'addCoins'])->name('users.add-coins');
     Route::post('/users/{user}/deduct-coins', [UserController::class, 'deductCoins'])->name('users.deduct-coins');

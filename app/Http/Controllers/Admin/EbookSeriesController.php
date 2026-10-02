@@ -8,6 +8,7 @@ use App\Models\EbookItem;
 use App\Models\Genre;
 use App\Models\Series;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -136,8 +137,45 @@ class EbookSeriesController extends Controller
     {
         $series = EbookSeries::with(['genres', 'items'])->findOrFail($id);
 
-        $items = $series->items()->orderBy('order')->get()->map(function ($item) {
+        $items = $series->items()->orderBy('order')->get();
+
+        // Download figures for every volume in one grouped query, rather than
+        // one per row. Total counts every download; readers counts people.
+        $downloads = DB::table('ebook_downloads')
+            ->whereIn('ebook_item_id', $items->pluck('id'))
+            ->select(
+                'ebook_item_id',
+                'format',
+                DB::raw('SUM(downloads) as total'),
+                DB::raw('COUNT(*) as readers'),
+                DB::raw('MAX(last_downloaded_at) as last_at'),
+            )
+            ->groupBy('ebook_item_id', 'format')
+            ->get()
+            ->groupBy('ebook_item_id');
+
+        // Distinct readers across both formats, so someone who took the EPUB
+        // and the PDF counts once. Its own grouped query — summing the
+        // per-format reader counts would count that person twice.
+        $readers = DB::table('ebook_downloads')
+            ->whereIn('ebook_item_id', $items->pluck('id'))
+            ->select('ebook_item_id', DB::raw('COUNT(DISTINCT user_id) as readers'))
+            ->groupBy('ebook_item_id')
+            ->pluck('readers', 'ebook_item_id');
+
+        $items = $items->map(function ($item) use ($downloads, $readers) {
+            $rows = $downloads[$item->id] ?? collect();
+            $epub = $rows->firstWhere('format', 'epub');
+            $pdf = $rows->firstWhere('format', 'pdf');
+
             return [
+                'downloads' => [
+                    'epub' => (int) ($epub->total ?? 0),
+                    'pdf' => (int) ($pdf->total ?? 0),
+                    'total' => (int) $rows->sum('total'),
+                    'readers' => (int) ($readers[$item->id] ?? 0),
+                    'last_at' => $rows->max('last_at'),
+                ],
                 'id' => $item->id,
                 'title' => $item->title,
                 'cover_url' => $item->thumb_url,

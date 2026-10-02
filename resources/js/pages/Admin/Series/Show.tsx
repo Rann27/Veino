@@ -21,7 +21,7 @@ function TLabel({ children, muted }: { children: React.ReactNode; muted: string 
   return <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: muted }}>{children}</label>;
 }
 function TInput({ value, onChange, placeholder, type='text', required=false, inputRef, fg, border, cardBg, accent }:
-  { value: string; onChange: (v:string)=>void; placeholder?: string; type?: string; required?: boolean; inputRef?: React.RefObject<HTMLInputElement>; fg: string; border: string; cardBg: string; accent: string }) {
+  { value: string; onChange: (v:string)=>void; placeholder?: string; type?: string; required?: boolean; inputRef?: React.RefObject<HTMLInputElement | null>; fg: string; border: string; cardBg: string; accent: string }) {
   return (
     <input ref={inputRef} type={type} value={value} placeholder={placeholder} required={required}
       onChange={e => onChange(e.target.value)}

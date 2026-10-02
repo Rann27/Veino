@@ -61,7 +61,7 @@ export default function CoverImage({
 
     return (
         <div
-            className={`${aspectClass} rounded-md overflow-hidden relative ${containerClassName}`}
+            className={`${aspectClass} rounded-lg overflow-hidden relative ${containerClassName}`}
             style={{ backgroundColor: `${currentTheme.foreground}10` }}
         >
             {/* Skeleton shimmer — shown until image loads */}
@@ -87,7 +87,7 @@ export default function CoverImage({
                     onError={() => setError(true)}
                     className={[
                         'w-full h-full object-cover',
-                        hoverScale ? 'group-hover:scale-110 transition-all duration-300' : 'transition-opacity duration-500',
+                        hoverScale ? 'group-hover:scale-[1.02] transition-transform duration-200 ease-out' : 'transition-opacity duration-200',
                         loaded ? 'opacity-100' : 'opacity-0',
                         className,
                     ].join(' ')}

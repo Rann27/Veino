@@ -9,6 +9,7 @@ use App\Models\ChapterUnlockToken;
 use App\Models\PaymentSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -500,7 +501,17 @@ class ChapterUnlockService
         // same chapter at once would otherwise both see the same count and both
         // write the same successor, and the token would serve one grant more
         // than it was allowed to.
-        Chapter::whereKey($chapter->id)->increment('unlock_claim_count');
+        //
+        // Deliberately the query builder rather than Eloquent. Eloquent's
+        // increment() quietly folds in updated_at, and Latest Updates ranks
+        // series by MAX(chapters.updated_at) — so every free unlock was
+        // shoving its series to the top of the homepage as though a new
+        // chapter had been posted.
+        //
+        // Chapter::withoutTimestamps() would also have worked; this is the
+        // blunter version, chosen because it cannot be defeated by someone
+        // later calling the increment from outside that closure.
+        DB::table('chapters')->where('id', $chapter->id)->increment('unlock_claim_count');
 
         return ChapterTemporaryAccess::updateOrCreate(
             ['user_id' => $user->id, 'chapter_id' => $chapter->id],

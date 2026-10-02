@@ -38,6 +38,13 @@ Schedule::command('storage:purge-trash')
     ->dailyAt('03:30')
     ->timezone('UTC');
 
+// Raw event logs past their window. Kept apart from analytics:prune, which
+// guards page views behind their rollups; these have nothing to roll up.
+Schedule::command('logs:prune --days=90')
+    ->dailyAt('03:50')
+    ->timezone('UTC')
+    ->withoutOverlapping();
+
 // Catches any image the upload hooks missed — a file placed by FTP, or one
 // whose generation failed at the time. Cheap because anything that already has
 // a thumbnail is skipped, so on a normal night this does almost nothing.

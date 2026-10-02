@@ -1,4 +1,4 @@
-﻿import { useState, FormEvent, useRef } from 'react';
+import { useState, FormEvent, useRef } from 'react';
 import { router, usePage, Head } from '@inertiajs/react';
 import React from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
@@ -355,7 +355,7 @@ function MiscContent() {
     const cardBg  = light ? wa(fg, 0.03) : wa(fg, 0.06);
     const panelBg = light ? wa(fg, 0.06) : wa(fg, 0.09);
     const inputBg = light ? 'rgba(0,0,0,0.03)' : 'rgba(255,255,255,0.05)';
-    const accent  = currentTheme.accent || '#2563eb';
+    const accent  = '#2563eb';
 
     const emptyBanner: BannerData = { image_path: '', image_url: '', link_url: '', alt: '' };
 

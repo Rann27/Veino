@@ -96,10 +96,10 @@ function ThemedDropdown({
             <button
                 type="button"
                 onClick={() => setIsOpen((prev) => !prev)}
-                className="w-full py-2.5 px-3 rounded-xl text-sm transition-colors flex items-center justify-between"
+                className="w-full py-2.5 px-3 rounded-lg text-sm transition-colors flex items-center justify-between"
                 style={{
-                    backgroundColor: `${currentTheme.foreground}06`,
-                    border: `1px solid ${currentTheme.foreground}12`,
+                    backgroundColor: `${currentTheme.foreground}08`,
+                    border: `1px solid ${currentTheme.foreground}15`,
                     color: currentTheme.foreground,
                 }}
             >
@@ -117,10 +117,10 @@ function ThemedDropdown({
 
             {isOpen && (
                 <div
-                    className="absolute top-full mt-1 w-full rounded-xl overflow-hidden z-30 max-h-64 overflow-y-auto themed-scrollbar"
+                    className="absolute top-full mt-1 w-full rounded-lg overflow-hidden z-30 max-h-64 overflow-y-auto themed-scrollbar"
                     style={{
                         backgroundColor: currentTheme.background,
-                        border: `1px solid ${currentTheme.foreground}18`,
+                        border: `1px solid ${currentTheme.foreground}15`,
                         boxShadow: `0 8px 24px ${currentTheme.foreground}1A`,
                     }}
                 >
@@ -289,27 +289,27 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
 
                     {/* ─── Search & Controls Bar ─── */}
                     <div 
-                        className="rounded-2xl p-4 sm:p-5 mb-6"
+                        className="rounded-lg p-4 sm:p-5 mb-6"
                         style={{
-                            backgroundColor: `${currentTheme.foreground}04`,
-                            border: `1px solid ${currentTheme.foreground}08`,
+                            backgroundColor: `${currentTheme.foreground}08`,
+                            border: `1px solid ${currentTheme.foreground}15`,
                         }}
                     >
                         <div className="flex flex-col sm:flex-row gap-3">
                             {/* Search Input */}
                             <div className="flex-1 relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search by title or author..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full pl-10 pr-10 py-2.5 rounded-xl focus:ring-2 transition-colors text-sm"
-                                    style={{
-                                        backgroundColor: `${currentTheme.foreground}06`,
-                                        border: `1px solid ${currentTheme.foreground}12`,
-                                        color: currentTheme.foreground,
-                                    }}
-                                />
+                                 <input
+                                     type="text"
+                                     placeholder="Search by title or author..."
+                                     value={searchTerm}
+                                     onChange={(e) => setSearchTerm(e.target.value)}
+                                     className="w-full pl-10 pr-10 py-2.5 rounded-lg focus:ring-1 transition-colors text-sm"
+                                     style={{
+                                         backgroundColor: `${currentTheme.foreground}06`,
+                                         border: `1px solid ${currentTheme.foreground}15`,
+                                         color: currentTheme.foreground,
+                                     }}
+                                 />
                                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                                     {isSearching ? (
                                         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" style={{ color: `${currentTheme.foreground}40` }}>
@@ -351,10 +351,10 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                             {/* Filter Toggle */}
                             <button
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="relative px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm font-medium transition-all"
+                                className="relative px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm font-medium transition-colors"
                                 style={{
-                                    backgroundColor: showFilters ? currentTheme.foreground : `${currentTheme.foreground}06`,
-                                    border: `1px solid ${showFilters ? currentTheme.foreground : `${currentTheme.foreground}12`}`,
+                                    backgroundColor: showFilters ? currentTheme.foreground : `${currentTheme.foreground}08`,
+                                    border: `1px solid ${showFilters ? currentTheme.foreground : `${currentTheme.foreground}15`}`,
                                     color: showFilters ? currentTheme.background : currentTheme.foreground,
                                 }}
                             >
@@ -380,7 +380,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                         {showFilters && (
                             <div 
                                 className="mt-4 pt-4"
-                                style={{ borderTop: `1px solid ${currentTheme.foreground}08` }}
+                                style={{ borderTop: `1px solid ${currentTheme.foreground}15` }}
                             >
                                 {/* Row 1: Type, Language, Status */}
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -449,11 +449,11 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                                 <button
                                                     key={genre.id}
                                                     onClick={() => handleGenreToggle(genre.id)}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
                                                     style={{
-                                                        backgroundColor: isActive ? currentTheme.foreground : `${currentTheme.foreground}06`,
+                                                        backgroundColor: isActive ? currentTheme.foreground : `${currentTheme.foreground}08`,
                                                         color: isActive ? currentTheme.background : `${currentTheme.foreground}70`,
-                                                        border: `1px solid ${isActive ? currentTheme.foreground : `${currentTheme.foreground}10`}`,
+                                                        border: `1px solid ${isActive ? currentTheme.foreground : `${currentTheme.foreground}15`}`,
                                                     }}
                                                 >
                                                     {genre.name}
@@ -468,10 +468,11 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                     <div className="mt-3 flex justify-end">
                                         <button
                                             onClick={clearFilters}
-                                            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-all hover:opacity-70"
+                                            className="text-xs font-medium px-3 py-1.5 rounded-lg transition-opacity hover:opacity-70"
                                             style={{ 
                                                 color: `${currentTheme.foreground}60`,
-                                                backgroundColor: `${currentTheme.foreground}05`,
+                                                backgroundColor: `${currentTheme.foreground}08`,
+                                                border: `1px solid ${currentTheme.foreground}15`,
                                             }}
                                         >
                                             Clear All Filters
@@ -502,10 +503,10 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                     className="group"
                                 >
                                     <div
-                                        className="series-card rounded-2xl overflow-hidden h-full flex flex-col"
+                                        className="series-card rounded-lg overflow-hidden h-full flex flex-col"
                                         style={{
-                                            backgroundColor: `${currentTheme.foreground}04`,
-                                            border: `1px solid ${currentTheme.foreground}08`,
+                                            backgroundColor: `${currentTheme.foreground}08`,
+                                            border: `1px solid ${currentTheme.foreground}15`,
                                         }}
                                     >
                                         {/* Cover */}
@@ -515,13 +516,6 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                                 alt={item.title}
                                                 containerClassName="cover-zoom"
                                                 hoverScale={false}
-                                            />
-                                            {/* Gradient overlay at bottom */}
-                                            <div 
-                                                className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-                                                style={{
-                                                    background: `linear-gradient(to top, ${currentTheme.foreground}30, transparent)`,
-                                                }}
                                             />
                                             {/* Status badge */}
                                             <div className="absolute top-2.5 left-2.5">
@@ -538,9 +532,9 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                             {/* Rating badge bottom-right */}
                                             <div className="absolute bottom-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-semibold"
                                                 style={{
-                                                    backgroundColor: `${currentTheme.background}CC`,
+                                                    backgroundColor: currentTheme.background,
                                                     color: currentTheme.foreground,
-                                                    backdropFilter: 'blur(4px)',
+                                                    border: `1px solid ${currentTheme.foreground}15`,
                                                 }}
                                             >
                                                 <span className="text-yellow-400 text-xs">★</span>

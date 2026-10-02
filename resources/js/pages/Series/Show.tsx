@@ -523,7 +523,6 @@ function SeriesShowContent({
                 <div 
                     className="fixed inset-0 z-50 flex items-center justify-center p-4"
                     style={{ 
-                        backdropFilter: 'blur(8px)',
                         backgroundColor: 'rgba(0, 0, 0, 0.8)'
                     }}
                 >
@@ -531,19 +530,19 @@ function SeriesShowContent({
                         className="rounded-lg shadow-2xl max-w-md w-full p-8 text-center"
                         style={{ 
                             backgroundColor: currentTheme.background,
-                            borderColor: '#dc2626',
-                            borderWidth: '2px'
+                            borderColor: '#ef4444',
+                            borderWidth: '1px'
                         }}
                     >
                         <div className="mb-6">
                             {/* Age Restriction Icon */}
                             <div className="mb-4 flex justify-center">
                                 <svg 
-                                    width="80" 
-                                    height="80" 
+                                    width="64" 
+                                    height="64" 
                                     viewBox="0 0 24 28" 
                                     fill="none" 
-                                    stroke="#dc2626"
+                                    stroke="#ef4444"
                                     strokeWidth="2"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
@@ -552,7 +551,7 @@ function SeriesShowContent({
                                     <path d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"/>
                                     {/* Warning exclamation mark */}
                                     <line x1="12" y1="8" x2="12" y2="13" strokeWidth="2.5"/>
-                                    <circle cx="12" cy="16" r="1" fill="#dc2626"/>
+                                    <circle cx="12" cy="16" r="1" fill="#ef4444"/>
                                 </svg>
                             </div>
                             <h2 
@@ -563,12 +562,12 @@ function SeriesShowContent({
                             </h2>
                             <p 
                                 className="text-sm mb-4"
-                                style={{ color: `${currentTheme.foreground}90` }}
+                                style={{ color: `${currentTheme.foreground}80` }}
                             >
                                 This series may contain strong language, violence, or mature themes. It is not suitable for individuals under 18.
                             </p>
                             <p 
-                                className="text-lg font-semibold"
+                                className="text-base font-semibold"
                                 style={{ color: currentTheme.foreground }}
                             >
                                 Are you over 18?
@@ -578,7 +577,7 @@ function SeriesShowContent({
                         <div className="flex gap-4 justify-center">
                             <button
                                 onClick={() => handleAgeVerification(false)}
-                                className="px-8 py-3 rounded-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+                                className="px-6 py-2.5 rounded-lg font-semibold transition-opacity hover:opacity-90 shadow-md text-sm"
                                 style={{ 
                                     backgroundColor: currentTheme.foreground,
                                     color: currentTheme.background,
@@ -588,11 +587,11 @@ function SeriesShowContent({
                             </button>
                             <button
                                 onClick={() => handleAgeVerification(true)}
-                                className="px-8 py-3 rounded-lg font-semibold border-2 transition-all transform hover:scale-105"
+                                className="px-6 py-2.5 rounded-lg font-semibold border transition-opacity hover:opacity-90 text-sm"
                                 style={{ 
-                                    borderColor: currentTheme.foreground,
+                                    borderColor: `${currentTheme.foreground}30`,
                                     color: currentTheme.foreground,
-                                    backgroundColor: 'transparent'
+                                    backgroundColor: `${currentTheme.foreground}08`
                                 }}
                             >
                                 Yes, I am
@@ -617,7 +616,8 @@ function SeriesShowContent({
                             style={{
                                 backgroundImage: `url(${series.cover_url})`,
                                 transform: 'scale(1.2)',
-                                filter: 'blur(3px)',
+                                filter: 'blur(4px)',
+                                opacity: 0.15,
                             }}
                         />
                     )}
@@ -625,14 +625,8 @@ function SeriesShowContent({
                         className="absolute inset-0"
                         style={{
                             background: isMobile
-                                ? `linear-gradient(to top, ${currentTheme.background} 0%, ${currentTheme.background}CC 30%, ${currentTheme.background}55 70%, transparent 100%)`
-                                : `linear-gradient(90deg, ${currentTheme.background} 0%, ${currentTheme.background}E6 30%, ${currentTheme.background}99 60%, ${currentTheme.background}66 100%)`,
-                        }}
-                    />
-                    <div
-                        className="absolute inset-0"
-                        style={{
-                            background: `linear-gradient(to top, ${currentTheme.background} 0%, transparent 50%)`,
+                                ? `linear-gradient(to top, ${currentTheme.background} 0%, ${currentTheme.background}F2 40%, ${currentTheme.background}80 100%)`
+                                : `linear-gradient(90deg, ${currentTheme.background} 0%, ${currentTheme.background}F2 40%, ${currentTheme.background}99 100%)`,
                         }}
                     />
 
@@ -666,18 +660,13 @@ function SeriesShowContent({
                             <div className="flex-shrink-0 flex flex-col items-center md:items-start w-full md:w-auto">
                                 <div className="w-full sm:w-52 md:w-56 relative">
                                     <div
-                                        className="relative rounded-2xl overflow-hidden shadow-2xl"
-                                        style={{ boxShadow: `0 25px 60px ${currentTheme.foreground}20` }}
+                                        className="relative rounded-lg overflow-hidden shadow-xl"
+                                        style={{ border: `1px solid ${currentTheme.foreground}15` }}
                                     >
                                         <CoverImage
                                             src={series.cover_url}
                                             alt={series.title}
                                             hoverScale={false}
-                                        />
-                                        {/* Shine overlay */}
-                                        <div
-                                            className="absolute inset-0 opacity-20 pointer-events-none"
-                                            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 40%)' }}
                                         />
                                     </div>
                                 </div>
@@ -691,9 +680,9 @@ function SeriesShowContent({
                                     <Link
                                         href={route('chapters.show', [series.slug, resumeLink])}
                                         prefetch
-                                        className="flex flex-col items-center justify-center gap-0.5 px-4 rounded-xl font-semibold transition-all hover:opacity-90 hover:shadow-lg text-sm"
+                                        className="flex flex-col items-center justify-center gap-0.5 px-4 rounded-lg font-semibold transition-opacity hover:opacity-90 text-sm"
                                         style={{
-                                            height: '52px',
+                                            height: '48px',
                                             backgroundColor: currentTheme.foreground,
                                             color: currentTheme.background,
                                         }}
@@ -714,11 +703,11 @@ function SeriesShowContent({
                                     {series.show_epub_button && series.epub_series_slug && (
                                         <Link
                                             href={route('epub-novels.show', series.epub_series_slug)}
-                                            className={`inline-flex items-center justify-center gap-2 px-5 border rounded-xl text-sm font-semibold transition-all hover:opacity-80 ${series.epub_free_for_premium_members ? 'py-2' : 'py-2.5'}`}
+                                            className={`inline-flex items-center justify-center gap-2 px-5 border rounded-lg text-sm font-semibold transition-opacity hover:opacity-80 ${series.epub_free_for_premium_members ? 'py-2' : 'py-2.5'}`}
                                             style={{
-                                                borderColor: `${currentTheme.foreground}30`,
+                                                borderColor: `${currentTheme.foreground}15`,
                                                 color: currentTheme.foreground,
-                                                backgroundColor: `${currentTheme.foreground}06`,
+                                                backgroundColor: `${currentTheme.foreground}08`,
                                             }}
                                         >
                                             <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -727,7 +716,7 @@ function SeriesShowContent({
                                             <span className="flex flex-col items-center leading-none">
                                                 <span>Download Epub</span>
                                                 {series.epub_free_for_premium_members && (
-                                                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: SHINY_PURPLE }}>
+                                                    <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-semibold" style={{ color: '#a78bfa' }}>
                                                         <PremiumDiamond size={10} />
                                                         Free for Premium Member
                                                     </span>
@@ -737,11 +726,11 @@ function SeriesShowContent({
                                     )}
 
                                     <button 
-                                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border rounded-xl font-semibold transition-all hover:opacity-80 text-sm"
+                                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border rounded-lg font-semibold transition-opacity hover:opacity-80 text-sm"
                                         style={{
-                                            borderColor: bookmarked ? currentTheme.foreground : `${currentTheme.foreground}30`,
+                                            borderColor: bookmarked ? currentTheme.foreground : `${currentTheme.foreground}15`,
                                             color: currentTheme.foreground,
-                                            backgroundColor: bookmarked ? `${currentTheme.foreground}10` : `${currentTheme.foreground}06`,
+                                            backgroundColor: bookmarked ? `${currentTheme.foreground}10` : `${currentTheme.foreground}08`,
                                         }}
                                         onClick={handleBookmarkToggle}
                                     >
@@ -901,25 +890,25 @@ function SeriesShowContent({
                 {marks.length > 0 && (
                     <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-4">
                         <div
-                            className="rounded-2xl overflow-hidden"
+                            className="rounded-lg overflow-hidden"
                             style={{
-                                backgroundColor: `${currentTheme.foreground}04`,
-                                border: `1px solid rgba(251,191,36,0.2)`,
+                                backgroundColor: `${currentTheme.foreground}08`,
+                                border: `1px solid rgba(245,158,11,0.25)`,
                             }}
                         >
                             {/* Header */}
                             <button
                                 className="w-full flex items-center justify-between px-5 py-4 transition-opacity hover:opacity-80"
                                 onClick={() => setMarksExpanded(e => !e)}
-                                style={{ borderBottom: marksExpanded ? `1px solid rgba(251,191,36,0.12)` : 'none' }}
+                                style={{ borderBottom: marksExpanded ? `1px solid rgba(245,158,11,0.15)` : 'none' }}
                             >
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-1 h-6 rounded-full" style={{ background: 'linear-gradient(to bottom,#f59e0b,#fbbf2480)' }} />
+                                    <div className="w-1 h-5 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#f59e0b' }}>
                                         <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
                                     </svg>
                                     <h2 className="text-base font-bold" style={{ color: currentTheme.foreground }}>My Marks</h2>
-                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(251,191,36,0.15)', color: '#f59e0b' }}>
+                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ backgroundColor: 'rgba(245,158,11,0.15)', color: '#f59e0b' }}>
                                         {marks.length}
                                     </span>
                                 </div>
@@ -937,11 +926,11 @@ function SeriesShowContent({
                                     {marksGrouped.map(group => (
                                         <div key={group.chapter_link}>
                                             {/* Chapter label */}
-                                            <div className="px-5 py-2 sticky top-0" style={{ backgroundColor: `${currentTheme.background}f0` }}>
+                                            <div className="px-5 py-2 sticky top-0" style={{ backgroundColor: currentTheme.background }}>
                                                 <Link
                                                     href={route('chapters.show', [series.slug, group.chapter_link])}
                                                     className="text-xs font-bold hover:underline"
-                                                    style={{ color: SHINY_PURPLE }}
+                                                    style={{ color: currentTheme.foreground }}
                                                 >
                                                     {group.chapter_volume ? `Vol ${group.chapter_volume} ` : ''}Ch {group.chapter_number} — {group.chapter_title}
                                                 </Link>
@@ -950,9 +939,9 @@ function SeriesShowContent({
                                                 <div
                                                     key={m.id}
                                                     className="flex items-start gap-3 px-5 py-3 group"
-                                                    style={{ borderTop: `1px solid ${currentTheme.foreground}06` }}
+                                                    style={{ borderTop: `1px solid ${currentTheme.foreground}08` }}
                                                 >
-                                                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0 opacity-60" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#fbbf24' }}>
+                                                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0 opacity-60" fill="currentColor" viewBox="0 0 24 24" style={{ color: '#f59e0b' }}>
                                                         <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
                                                     </svg>
                                                     <div className="flex-1 min-w-0">
@@ -965,8 +954,8 @@ function SeriesShowContent({
                                                     </div>
                                                     <Link
                                                         href={route('chapters.show', [series.slug, m.chapter_link])}
-                                                        className="flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-70"
-                                                        style={{ backgroundColor: `${SHINY_PURPLE}12`, color: SHINY_PURPLE }}
+                                                        className="flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-opacity hover:opacity-80"
+                                                        style={{ backgroundColor: `${currentTheme.foreground}12`, color: currentTheme.foreground }}
                                                     >
                                                         Go
                                                     </Link>
@@ -997,42 +986,39 @@ function SeriesShowContent({
                         {/* ── Chapter List ── */}
                         <div className="lg:col-span-2 flex flex-col">
                             <div
-                                className="rounded-2xl overflow-hidden flex flex-col"
+                                className="rounded-lg overflow-hidden flex flex-col"
                                 style={{
                                     height: isMobile ? 'auto' : '680px',
-                                    backgroundColor: `${currentTheme.foreground}04`,
-                                    border: `1px solid ${currentTheme.foreground}08`,
+                                    backgroundColor: `${currentTheme.foreground}08`,
+                                    border: `1px solid ${currentTheme.foreground}15`,
                                 }}
                             >
                                 {/* Header */}
                                 <div
                                     className="flex-shrink-0 px-5 py-4"
                                     style={{
-                                        background: `linear-gradient(135deg, ${currentTheme.foreground}06 0%, ${currentTheme.foreground}02 100%)`,
-                                        borderBottom: `1px solid ${currentTheme.foreground}08`,
+                                        backgroundColor: `${currentTheme.foreground}04`,
+                                        borderBottom: `1px solid ${currentTheme.foreground}15`,
                                     }}
                                 >
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                         <div className="flex items-center gap-2.5">
                                             <div
-                                                className="w-1 h-6 rounded-full"
-                                                style={{ background: `linear-gradient(to bottom, ${SHINY_PURPLE}, ${SHINY_PURPLE}60)` }}
+                                                className="w-1 h-5 rounded-full"
+                                                style={{ backgroundColor: currentTheme.foreground }}
                                             />
                                             <h2 className="text-lg font-bold" style={{ color: currentTheme.foreground }}>
                                                 Chapters
                                             </h2>
                                             <span
                                                 className="px-2 py-0.5 rounded-full text-xs font-bold"
-                                                style={{ backgroundColor: `${SHINY_PURPLE}18`, color: SHINY_PURPLE }}
+                                                style={{ backgroundColor: `${currentTheme.foreground}12`, color: currentTheme.foreground }}
                                             >
                                                 {filteredChapters.length}
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-2 w-full sm:w-auto">
-                                            {/* Search — takes whatever the sort toggle leaves
-                                                over on mobile, where the row is full width.
-                                                On desktop it keeps its fixed size so the
-                                                control cluster stays right-aligned. */}
+                                            {/* Search */}
                                             <div className="relative flex-1 min-w-0 sm:flex-none">
                                                 <input
                                                     type="text"
@@ -1042,7 +1028,7 @@ function SeriesShowContent({
                                                     className="px-3 py-1.5 pr-8 rounded-lg text-xs w-full sm:w-36 focus:outline-none"
                                                     style={{
                                                         backgroundColor: `${currentTheme.foreground}06`,
-                                                        border: `1px solid ${currentTheme.foreground}10`,
+                                                        border: `1px solid ${currentTheme.foreground}15`,
                                                         color: currentTheme.foreground,
                                                     }}
                                                 />
@@ -1054,7 +1040,7 @@ function SeriesShowContent({
                                             {!isMobile && (
                                                 <div
                                                     className="flex rounded-lg overflow-hidden"
-                                                    style={{ border: `1px solid ${currentTheme.foreground}10` }}
+                                                    style={{ border: `1px solid ${currentTheme.foreground}15` }}
                                                 >
                                                     {(['detailed', 'simple'] as const).map((mode) => (
                                                         <button
@@ -1075,16 +1061,10 @@ function SeriesShowContent({
                                                     ))}
                                                 </div>
                                             )}
-                                            {/* Sort order — a two-state toggle rather than a
-                                                dropdown, matching the view-mode control. The
-                                                choice is binary, so hiding one option behind a
-                                                menu costs a tap for no benefit.
-                                                "Ascending/Descending" were replaced with what
-                                                the reader actually wants: start from the First
-                                                chapter, or from the Latest. */}
+                                            {/* Sort order */}
                                             <div
                                                 className="flex rounded-lg overflow-hidden flex-shrink-0"
-                                                style={{ border: `1px solid ${currentTheme.foreground}10` }}
+                                                style={{ border: `1px solid ${currentTheme.foreground}15` }}
                                                 role="group"
                                                 aria-label="Chapter order"
                                             >
@@ -1131,31 +1111,31 @@ function SeriesShowContent({
                                                 key={chapter.id}
                                                 href={route('chapters.show', [series.slug, chapter.chapter_link])}
                                                 className="flex items-center gap-0 transition-all duration-150 group"
-                                                style={{ borderBottom: `1px solid ${currentTheme.foreground}06` }}
+                                                style={{ borderBottom: `1px solid ${currentTheme.foreground}08` }}
                                             >
                                                 {/* Premium left border indicator */}
                                                 <div
                                                     className="w-0.5 self-stretch flex-shrink-0 transition-all duration-150"
                                                     style={{
-                                                        backgroundColor: chapter.is_premium ? `${SHINY_PURPLE}60` : 'transparent',
+                                                        backgroundColor: chapter.is_premium ? '#a78bfa80' : 'transparent',
                                                     }}
                                                 />
                                                 <div
                                                     className="flex-1 flex items-center gap-3 px-4 py-3.5 transition-colors duration-150"
                                                     style={{
                                                         backgroundColor: chapter.is_premium
-                                                            ? `${SHINY_PURPLE}04`
+                                                            ? '#a78bfa08'
                                                             : 'transparent',
                                                     }}
-                                                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = `${SHINY_PURPLE}08`; }}
-                                                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = chapter.is_premium ? `${SHINY_PURPLE}04` : 'transparent'; }}
+                                                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = `${currentTheme.foreground}0c`; }}
+                                                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = chapter.is_premium ? '#a78bfa08' : 'transparent'; }}
                                                 >
                                                     {/* Chapter number chip */}
                                                     <span
                                                         className="text-xs font-bold w-9 text-center flex-shrink-0 py-1 rounded-md"
                                                         style={{
-                                                            backgroundColor: chapter.is_premium ? `${SHINY_PURPLE}15` : `${currentTheme.foreground}08`,
-                                                            color: chapter.is_premium ? SHINY_PURPLE : `${currentTheme.foreground}60`,
+                                                            backgroundColor: chapter.is_premium ? '#a78bfa15' : `${currentTheme.foreground}08`,
+                                                            color: chapter.is_premium ? '#a78bfa' : `${currentTheme.foreground}70`,
                                                         }}
                                                     >
                                                         {chapter.volume ? `V${chapter.volume}` : `${chapter.chapter_number}`}
@@ -1176,31 +1156,29 @@ function SeriesShowContent({
                                                             {!!chapter.has_images && <IllustrationIcon color={`${currentTheme.foreground}70`} />}
                                                         </div>
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <span className="text-xs flex items-center gap-1" style={{ color: `${currentTheme.foreground}45` }}>
-                                                                <CalendarIcon size={11} color={`${currentTheme.foreground}45`} />
+                                                            <span className="text-xs flex items-center gap-1" style={{ color: `${currentTheme.foreground}55` }}>
+                                                                <CalendarIcon size={11} color={`${currentTheme.foreground}55`} />
                                                                 {formatDate(chapter.created_at)}
                                                             </span>
-                                                            <span className="text-xs flex items-center gap-1" style={{ color: `${currentTheme.foreground}45` }}>
+                                                            <span className="text-xs flex items-center gap-1" style={{ color: `${currentTheme.foreground}55` }}>
                                                                 <EyeIcon className="w-3 h-3" />
                                                                 {formatNumber(chapter.views)}
                                                             </span>
                                                             {chapter.is_premium && (
-                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: `${SHINY_PURPLE}18`, color: SHINY_PURPLE }}>
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-lg" style={{ backgroundColor: '#a78bfa15', color: '#a78bfa', border: '1px solid #a78bfa30' }}>
                                                                     <PremiumDiamond size={10} />
                                                                     Premium
                                                                 </span>
                                                             )}
                                                             {chapter.is_owned && (
-                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: 'rgba(234,179,8,0.12)', color: '#eab308' }}>
-                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-lg" style={{ backgroundColor: '#f59e0b15', color: '#f59e0b', border: '1px solid #f59e0b30' }}>
+                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                                     Owned
                                                                 </span>
                                                             )}
-                                                            {/* Challenge-earned access, shown only when it is not
-                                                                already owned outright. */}
                                                             {!chapter.is_owned && temporaryDaysLeft(chapter.id) !== null && (
-                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-full" style={{ backgroundColor: 'rgba(27,175,122,0.12)', color: '#1baf7a' }}>
-                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#1baf7a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-lg" style={{ backgroundColor: '#16a34a15', color: '#16a34a', border: '1px solid #16a34a30' }}>
+                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
                                                                     Owned for {temporaryDaysLeft(chapter.id)}d
                                                                 </span>
                                                             )}
@@ -1233,10 +1211,10 @@ function SeriesShowContent({
                                             >
                                                 {/* Number badge */}
                                                 <div
-                                                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                                                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold"
                                                     style={{
-                                                        backgroundColor: chapter.is_premium ? `${SHINY_PURPLE}18` : `${currentTheme.foreground}08`,
-                                                        color: chapter.is_premium ? SHINY_PURPLE : `${currentTheme.foreground}70`,
+                                                        backgroundColor: chapter.is_premium ? '#a78bfa15' : `${currentTheme.foreground}08`,
+                                                        color: chapter.is_premium ? '#a78bfa' : `${currentTheme.foreground}70`,
                                                     }}
                                                 >
                                                     {chapter.volume ? `V${chapter.volume}` : chapter.chapter_number}
@@ -1255,12 +1233,12 @@ function SeriesShowContent({
                                                         {!!chapter.has_images && <IllustrationIcon color={`${currentTheme.foreground}70`} />}
                                                         {chapter.is_premium && <PremiumDiamond size={12} />}
                                                         {chapter.is_owned && (
-                                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#eab308" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-[10px]" style={{ color: `${currentTheme.foreground}45` }}>
+                                                    <div className="flex items-center gap-2 text-[10px]" style={{ color: `${currentTheme.foreground}55` }}>
                                                         <span className="flex items-center gap-0.5">
-                                                            <CalendarIcon size={10} color={`${currentTheme.foreground}45`} />
+                                                            <CalendarIcon size={10} color={`${currentTheme.foreground}55`} />
                                                             {formatDate(chapter.created_at)}
                                                         </span>
                                                         <span className="flex items-center gap-0.5">
@@ -1285,7 +1263,7 @@ function SeriesShowContent({
                                             <button
                                                 onClick={() => setSearchQuery('')}
                                                 className="mt-2 text-xs underline"
-                                                style={{ color: SHINY_PURPLE }}
+                                                style={{ color: currentTheme.foreground }}
                                             >
                                                 Clear search
                                             </button>
@@ -1299,25 +1277,25 @@ function SeriesShowContent({
                         <div className="flex flex-col">
                             {relatedSeries.length > 0 && (
                                 <div
-                                    className="rounded-2xl overflow-hidden flex flex-col"
+                                    className="rounded-lg overflow-hidden flex flex-col"
                                     style={{
                                         height: isMobile ? 'auto' : '680px',
-                                        backgroundColor: `${currentTheme.foreground}04`,
-                                        border: `1px solid ${currentTheme.foreground}08`,
+                                        backgroundColor: `${currentTheme.foreground}08`,
+                                        border: `1px solid ${currentTheme.foreground}15`,
                                     }}
                                 >
                                     {/* Header */}
                                     <div
                                         className="flex-shrink-0 px-5 py-4"
                                         style={{
-                                            background: `linear-gradient(135deg, ${SHINY_PURPLE}08 0%, ${currentTheme.foreground}02 100%)`,
-                                            borderBottom: `1px solid ${currentTheme.foreground}08`,
+                                            backgroundColor: `${currentTheme.foreground}04`,
+                                            borderBottom: `1px solid ${currentTheme.foreground}15`,
                                         }}
                                     >
                                         <div className="flex items-center gap-2.5">
                                             <div
-                                                className="w-1 h-6 rounded-full"
-                                                style={{ background: `linear-gradient(to bottom, ${SHINY_PURPLE}, #e879f9)` }}
+                                                className="w-1 h-5 rounded-full"
+                                                style={{ backgroundColor: currentTheme.foreground }}
                                             />
                                             <h3 className="text-base font-bold" style={{ color: currentTheme.foreground }}>
                                                 You Might Also Like
@@ -1338,13 +1316,11 @@ function SeriesShowContent({
                                             <Link
                                                 key={related.id}
                                                 href={route('series.show', related.slug)}
-                                                className="flex gap-3 p-2.5 rounded-xl transition-all duration-200 group hover:-translate-y-0.5 hover:shadow-md"
+                                                className="flex gap-3 p-2.5 rounded-lg transition-all duration-150 group hover:opacity-90"
                                                 style={{
-                                                    backgroundColor: `${currentTheme.foreground}03`,
-                                                    border: `1px solid ${currentTheme.foreground}07`,
+                                                    backgroundColor: `${currentTheme.foreground}04`,
+                                                    border: `1px solid ${currentTheme.foreground}08`,
                                                 }}
-                                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${SHINY_PURPLE}25`; (e.currentTarget as HTMLElement).style.backgroundColor = `${SHINY_PURPLE}05`; }}
-                                                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = `${currentTheme.foreground}07`; (e.currentTarget as HTMLElement).style.backgroundColor = `${currentTheme.foreground}03`; }}
                                             >
                                                 <CoverImage
                                                     src={related.cover_url}
@@ -1389,10 +1365,10 @@ function SeriesShowContent({
                 {/* ─── Reactions Section ─── */}
                 <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-6">
                     <div
-                        className="rounded-2xl p-8 text-center"
+                        className="rounded-lg p-6 sm:p-8 text-center"
                         style={{
-                            backgroundColor: `${currentTheme.foreground}04`,
-                            border: `1px solid ${currentTheme.foreground}08`,
+                            backgroundColor: `${currentTheme.foreground}08`,
+                            border: `1px solid ${currentTheme.foreground}15`,
                         }}
                     >
                         <h3 
@@ -1430,7 +1406,7 @@ function SeriesShowContent({
             {showNotification && (
                 <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-2 duration-300">
                     <div 
-                        className="rounded-xl shadow-2xl p-4 max-w-sm flex items-center gap-3"
+                        className="rounded-lg shadow-2xl p-4 max-w-sm flex items-center gap-3"
                         style={{
                             backgroundColor: currentTheme.background,
                             border: `1px solid ${currentTheme.foreground}15`,

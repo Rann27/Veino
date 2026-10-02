@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme, themePresets } from '@/Contexts/ThemeContext';
-import { SHINY_PURPLE, SHINY_PURPLE_DIM } from '@/constants/colors';
 
 interface ThemeSelectorModalProps {
     isOpen: boolean;
@@ -48,42 +47,37 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
+            {/* Backdrop — no glassmorphism */}
             <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 bg-black/50"
                 onClick={onClose}
             />
 
-            {/* Modal */}
+            {/* Modal — single consistent border radius (8px / rounded-lg) */}
             <div
-                className="relative rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200"
-                style={{ backgroundColor: currentTheme.background }}
+                className="relative rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden border"
+                style={{
+                    backgroundColor: currentTheme.background,
+                    borderColor: `${currentTheme.foreground}15`,
+                }}
             >
                 {/* Header */}
                 <div
-                    className="flex items-center justify-between p-6 border-b"
-                    style={{ borderColor: `${currentTheme.foreground}12` }}
+                    className="flex items-center justify-between px-6 py-4 border-b"
+                    style={{ borderColor: `${currentTheme.foreground}15` }}
                 >
                     <h2
-                        className="text-xl font-semibold"
+                        className="text-lg font-semibold"
                         style={{ color: currentTheme.foreground }}
                     >
                         Theme Settings
                     </h2>
                     <button
                         onClick={onClose}
-                        className="p-1 rounded-lg transition-colors"
-                        style={{ color: `${currentTheme.foreground}50` }}
-                        onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.color = currentTheme.foreground;
-                            (e.currentTarget as HTMLElement).style.backgroundColor = `${currentTheme.foreground}08`;
-                        }}
-                        onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLElement).style.color = `${currentTheme.foreground}50`;
-                            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                        }}
+                        className="p-1 rounded-md transition-colors hover:opacity-75"
+                        style={{ color: `${currentTheme.foreground}60` }}
                     >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
@@ -93,34 +87,40 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
                 <div className="overflow-y-auto max-h-[calc(90vh-120px)] p-6">
                     {/* System Theme Toggle */}
                     <div
-                        className="mb-6 p-4 rounded-xl"
-                        style={{ backgroundColor: `${currentTheme.foreground}06`, border: `1px solid ${currentTheme.foreground}08` }}
+                        className="mb-5 p-3.5 rounded-lg border"
+                        style={{
+                            backgroundColor: `${currentTheme.foreground}06`,
+                            borderColor: `${currentTheme.foreground}12`,
+                        }}
                     >
                         <label className="flex items-center justify-between cursor-pointer">
                             <div>
                                 <span
-                                    className="font-medium"
+                                    className="font-medium text-sm"
                                     style={{ color: currentTheme.foreground }}
                                 >
                                     Auto Theme
                                 </span>
                                 <p
-                                    className="text-sm mt-0.5"
+                                    className="text-xs mt-0.5"
                                     style={{ color: `${currentTheme.foreground}60` }}
                                 >
-                                    Follow system preference
+                                    Follow system dark/light preference
                                 </p>
                             </div>
                             <button
                                 onClick={toggleSystemTheme}
-                                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+                                className="relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none"
                                 style={{
-                                    backgroundColor: isSystemTheme ? SHINY_PURPLE : `${currentTheme.foreground}25`,
+                                    backgroundColor: isSystemTheme ? currentTheme.foreground : `${currentTheme.foreground}25`,
                                 }}
                             >
                                 <span
-                                    className="inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow"
-                                    style={{ transform: isSystemTheme ? 'translateX(1.5rem)' : 'translateX(0.25rem)' }}
+                                    className="inline-block h-3.5 w-3.5 transform rounded-full transition-transform"
+                                    style={{
+                                        backgroundColor: isSystemTheme ? currentTheme.background : currentTheme.foreground,
+                                        transform: isSystemTheme ? 'translateX(1.35rem)' : 'translateX(0.2rem)',
+                                    }}
                                 />
                             </button>
                         </label>
@@ -129,14 +129,14 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
                     {/* Theme Options */}
                     <div className="space-y-3">
                         <h3
-                            className="font-medium mb-3"
+                            className="font-medium text-sm mb-2.5"
                             style={{ color: currentTheme.foreground }}
                         >
-                            Choose Theme
+                            Select Preset
                         </h3>
 
                         {/* Preset Grid */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2.5">
                             {themePresets.map((preset) => {
                                 const isSelected = currentTheme.name === preset.name && !isSystemTheme;
                                 return (
@@ -144,19 +144,19 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
                                         key={preset.name}
                                         onClick={() => setTheme(preset)}
                                         disabled={isSystemTheme}
-                                        className={`relative p-4 rounded-xl text-left transition-all duration-200 ${
+                                        className={`relative p-3 rounded-lg text-left transition-all ${
                                             isSystemTheme ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                                         }`}
                                         style={{
-                                            border: `2px solid ${isSelected ? SHINY_PURPLE : `${currentTheme.foreground}12`}`,
-                                            backgroundColor: isSelected ? SHINY_PURPLE_DIM : `${currentTheme.foreground}04`,
+                                            border: `1.5px solid ${isSelected ? currentTheme.foreground : `${currentTheme.foreground}15`}`,
+                                            backgroundColor: isSelected ? `${currentTheme.foreground}0C` : `${currentTheme.foreground}04`,
                                         }}
                                     >
                                         {/* Color Swatches + Name */}
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2.5">
                                             {/* Preview swatch */}
                                             <div
-                                                className="w-10 h-10 rounded-lg shadow-sm flex-shrink-0"
+                                                className="w-8 h-8 rounded-md flex-shrink-0"
                                                 style={{
                                                     background: `linear-gradient(135deg, ${preset.background} 50%, ${preset.foreground} 50%)`,
                                                     border: `1px solid ${currentTheme.foreground}15`,
@@ -164,22 +164,21 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
                                             />
                                             <div className="flex-1 min-w-0">
                                                 <div
-                                                    className="font-medium text-sm truncate"
+                                                    className="font-medium text-xs truncate"
                                                     style={{ color: currentTheme.foreground }}
                                                 >
                                                     {preset.name}
                                                 </div>
-                                                {/* Mini color dots */}
-                                                <div className="flex items-center gap-1.5 mt-1">
+                                                <div className="flex items-center gap-1 mt-1">
                                                     <div
-                                                        className="w-3 h-3 rounded-full border"
+                                                        className="w-2.5 h-2.5 rounded-full border"
                                                         style={{
                                                             backgroundColor: preset.background,
                                                             borderColor: `${currentTheme.foreground}20`,
                                                         }}
                                                     />
                                                     <div
-                                                        className="w-3 h-3 rounded-full border"
+                                                        className="w-2.5 h-2.5 rounded-full border"
                                                         style={{
                                                             backgroundColor: preset.foreground,
                                                             borderColor: `${currentTheme.foreground}20`,
@@ -189,113 +188,66 @@ export default function ThemeSelectorModal({ isOpen, onClose }: ThemeSelectorMod
                                             </div>
                                         </div>
 
-                                        {/* Selected indicator */}
+                                        {/* Selected indicator dot */}
                                         {isSelected && (
-                                            <div className="absolute top-2 right-2">
-                                                <svg
-                                                    className="w-5 h-5"
-                                                    fill="currentColor"
-                                                    viewBox="0 0 20 20"
-                                                    style={{ color: SHINY_PURPLE }}
-                                                >
-                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                </svg>
-                                            </div>
+                                            <div className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ backgroundColor: currentTheme.foreground }} />
                                         )}
                                     </button>
                                 );
                             })}
 
-                            {/* Custom Theme Card — full width (col-span-2) */}
+                            {/* Custom Theme Card */}
                             <button
                                 onClick={() => !isSystemTheme && applyCustom(customBg, customFg)}
                                 disabled={isSystemTheme}
-                                className={`relative col-span-2 p-4 rounded-xl text-left transition-all duration-200 ${
+                                className={`relative col-span-2 p-3 rounded-lg text-left transition-all ${
                                     isSystemTheme ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                                 }`}
                                 style={{
-                                    border: `2px solid ${isCustomActive ? SHINY_PURPLE : `${currentTheme.foreground}12`}`,
-                                    backgroundColor: isCustomActive ? SHINY_PURPLE_DIM : `${currentTheme.foreground}04`,
+                                    border: `1.5px solid ${isCustomActive ? currentTheme.foreground : `${currentTheme.foreground}15`}`,
+                                    backgroundColor: isCustomActive ? `${currentTheme.foreground}0C` : `${currentTheme.foreground}04`,
                                 }}
                             >
-                                <div className="flex items-center gap-4">
-                                    {/* Preview swatch */}
+                                <div className="flex items-center gap-3">
                                     <div
-                                        className="w-10 h-10 rounded-lg shadow-sm flex-shrink-0"
+                                        className="w-8 h-8 rounded-md flex-shrink-0"
                                         style={{
                                             background: `linear-gradient(135deg, ${customBg} 50%, ${customFg} 50%)`,
                                             border: `1px solid ${currentTheme.foreground}15`,
                                         }}
                                     />
 
-                                    {/* Name + hint */}
                                     <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-sm" style={{ color: currentTheme.foreground }}>
-                                            Custom
+                                        <div className="font-medium text-xs" style={{ color: currentTheme.foreground }}>
+                                            Custom Palette
                                         </div>
-                                        <div className="text-xs mt-0.5" style={{ color: `${currentTheme.foreground}50` }}>
-                                            Click a circle to pick a color
+                                        <div className="text-[11px] mt-0.5" style={{ color: `${currentTheme.foreground}50` }}>
+                                            Pick background and foreground
                                         </div>
                                     </div>
 
                                     {/* Color pickers */}
-                                    <div className="flex items-center gap-3 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <div className="relative" title="Background color">
-                                                <div className="w-7 h-7 rounded-full border-2 pointer-events-none"
-                                                    style={{ backgroundColor: customBg, borderColor: `${currentTheme.foreground}25` }} />
-                                                <input type="color" value={customBg}
-                                                    onChange={handleCustomBgChange}
-                                                    disabled={isSystemTheme}
-                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                    style={{ minWidth: 0 }} />
+                                    <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[10px] uppercase font-medium" style={{ color: `${currentTheme.foreground}50` }}>BG</span>
+                                            <div className="relative w-6 h-6 rounded border cursor-pointer overflow-hidden" style={{ backgroundColor: customBg, borderColor: `${currentTheme.foreground}20` }}>
+                                                <input type="color" value={customBg} onChange={handleCustomBgChange} disabled={isSystemTheme} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                                             </div>
-                                            <span className="text-xs" style={{ color: `${currentTheme.foreground}45` }}>BG</span>
                                         </div>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <div className="relative" title="Foreground color">
-                                                <div className="w-7 h-7 rounded-full border-2 pointer-events-none"
-                                                    style={{ backgroundColor: customFg, borderColor: `${currentTheme.foreground}25` }} />
-                                                <input type="color" value={customFg}
-                                                    onChange={handleCustomFgChange}
-                                                    disabled={isSystemTheme}
-                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                    style={{ minWidth: 0 }} />
+                                        <div className="flex items-center gap-1">
+                                            <span className="text-[10px] uppercase font-medium" style={{ color: `${currentTheme.foreground}50` }}>FG</span>
+                                            <div className="relative w-6 h-6 rounded border cursor-pointer overflow-hidden" style={{ backgroundColor: customFg, borderColor: `${currentTheme.foreground}20` }}>
+                                                <input type="color" value={customFg} onChange={handleCustomFgChange} disabled={isSystemTheme} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                                             </div>
-                                            <span className="text-xs" style={{ color: `${currentTheme.foreground}45` }}>FG</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {isCustomActive && (
-                                    <div className="absolute top-2 right-2">
-                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" style={{ color: SHINY_PURPLE }}>
-                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
+                                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ backgroundColor: currentTheme.foreground }} />
                                 )}
                             </button>
                         </div>
-
-                        {/* Auto-mode info */}
-                        {isSystemTheme && (
-                            <div
-                                className="mt-4 p-3 rounded-xl"
-                                style={{
-                                    backgroundColor: SHINY_PURPLE_DIM,
-                                    border: `1px solid ${SHINY_PURPLE}30`,
-                                }}
-                            >
-                                <p
-                                    className="text-sm"
-                                    style={{ color: currentTheme.foreground }}
-                                >
-                                    <span className="font-medium">Auto mode: </span>
-                                    Currently using{' '}
-                                    <span className="font-medium">{currentTheme.name}</span> theme
-                                </p>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>

@@ -66,7 +66,7 @@ class HomeController extends Controller
         // one prop 144 KB — a third of the homepage document — for data the page
         // never renders. Only price_coins is needed to work out the range.
         $epubSeries = EbookSeries::with(['items:id,ebook_series_id,price_coins'])
-            ->orderBy('created_at', 'desc')
+            ->orderByLatestVolume()
             ->take(12)
             ->get()
             // Projected to a plain array rather than handed over as a model.

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PurchasedItem;
 use App\Models\EbookItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -77,6 +78,8 @@ class BookshelfController extends Controller
             return back()->with('error', 'File not available for download.');
         }
 
+        $this->recordDownload($userId, $item->id, 'epub');
+
         $fileName = $item->title . '.epub';
 
         return Storage::download($item->file_path, $fileName);
@@ -107,8 +110,46 @@ class BookshelfController extends Controller
             return back()->with('error', 'PDF file not available for download.');
         }
 
+        $this->recordDownload($userId, $item->id, 'pdf');
+
         $fileName = $item->title . '.pdf';
 
         return Storage::download($item->pdf_file_path, $fileName);
+    }
+
+    /**
+     * Counts a download against the reader, volume and format.
+     *
+     * Called only once access is confirmed and the file is known to exist, so
+     * a refused or broken download is never counted. A single atomic upsert:
+     * the first download inserts the row, every later one bumps it, and two
+     * simultaneous clicks cannot both insert.
+     *
+     * Never allowed to cost anyone their file — a counter that fails to write
+     * is worth less than the download itself.
+     */
+    private function recordDownload(int $userId, int $itemId, string $format): void
+    {
+        try {
+            $now = now();
+
+            DB::table('ebook_downloads')->upsert(
+                [[
+                    'user_id' => $userId,
+                    'ebook_item_id' => $itemId,
+                    'format' => $format,
+                    'downloads' => 1,
+                    'first_downloaded_at' => $now,
+                    'last_downloaded_at' => $now,
+                ]],
+                ['user_id', 'ebook_item_id', 'format'],
+                [
+                    'downloads' => DB::raw('downloads + 1'),
+                    'last_downloaded_at' => $now,
+                ],
+            );
+        } catch (\Throwable) {
+            // Silent by design.
+        }
     }
 }

@@ -90,17 +90,17 @@ function SearchResultsContent({ series, query }: Props) {
                                         className="group"
                                     >
                                         <div
-                                            className="rounded-lg p-4 sm:p-5 transition-all duration-300 hover:scale-105 hover:shadow-lg h-full flex flex-col min-h-[280px]"
+                                            className="rounded-lg p-4 sm:p-5 transition-opacity hover:opacity-90 h-full flex flex-col min-h-[280px]"
                                             style={{
-                                                backgroundColor: getCardBg(currentTheme.name),
-                                                border: `1px solid ${currentTheme.foreground}10`
+                                                backgroundColor: `${currentTheme.foreground}08`,
+                                                border: `1px solid ${currentTheme.foreground}15`
                                             }}
                                         >
                                             <CoverImage
                                                 src={item.cover_url}
                                                 alt={item.title}
                                                 containerClassName="mb-3"
-                                                hoverScale={true}
+                                                hoverScale={false}
                                             />
                                             
                                             <h3 
@@ -152,10 +152,10 @@ function SearchResultsContent({ series, query }: Props) {
                                                 {item.genres.slice(0, 2).map((genre) => (
                                                     <span
                                                         key={genre.id}
-                                                        className="px-2 py-1 text-xs rounded"
+                                                        className="px-2 py-1 text-xs rounded-md"
                                                         style={{
-                                                            backgroundColor: `${currentTheme.foreground}15`,
-                                                            color: `${currentTheme.foreground}90`
+                                                            backgroundColor: `${currentTheme.foreground}08`,
+                                                            color: `${currentTheme.foreground}80`
                                                         }}
                                                     >
                                                         {genre.name}
@@ -163,10 +163,10 @@ function SearchResultsContent({ series, query }: Props) {
                                                 ))}
                                                 {item.genres.length > 2 && (
                                                     <span 
-                                                        className="px-2 py-1 text-xs rounded"
+                                                        className="px-2 py-1 text-xs rounded-md"
                                                         style={{
-                                                            backgroundColor: `${currentTheme.foreground}15`,
-                                                            color: `${currentTheme.foreground}90`
+                                                            backgroundColor: `${currentTheme.foreground}08`,
+                                                            color: `${currentTheme.foreground}80`
                                                         }}
                                                     >
                                                         +{item.genres.length - 2}
@@ -193,12 +193,11 @@ function SearchResultsContent({ series, query }: Props) {
                                                     }
                                                 }}
                                                 disabled={!link.url}
-                                                className="px-3 py-2 text-sm rounded-md transition-colors"
+                                                className="px-3 py-2 text-sm rounded-lg transition-colors"
                                                 style={{
-                                                    backgroundColor: link.active ? SHINY_PURPLE : currentTheme.background,
-                                                    borderColor: link.active ? SHINY_PURPLE : `${currentTheme.foreground}30`,
-                                                    border: `1px solid ${link.active ? SHINY_PURPLE : `${currentTheme.foreground}30`}`,
-                                                    color: link.active ? 'white' : currentTheme.foreground
+                                                    backgroundColor: link.active ? currentTheme.foreground : `${currentTheme.foreground}06`,
+                                                    border: `1px solid ${link.active ? currentTheme.foreground : `${currentTheme.foreground}15`}`,
+                                                    color: link.active ? currentTheme.background : `${currentTheme.foreground}80`
                                                 }}
                                                 dangerouslySetInnerHTML={{ __html: link.label }}
                                             />
@@ -210,10 +209,10 @@ function SearchResultsContent({ series, query }: Props) {
                     ) : (
                         <div className="text-center py-12">
                             <div 
-                                className="rounded-lg shadow-sm border p-12"
+                                className="rounded-lg border p-12"
                                 style={{
-                                    backgroundColor: currentTheme.background,
-                                    borderColor: `${currentTheme.foreground}20`
+                                    backgroundColor: `${currentTheme.foreground}08`,
+                                    borderColor: `${currentTheme.foreground}15`
                                 }}
                             >
                                 <svg 
@@ -239,8 +238,8 @@ function SearchResultsContent({ series, query }: Props) {
                                 </p>
                                 <Link
                                     href={route('explore')}
-                                    className="inline-flex items-center px-6 py-3 rounded-lg transition-colors"
-                                    style={{ backgroundColor: SHINY_PURPLE, color: '#ffffff' }}
+                                    className="inline-flex items-center px-6 py-3 rounded-lg transition-opacity hover:opacity-90 font-medium text-sm"
+                                    style={{ backgroundColor: currentTheme.foreground, color: currentTheme.background }}
                                 >
                                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

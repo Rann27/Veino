@@ -31,6 +31,7 @@ interface Item {
     has_file: boolean;
     has_pdf_file: boolean;
     has_preview: boolean;
+    downloads: { epub: number; pdf: number; total: number; readers: number; last_at: string | null };
 }
 
 interface Series {
@@ -611,6 +612,22 @@ function EditContent({ series, items, genres, seriesOptions }: Props) {
                                                 {item.has_file && <span style={{ fontSize: '0.6rem', color: '#22c55e', background: 'rgba(34,197,94,0.12)', borderRadius: '9999px', padding: '0.05rem 0.4rem', fontWeight: 700 }}>EPUB</span>}
                                                 {item.has_pdf_file && <span style={{ fontSize: '0.6rem', color: '#f87171', background: 'rgba(248,113,113,0.12)', borderRadius: '9999px', padding: '0.05rem 0.4rem', fontWeight: 700 }}>PDF</span>}
                                                 {item.has_preview && <span style={{ fontSize: '0.6rem', color: '#fbbf24', background: 'rgba(251,191,36,0.12)', borderRadius: '9999px', padding: '0.05rem 0.4rem', fontWeight: 700 }}>Preview</span>}
+                                                {/* Downloads. Total counts every file pulled; readers counts
+                                                    people, so one reader re-downloading ten times reads as
+                                                    10 · 1 rather than ten readers. Hover for the split. */}
+                                                <span
+                                                    title={item.downloads.total === 0
+                                                        ? 'Not downloaded yet'
+                                                        : `EPUB ${item.downloads.epub} · PDF ${item.downloads.pdf}
+${item.downloads.readers} reader${item.downloads.readers === 1 ? '' : 's'}${item.downloads.last_at ? `
+Last ${new Date(item.downloads.last_at).toLocaleString()}` : ''}`}
+                                                    style={{ fontSize: '0.6rem', color: item.downloads.total ? '#60a5fa' : muted, background: item.downloads.total ? 'rgba(96,165,250,0.12)' : wa(fg, 0.06), borderRadius: '9999px', padding: '0.05rem 0.4rem', fontWeight: 700, cursor: 'help', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" style={{ width: '0.6rem', height: '0.6rem' }}>
+                                                        <path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14" />
+                                                    </svg>
+                                                    {item.downloads.total}
+                                                    {item.downloads.total > 0 && <span style={{ opacity: 0.7, fontWeight: 600 }}>· {item.downloads.readers} reader{item.downloads.readers === 1 ? '' : 's'}</span>}
+                                                </span>
                                             </div>
                                         </div>
                                         <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>

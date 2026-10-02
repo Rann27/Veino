@@ -43,7 +43,6 @@ interface LatestUpdatesSectionProps {
 
 function uniqueSeries(series: Series[]): Series[] {
   const seen = new Set<number>();
-
   return series.filter((item) => {
     if (seen.has(item.id)) return false;
     seen.add(item.id);
@@ -106,30 +105,30 @@ export default function LatestUpdatesSection({ initialData }: LatestUpdatesSecti
   // Skeleton loader
   const SkeletonCard = () => (
     <div
-      className="rounded-xl overflow-hidden flex h-[180px] animate-pulse"
+      className="rounded-lg overflow-hidden flex h-[175px] animate-pulse border"
       style={{
         backgroundColor: `${currentTheme.foreground}06`,
-        border: `1px solid ${currentTheme.foreground}05`,
+        borderColor: `${currentTheme.foreground}10`,
       }}
     >
       <div
-        className="w-[110px] sm:w-[120px] flex-shrink-0"
+        className="w-[105px] sm:w-[115px] flex-shrink-0"
         style={{ backgroundColor: `${currentTheme.foreground}08` }}
       />
-      <div className="flex-1 p-4 space-y-3">
+      <div className="flex-1 p-3.5 space-y-2.5">
         <div
-          className="h-4 rounded w-3/4"
+          className="h-3.5 rounded w-3/4"
           style={{ backgroundColor: `${currentTheme.foreground}08` }}
         />
         <div
-          className="h-3 rounded w-1/2"
+          className="h-2.5 rounded w-1/2"
           style={{ backgroundColor: `${currentTheme.foreground}06` }}
         />
-        <div className="space-y-2 mt-4">
+        <div className="space-y-1.5 mt-3">
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="h-3 rounded w-full"
+              className="h-2.5 rounded w-full"
               style={{ backgroundColor: `${currentTheme.foreground}05` }}
             />
           ))}
@@ -139,40 +138,41 @@ export default function LatestUpdatesSection({ initialData }: LatestUpdatesSecti
   );
 
   return (
-    <section className="py-8 sm:py-12" style={{ backgroundColor: currentTheme.background }}>
+    <section className="py-8 sm:py-10" style={{ backgroundColor: currentTheme.background }}>
       <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
         {/* Header with tabs */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
           <h2
-            className="text-xl sm:text-2xl font-bold"
-            style={{ color: currentTheme.foreground }}
+            className="text-lg sm:text-xl font-semibold tracking-tight"
+            style={{
+              fontFamily: 'Poppins, sans-serif',
+              color: currentTheme.foreground,
+            }}
           >
             Latest Updates
           </h2>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             {/* Tab buttons */}
             <div
-              className="inline-flex rounded-lg p-1"
+              className="inline-flex rounded-lg p-0.5 border"
               style={{
-                backgroundColor: `${currentTheme.foreground}06`,
+                backgroundColor: `${currentTheme.foreground}04`,
+                borderColor: `${currentTheme.foreground}12`,
               }}
             >
               {tabs.map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => fetchTab(tab.key)}
-                  className="relative px-4 py-2 text-sm font-medium rounded-md transition-all duration-200"
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors cursor-pointer"
                   style={{
                     backgroundColor:
                       activeTab === tab.key ? `${currentTheme.foreground}12` : 'transparent',
                     color:
                       activeTab === tab.key
                         ? currentTheme.foreground
-                        : `${currentTheme.foreground}50`,
-                    ...(activeTab === tab.key && {
-                      boxShadow: `0 1px 3px ${currentTheme.foreground}08`,
-                    }),
+                        : `${currentTheme.foreground}55`,
                   }}
                 >
                   {tab.label}
@@ -183,11 +183,11 @@ export default function LatestUpdatesSection({ initialData }: LatestUpdatesSecti
             {/* View All link */}
             <Link
               href={`/explore?sort=latest${activeTab !== 'all' ? `&type=${activeTab}` : ''}`}
-              className="text-sm font-medium hover:opacity-70 transition-opacity flex items-center gap-1 ml-3"
+              className="text-xs font-medium hover:opacity-75 transition-opacity flex items-center gap-1 ml-2"
               style={{ color: `${currentTheme.foreground}70` }}
             >
               View All
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
@@ -195,21 +195,21 @@ export default function LatestUpdatesSection({ initialData }: LatestUpdatesSecti
         </div>
 
         {/* Content grid */}
-        <div ref={contentRef} className="relative min-h-[200px]">
+        <div ref={contentRef} className="relative min-h-[180px]">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
               {currentData.map((series, i) => (
                 <LatestUpdateCard key={series.id} series={series} index={i} />
               ))}
               {currentData.length === 0 && (
                 <div
-                  className="col-span-full text-center py-12 text-sm"
+                  className="col-span-full text-center py-10 text-xs"
                   style={{ color: `${currentTheme.foreground}40` }}
                 >
                   No updates found for this category.

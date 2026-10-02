@@ -31,6 +31,8 @@ class User extends Authenticatable
         'membership_tier', // User's membership level
         'membership_expires_at', // When membership expires
         'is_banned',
+        'ban_reason',
+        'banned_at',
         'avatar', // User's avatar image path
         'bio', // User's biography
         // Removed email_verified_at since we don't use email verification
@@ -66,6 +68,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_banned' => 'boolean',
+            'banned_at' => 'datetime',
             'coins' => 'integer',
             'membership_expires_at' => 'datetime',
         ];
