@@ -12,6 +12,8 @@ import CommentIcon from '@/Components/Icons/CommentIcon';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import { getVisitedChapters } from '@/lib/reading';
 import { csrfHeaders } from '@/lib/csrf';
+import { formatRating, formatRatingCount } from '@/lib/rating';
+import StarRating from '@/Components/StarRating';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -150,7 +152,9 @@ interface Series {
     slug: string;
     synopsis: string;
     cover_url: string | null;
-    rating: number;
+    /** Readers' average out of 10; null until someone votes. */
+    rating: number | string | null;
+    rating_count?: number;
     status: string;
     chapters_count: number;
     genres: Genre[];
@@ -194,6 +198,8 @@ interface Props {
     lastRead?: LastRead | null;
     /** chapter id → ISO expiry of challenge-earned access */
     temporaryAccess?: Record<string, string>;
+    /** This reader's own vote, 1–5. */
+    userRating?: number | null;
     auth?: {
         user?: {
             id: number;
@@ -247,6 +253,7 @@ const sanitizeContent = (html: string): string => {
 function SeriesShowContent({
     series, chapters, relatedSeries, isBookmarked = false, seriesMarks = [], auth,
     firstChapter = null, readChapterIds = [], lastRead = null, temporaryAccess = {},
+    userRating = null,
 }: Props) {
     const { currentTheme } = useTheme();
 
@@ -285,6 +292,8 @@ function SeriesShowContent({
     const [bookmarked, setBookmarked] = useState(isBookmarked);
     const [showNotification, setShowNotification] = useState(false);
     const [notificationMessage, setNotificationMessage] = useState('');
+    // Decides the icon: a green tick only for things that actually happened.
+    const [notificationTone, setNotificationTone] = useState<'success' | 'info' | 'error'>('success');
     const [isExpanded, setIsExpanded] = useState(false);
     
     // Age verification modal state
@@ -425,6 +434,7 @@ function SeriesShowContent({
         // Check if user is logged in first - Show message instead of redirect
         if (!auth?.user) {
             setNotificationMessage('Please log in to bookmark this series');
+            setNotificationTone('info');
             setShowNotification(true);
             setTimeout(() => {
                 setShowNotification(false);
@@ -448,6 +458,7 @@ function SeriesShowContent({
                 const data = await response.json();
                 setBookmarked(!bookmarked);
                 setNotificationMessage(data.message);
+                setNotificationTone('success');
                 setShowNotification(true);
                 
                 // Hide notification after 3 seconds
@@ -458,6 +469,7 @@ function SeriesShowContent({
                 // Handle error responses from server
                 const errorData = await response.json().catch(() => ({}));
                 setNotificationMessage(errorData.message || 'An error occurred. Please try again.');
+                setNotificationTone('error');
                 setShowNotification(true);
                 setTimeout(() => {
                     setShowNotification(false);
@@ -466,6 +478,7 @@ function SeriesShowContent({
         } catch (error) {
             console.error('Error toggling bookmark:', error);
             setNotificationMessage('An error occurred. Please try again.');
+            setNotificationTone('error');
             setShowNotification(true);
             setTimeout(() => {
                 setShowNotification(false);
@@ -797,10 +810,16 @@ function SeriesShowContent({
                                     <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${getStatusColor(series.status)}`}>
                                         {series.status}
                                     </span>
-                                    <div className="flex items-center gap-1">
+                                    <div
+                                        className="flex items-center gap-1"
+                                        title={series.rating_count ? `Average of ${formatRatingCount(series.rating_count)}, out of 10` : 'No ratings yet'}
+                                    >
                                         <span className="text-yellow-400 text-lg">★</span>
                                         <span className="font-semibold" style={{ color: currentTheme.foreground }}>
-                                            {series.rating || 'N/A'}
+                                            {formatRating(series.rating, '–')}
+                                        </span>
+                                        <span className="text-xs" style={{ color: `${currentTheme.foreground}60` }}>
+                                            {series.rating_count ? `(${formatRatingCount(series.rating_count)})` : '(no ratings yet)'}
                                         </span>
                                     </div>
                                     <span className="w-1 h-1 rounded-full" style={{ backgroundColor: `${currentTheme.foreground}30` }} />
@@ -813,20 +832,46 @@ function SeriesShowContent({
                                     </span>
                                 </div>
 
-                                {/* Genre Pills */}
+                                {/* Your rating */}
+                                <div className="mb-4">
+                                    <StarRating
+                                        slug={series.slug}
+                                        userRating={userRating}
+                                        isAuthenticated={!!auth?.user}
+                                        foreground={currentTheme.foreground}
+                                        onRequireLogin={() => {
+                                            setNotificationMessage('Please log in to rate this series');
+                                            setNotificationTone('info');
+                                            setShowNotification(true);
+                                            setTimeout(() => setShowNotification(false), 3000);
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Genre Pills — each opens Explore filtered to that genre */}
                                 <div className="flex flex-wrap gap-2 mb-5">
                                     {series.genres.map((genre) => (
-                                        <span
+                                        <Link
                                             key={genre.id}
-                                            className="px-3 py-1 text-xs font-semibold rounded-full uppercase tracking-wider"
+                                            href={`/explore?genres[]=${genre.id}`}
+                                            title={`Explore more ${genre.name}`}
+                                            className="px-3 py-1 text-xs font-semibold rounded-full uppercase tracking-wider transition-all duration-200 hover:-translate-y-0.5 hover:brightness-125"
                                             style={{
                                                 backgroundColor: `${currentTheme.foreground}10`,
                                                 color: `${currentTheme.foreground}80`,
                                                 border: `1px solid ${currentTheme.foreground}12`,
                                             }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.backgroundColor = `${currentTheme.foreground}1f`;
+                                                e.currentTarget.style.color = currentTheme.foreground;
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.backgroundColor = `${currentTheme.foreground}10`;
+                                                e.currentTarget.style.color = `${currentTheme.foreground}80`;
+                                            }}
                                         >
                                             {genre.name}
-                                        </span>
+                                        </Link>
                                     ))}
                                 </div>
 
@@ -1344,7 +1389,7 @@ function SeriesShowContent({
                                                     <div className="flex items-center gap-2 mt-1.5">
                                                         <span className="flex items-center gap-0.5 text-xs">
                                                             <span className="text-yellow-400 text-sm leading-none">★</span>
-                                                            <span className="font-semibold" style={{ color: currentTheme.foreground }}>{related.rating || 'N/A'}</span>
+                                                            <span className="font-semibold" style={{ color: currentTheme.foreground }}>{formatRating(related.rating)}</span>
                                                         </span>
                                                         <span className="w-1 h-1 rounded-full" style={{ backgroundColor: `${currentTheme.foreground}25` }} />
                                                         <span className="text-xs" style={{ color: `${currentTheme.foreground}50` }}>
@@ -1414,9 +1459,21 @@ function SeriesShowContent({
                         }}
                     >
                         <div className="flex-shrink-0">
-                            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
+                            {notificationTone === 'success' && (
+                                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            )}
+                            {notificationTone === 'info' && (
+                                <svg className="w-5 h-5 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                                </svg>
+                            )}
+                            {notificationTone === 'error' && (
+                                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+                                </svg>
+                            )}
                         </div>
                         <p className="text-sm font-medium flex-1" style={{ color: currentTheme.foreground }}>
                             {notificationMessage}

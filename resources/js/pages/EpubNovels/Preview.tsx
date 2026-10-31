@@ -98,10 +98,27 @@ function PreviewContent({ series, item }: Props) {
     const processedContent = useMemo(() => {
         const safe = sanitizeColorStyles(item.preview_content ?? '');
         let idx = 0;
-        return safe.replace(/<h1(\s[^>]*)?>/gi, (_m, attrs) => {
+        const withIds = safe.replace(/<h1(\s[^>]*)?>/gi, (_m, attrs) => {
             return `<h1${attrs || ''} id="epub-h1-${idx++}">`;
         });
-    }, [item.preview_content]);
+
+        // Reader settings go inline on each block, the same way the chapter
+        // reader does it. The settings come first so a style the editor set
+        // on purpose (a centred scene break, say) still wins.
+        return withIds.replace(/<(p|h[1-6]|li|blockquote|figcaption)(\s[^>]*)?>/gi, (_m, tag, attrs) => {
+            const styles = [
+                `margin-bottom:${readerSettings.paragraphSpacing}em`,
+                'margin-top:0',
+                `text-align:${readerSettings.textAlign}`,
+                readerSettings.hyphenation ? 'hyphens:auto' : 'hyphens:none',
+                tag.toLowerCase() === 'p' && readerSettings.textIndent > 0 ? `text-indent:${readerSettings.textIndent}em` : '',
+            ].filter(Boolean).join(';');
+            const ea = attrs || '';
+            return /style\s*=/i.test(ea)
+                ? `<${tag}${ea.replace(/style\s*=\s*["']([^"']*)["']/i, `style="${styles};$1"`)}>`
+                : `<${tag}${ea} style="${styles}">`;
+        });
+    }, [item.preview_content, readerSettings.paragraphSpacing, readerSettings.textAlign, readerSettings.textIndent, readerSettings.hyphenation]);
 
     // ── extract headings for TOC ───────────────────────────────────────────
     const headings = useMemo(() => {
@@ -322,8 +339,15 @@ function PreviewContent({ series, item }: Props) {
                     </div>
 
                     {/* Content */}
+                    <style>{`
+                        /* Illustrations: centred, and a blank line (one line-height) below
+                           each so consecutive images never butt up against one another. */
+                        .epub-preview-content img { display: block; max-width: 100%; height: auto; margin: 0 auto ${readerSettings.lineHeight}em; }
+                        .epub-preview-content figure { margin: 0 auto ${readerSettings.lineHeight}em; text-align: center; }
+                        .epub-preview-content figure img { margin-bottom: 0; }
+                    `}</style>
                     <div
-                        className="chapter-content prose max-w-none"
+                        className="chapter-content epub-preview-content prose max-w-none"
                         style={{
                             color: fg,
                             fontSize: `${readerSettings.fontSize}px`,

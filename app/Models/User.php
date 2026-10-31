@@ -69,6 +69,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_banned' => 'boolean',
             'banned_at' => 'datetime',
+            'fraud_cleared_at' => 'datetime',
             'coins' => 'integer',
             'membership_expires_at' => 'datetime',
         ];

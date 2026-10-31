@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import CoverImage from '@/Components/CoverImage';
+import { formatRating } from '@/lib/rating';
 
 interface Genre {
   id: number;
@@ -23,7 +24,7 @@ interface Series {
   slug: string;
   cover_url?: string;
   thumb_url?: string | null;
-  rating: number;
+  rating: number | string | null;
   chapters_count?: number;
   chapters?: Chapter[];
 }
@@ -146,7 +147,7 @@ export default function SeriesCard({ series, index = 0 }: SeriesCardProps) {
             className="text-xs ml-1 font-medium"
             style={{ color: `${currentTheme.foreground}70` }}
           >
-            {series.rating}
+            {formatRating(series.rating)}
           </span>
         </div>
       </div>

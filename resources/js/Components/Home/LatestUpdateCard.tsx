@@ -28,7 +28,7 @@ interface LatestUpdateCardProps {
     type?: 'light-novel' | 'web-novel';
     cover_url?: string;
     thumb_url?: string | null;
-    rating: number;
+    rating: number | string | null;
     chapters_count?: number;
     chapters?: Chapter[];
     native_language?: NativeLanguage;

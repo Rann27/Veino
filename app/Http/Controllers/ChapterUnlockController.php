@@ -69,6 +69,14 @@ class ChapterUnlockController extends Controller
             ], 429);
         }
 
+        if ($this->unlock->reachedIpDailyLimit($request->ip())) {
+            $this->log($request, $user->id, $chapter->id, 'ip_limit');
+
+            return response()->json([
+                'message' => "Today's free unlocks are used up. Try again tomorrow.",
+            ], 429);
+        }
+
         $shortlink = $this->unlock->challengeUrlFor($chapter);
 
         if (! $shortlink) {
@@ -174,6 +182,14 @@ class ChapterUnlockController extends Controller
         // message honest for readers without it ever reporting on the challenge.
         if ($this->unlock->reachedDailyLimit($user)) {
             $this->log($request, $user->id, $chapter->id, 'daily_limit');
+
+            return redirect()->to($chapterUrl)->with('error', "You've reached today's free unlock limit.");
+        }
+
+        // Same reasoning as the per-account quota above: answered before the
+        // challenge is consumed, and in quota terms only.
+        if ($this->unlock->reachedIpDailyLimit($request->ip())) {
+            $this->log($request, $user->id, $chapter->id, 'ip_limit');
 
             return redirect()->to($chapterUrl)->with('error', "You've reached today's free unlock limit.");
         }

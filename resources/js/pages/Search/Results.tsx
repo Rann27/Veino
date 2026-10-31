@@ -4,6 +4,7 @@ import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
 import { getStatusColor, getCardBg, SHINY_PURPLE } from '@/constants/colors';
+import { formatRating } from '@/lib/rating';
 
 interface Genre {
     id: number;
@@ -22,7 +23,7 @@ interface Series {
     slug: string;
     synopsis: string;
     cover_url: string | null;
-    rating: number;
+    rating: number | string | null;
     status: string;
     chapters_count: number;
     genres: Genre[];
@@ -124,7 +125,7 @@ function SearchResultsContent({ series, query }: Props) {
                                                         className="text-xs ml-1"
                                                         style={{ color: `${currentTheme.foreground}80` }}
                                                     >
-                                                        {item.rating || 'N/A'}
+                                                        {formatRating(item.rating)}
                                                     </span>
                                                 </div>
                                                 <span style={{ color: `${currentTheme.foreground}30` }}>•</span>

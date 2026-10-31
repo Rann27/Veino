@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Transaction;
+use App\Services\FraudDetector;
+use App\Support\IpNetworks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -14,6 +16,18 @@ class UserController extends Controller
 {
     /** Addresses listed per row before the rest collapse into "+N more". */
     private const IPS_SHOWN = 3;
+
+    /**
+     * The network an address belongs to, in SQL: the /24 for IPv4, the /64 for
+     * IPv6. Mirrors IpNetworks::network(), which does the same in PHP.
+     *
+     * Counting networks instead of raw addresses is what keeps an honest
+     * reader off the top of the "most IPs" list. A home connection's address
+     * is reshuffled by the ISP within its pool, and IPv6 privacy extensions
+     * hand a phone a fresh address inside the same /64 every day; all of that
+     * churn collapses into one network here.
+     */
+    private const NETWORK_SQL = "COALESCE(CASE WHEN IS_IPV4(ip) THEN SUBSTRING_INDEX(ip, '.', 3) ELSE HEX(LEFT(INET6_ATON(ip), 8)) END, ip)";
 
     public function index(Request $request)
     {
@@ -29,19 +43,28 @@ class UserController extends Controller
             'membership' => 'membership_tier',
             'status' => 'is_banned',
             'joined' => 'created_at',
+            // Peak networks at once, then distinct networks, then raw
+            // addresses. Joined in only when asked for, see ipRanking().
+            'ips' => null,
         ];
 
         $sortKey = (string) $request->query('sort', 'joined');
-        $sortKey = isset($sortable[$sortKey]) ? $sortKey : 'joined';
+        $sortKey = array_key_exists($sortKey, $sortable) ? $sortKey : 'joined';
         $column = $sortable[$sortKey];
         $dir = $request->query('dir') === 'asc' ? 'asc' : 'desc';
         
-        $users = User::select('id', 'display_name', 'email', 'role', 'coins', 'membership_tier', 'membership_expires_at', 'is_banned', 'created_at')
+        $users = User::select('users.id', 'users.display_name', 'users.email', 'users.role', 'users.coins', 'users.membership_tier', 'users.membership_expires_at', 'users.is_banned', 'users.created_at')
             ->when($search, function($query, $search) {
-                return $query->where('display_name', 'like', "%{$search}%")
-                           ->orWhere('email', 'like', "%{$search}%");
+                return $query->where(fn ($q) => $q->where('users.display_name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%"));
             })
-            ->orderBy($column, $dir)
+            ->when($sortKey === 'ips', function ($query) use ($dir) {
+                $query->leftJoinSub($this->ipRanking(), 'ipr', 'ipr.user_id', '=', 'users.id')
+                    ->orderByRaw('COALESCE(ipr.peak, 0) '.$dir)
+                    ->orderByRaw('COALESCE(ipr.networks, 0) '.$dir)
+                    ->orderByRaw('COALESCE(ipr.addresses, 0) '.$dir)
+                    ->orderByDesc('users.id');
+            }, fn ($query) => $query->orderBy('users.'.$column, $dir))
             // Keeps the sort and the search across page changes.
             ->paginate(20)
             ->withQueryString();
@@ -52,13 +75,25 @@ class UserController extends Controller
         $ips = DB::table('user_login_ips')
             ->whereIn('user_id', $users->pluck('id'))
             ->orderByDesc('last_seen_at')
-            ->get(['user_id', 'ip', 'last_seen_at', 'logins'])
+            ->get(['user_id', 'ip', 'first_seen_at', 'last_seen_at', 'logins'])
             ->groupBy('user_id');
 
-        $users->through(function ($user) use ($ips) {
+        $fraud = app(FraudDetector::class)->all();
+
+        $users->through(function ($user) use ($ips, $fraud) {
             $rows = $ips[$user->id] ?? collect();
 
+            // Only the headline goes on the row; the reasons live in the
+            // Suspects panel, which has room to explain them.
+            $verdict = $fraud[$user->id] ?? null;
+            $user->risk = $verdict && $verdict['level'] !== 'low'
+                ? ['level' => $verdict['level'], 'score' => $verdict['score'], 'cleared' => $verdict['cleared']]
+                : null;
+
             $user->ip_total = $rows->count();
+            [$user->ip_networks, $user->ip_peak] = IpNetworks::stats($rows);
+            // Sharing only matters on a paid membership; the table flags it there.
+            $user->paid_active = $user->hasActiveMembership();
             $user->ips = $rows->take(self::IPS_SHOWN)->map(fn ($r) => [
                 'ip' => $r->ip,
                 'last_seen' => $r->last_seen_at,
@@ -96,6 +131,8 @@ class UserController extends Controller
             'banned_at' => now(),
         ]);
 
+        app(FraudDetector::class)->forget();
+
         return redirect()->back()->with('success', "{$user->display_name} has been banned.");
     }
 
@@ -107,7 +144,123 @@ class UserController extends Controller
             'banned_at' => null,
         ]);
 
+        app(FraudDetector::class)->forget();
+
         return redirect()->back()->with('success', "{$user->display_name} has been unbanned.");
+    }
+
+    /**
+     * Accounts the fraud check thinks are one person's spares, worst first.
+     *
+     * Loaded on demand by the Suspects panel, like the shared-address list.
+     * Each suspect comes with the accounts it is linked to, since the useful
+     * question is rarely "is this account bad" but "are these five accounts
+     * the same person".
+     */
+    public function suspects(Request $request, FraudDetector $detector)
+    {
+        $includeLow = $request->boolean('all');
+        $verdicts = collect($detector->all())
+            ->filter(fn ($v) => $includeLow || $v['level'] !== 'low');
+
+        $ids = $verdicts->keys()->merge($verdicts->pluck('linked')->flatten())->unique()->values();
+
+        $people = User::whereIn('id', $ids)
+            ->get(['id', 'display_name', 'email', 'is_banned', 'membership_tier', 'membership_expires_at', 'created_at', 'fraud_cleared_at'])
+            ->keyBy('id');
+
+        $grants = DB::table('chapter_temporary_access')
+            ->whereIn('user_id', $ids)
+            ->where('source', '!=', 'sandbox')
+            ->select('user_id', DB::raw('COUNT(*) as n'))
+            ->groupBy('user_id')
+            ->pluck('n', 'user_id');
+
+        $card = fn (User $u) => [
+            'id' => $u->id,
+            'display_name' => $u->display_name,
+            'email' => $u->email,
+            'is_banned' => (bool) $u->is_banned,
+            'paid' => $u->hasActiveMembership(),
+            'joined' => $u->created_at?->toISOString(),
+            'free_unlocks' => (int) ($grants[$u->id] ?? 0),
+        ];
+
+        $suspects = $verdicts
+            ->map(function ($v, $id) use ($people, $card) {
+                $user = $people[$id] ?? null;
+                if (! $user) {
+                    return null;
+                }
+
+                return $card($user) + [
+                    'score' => $v['score'],
+                    'level' => $v['level'],
+                    'reasons' => $v['reasons'],
+                    'cleared' => $v['cleared'],
+                    'cleared_at' => $user->fraud_cleared_at?->toISOString(),
+                    'linked' => collect($v['linked'])
+                        ->map(fn ($l) => isset($people[$l]) ? $card($people[$l]) : null)
+                        ->filter()->values(),
+                ];
+            })
+            ->filter()
+            // Banned accounts are done with; keep them out of the way unless
+            // they are the reason someone else is on the list.
+            ->reject(fn ($s) => $s['is_banned'] && ! $includeLow)
+            ->sortByDesc('score')
+            ->values();
+
+        return response()->json([
+            'suspects' => $suspects,
+            'thresholds' => ['high' => FraudDetector::HIGH, 'medium' => FraudDetector::MEDIUM],
+        ]);
+    }
+
+    /**
+     * "Looked at it, it's fine." Marks the account as reviewed until a new
+     * linked account turns up. Changes nothing for the reader.
+     */
+    public function clearSuspect(User $user, FraudDetector $detector)
+    {
+        $user->forceFill(['fraud_cleared_at' => now()])->saveQuietly();
+        $detector->forget();
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function unclearSuspect(User $user, FraudDetector $detector)
+    {
+        $user->forceFill(['fraud_cleared_at' => null])->saveQuietly();
+        $detector->forget();
+
+        return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Bans a suspect together with the accounts linked to it, under one reason.
+     * Admins in the selection are skipped, matching banUser().
+     */
+    public function banSuspects(Request $request, FraudDetector $detector)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1|max:200',
+            'ids.*' => 'integer',
+            'reason' => 'required|string|min:3|max:1000',
+        ]);
+
+        $banned = User::whereIn('id', $validated['ids'])
+            ->where('role', '!=', 'admin')
+            ->where('is_banned', false)
+            ->update([
+                'is_banned' => true,
+                'ban_reason' => $validated['reason'],
+                'banned_at' => now(),
+            ]);
+
+        $detector->forget();
+
+        return response()->json(['banned' => $banned]);
     }
 
     /**
@@ -268,5 +421,37 @@ class UserController extends Controller
         ]);
         
         return redirect()->back()->with('success', "Deducted {$amount} coins from {$user->display_name}");
+    }
+
+    /**
+     * IpNetworks::stats() for every account at once, in SQL, so "most IPs" ranks
+     * the whole user base rather than the twenty rows on the current page.
+     *
+     * The peak always falls on the moment some span opens, so it is enough to
+     * count, at each span's start, how many of the same account's spans are
+     * open (started at or before it, not yet ended). Opens-before-closes at
+     * the same instant, as in the PHP sweep.
+     */
+    private function ipRanking()
+    {
+        $spans = fn () => DB::table('user_login_ips')
+            ->select('user_id')
+            ->selectRaw(self::NETWORK_SQL.' as net, MIN(first_seen_at) as s, MAX(last_seen_at) as e, COUNT(*) as addresses')
+            ->groupBy('user_id', 'net');
+
+        $openAtStart = DB::query()
+            ->fromSub($spans(), 'a')
+            ->joinSub($spans(), 'b', fn ($j) => $j->on('b.user_id', '=', 'a.user_id')
+                ->on('b.s', '<=', 'a.s')
+                ->on('b.e', '>=', 'a.s'))
+            ->select('a.user_id', 'a.net', 'a.addresses')
+            ->selectRaw('COUNT(*) as open_count')
+            ->groupBy('a.user_id', 'a.net', 'a.addresses');
+
+        return DB::query()
+            ->fromSub($openAtStart, 'o')
+            ->select('user_id')
+            ->selectRaw('MAX(open_count) as peak, COUNT(*) as networks, SUM(addresses) as addresses')
+            ->groupBy('user_id');
     }
 }

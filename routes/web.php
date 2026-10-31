@@ -120,6 +120,13 @@ Route::get('/buy-coins', function () { return redirect('/shop?tab=coins'); })->n
 Route::get('/membership', function () { return redirect('/shop?tab=membership'); })->name('membership.index');
 
 // Membership action routes
+// Reader ratings, 1–5 stars. Throttled: a vote is a single click, and
+// anything faster than this is a script, not a reader changing their mind.
+Route::middleware(['auth', 'throttle:20,1'])->group(function () {
+    Route::post('/series/{slug}/rating', [App\Http\Controllers\SeriesRatingController::class, 'store'])->name('series.rating.store');
+    Route::delete('/series/{slug}/rating', [App\Http\Controllers\SeriesRatingController::class, 'destroy'])->name('series.rating.destroy');
+});
+
 Route::middleware('auth')->group(function () {
     Route::post('/membership/purchase', [MembershipController::class, 'purchase'])->name('membership.purchase')->middleware('throttle:5,1');
     Route::get('/membership/status/{history}', [MembershipController::class, 'status'])->name('membership.status');
@@ -286,6 +293,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/users/{user}/unban', [UserController::class, 'unbanUser'])->name('users.unban');
     // Which accounts share a sign-in address — the multi-account check.
     Route::get('/users/shared-ips', [UserController::class, 'sharedIps'])->name('users.shared-ips');
+    Route::get('/users/suspects', [UserController::class, 'suspects'])->name('users.suspects');
+    Route::post('/users/suspects/ban', [UserController::class, 'banSuspects'])->name('users.suspects.ban');
+    Route::post('/users/{user}/fraud-clear', [UserController::class, 'clearSuspect'])->name('users.fraud-clear');
+    Route::delete('/users/{user}/fraud-clear', [UserController::class, 'unclearSuspect'])->name('users.fraud-unclear');
     Route::post('/users/{user}/add-membership', [UserController::class, 'addMembership'])->name('users.add-membership');
     Route::post('/users/{user}/add-coins', [UserController::class, 'addCoins'])->name('users.add-coins');
     Route::post('/users/{user}/deduct-coins', [UserController::class, 'deductCoins'])->name('users.deduct-coins');

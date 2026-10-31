@@ -28,7 +28,7 @@ interface Series {
   title: string;
   slug: string;
   cover_url?: string;
-  rating: number;
+  rating: number | string | null;
   chapters_count?: number;
   chapters?: Chapter[];
   native_language?: NativeLanguage;

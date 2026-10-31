@@ -139,6 +139,7 @@ class SeriesController extends Controller
                 'days' => (int) PaymentSetting::get('unlock_challenge_days', 7),
                 'daily_limit' => (int) PaymentSetting::get('unlock_challenge_daily_limit', 10),
                 'rotate_after' => (int) PaymentSetting::get('unlock_rotate_after', 0),
+                'ip_daily_limit' => (int) PaymentSetting::get('unlock_ip_daily_limit', 0),
                 'sandbox' => app(\App\Services\ChapterUnlockService::class)->sandbox(),
                 // False outside local, so the modal can say the switch is inert
                 // here rather than showing a toggle that quietly does nothing.
@@ -190,7 +191,6 @@ class SeriesController extends Controller
             'synopsis' => 'nullable|string',
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
-            'rating' => 'nullable|numeric|min:0|max:10',
             'status' => 'required|in:ongoing,complete,hiatus',
             'type' => 'required|in:light-novel,web-novel',
             'native_language_id' => 'required|exists:native_languages,id',
@@ -234,7 +234,6 @@ class SeriesController extends Controller
             'synopsis' => 'nullable|string',
             'author' => 'nullable|string|max:255',
             'artist' => 'nullable|string|max:255',
-            'rating' => 'nullable|numeric|min:0|max:10',
             'status' => 'required|in:ongoing,complete,hiatus',
             'type' => 'required|in:light-novel,web-novel',
             'native_language_id' => 'required|exists:native_languages,id',
@@ -307,6 +306,7 @@ class SeriesController extends Controller
             'challenge_daily_limit' => 'required|integer|min:0|max:100',
             // 0 disables rotation, which is why the floor is 0 rather than 1.
             'challenge_rotate_after' => 'required|integer|min:0|max:100',
+            'challenge_ip_daily_limit' => 'required|integer|min:0|max:100',
             'challenge_sandbox' => 'required|boolean',
         ]);
 
@@ -315,6 +315,7 @@ class SeriesController extends Controller
         PaymentSetting::set('unlock_challenge_days', $validated['challenge_days'], 'integer', 'How many days challenge-earned access lasts');
         PaymentSetting::set('unlock_challenge_daily_limit', $validated['challenge_daily_limit'], 'integer', 'Free unlocks a reader may earn per day (0 = unlimited)');
         PaymentSetting::set('unlock_rotate_after', $validated['challenge_rotate_after'], 'integer', 'Grants a claim token may serve before it is retired (0 = never rotate)');
+        PaymentSetting::set('unlock_ip_daily_limit', $validated['challenge_ip_daily_limit'], 'integer', 'Free unlocks one IP address may earn per day across all accounts (0 = off)');
         PaymentSetting::set('unlock_challenge_sandbox', $validated['challenge_sandbox'] ? 1 : 0, 'boolean', 'Bypass Move2Link with a local stand-in gate — testing only');
 
         return back()->with('success', $validated['challenge_sandbox']

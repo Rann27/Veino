@@ -3,6 +3,7 @@ import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
 import { getStatusColor, SHINY_PURPLE } from '@/constants/colors';
+import { formatRating } from '@/lib/rating';
 
 interface Genre {
     id: number;
@@ -22,7 +23,7 @@ interface SearchSuggestion {
     cover_url: string | null;
     chapters_count: number;
     status: string;
-    rating: number;
+    rating: number | string | null;
     genres: Genre[];
     native_language: NativeLanguage;
 }
@@ -102,7 +103,7 @@ export default function SearchSuggestions({ suggestions, query, onSuggestionClic
                                                 className="text-xs ml-1"
                                                 style={{ color: `${currentTheme.foreground}80` }}
                                             >
-                                                {series.rating || 'N/A'}
+                                                {formatRating(series.rating)}
                                             </span>
                                         </div>
                                         <span style={{ color: `${currentTheme.foreground}30` }}>•</span>

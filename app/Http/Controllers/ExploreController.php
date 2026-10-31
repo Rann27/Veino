@@ -25,9 +25,18 @@ class ExploreController extends Controller
             });
         }
 
-        // Filter by genres
-        if ($request->filled('genres')) {
-            $genreIds = is_array($request->genres) ? $request->genres : [$request->genres];
+        // Filter by genres. Ids arrive from the query string as strings (and a
+        // genre chip on the series page links here with a single one), so they
+        // are normalised to ints: the page compares them against numeric ids
+        // to decide which chips start out selected.
+        $genreIds = collect((array) $request->input('genres', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($genreIds) {
             $query->whereHas('genres', function ($q) use ($genreIds) {
                 $q->whereIn('genres.id', $genreIds);
             });
@@ -61,7 +70,9 @@ class ExploreController extends Controller
                     $query->orderByDesc('chapters_count');
                     break;
                 case 'rating':
-                    $query->orderByDesc('rating');
+                    // Unrated series hold NULL and sink to the bottom; among
+                    // equal scores, the one more readers agreed on goes first.
+                    $query->orderByDesc('rating')->orderByDesc('rating_count');
                     break;
                 default:
                     $query->orderByDesc('created_at');
@@ -80,7 +91,7 @@ class ExploreController extends Controller
             'languages' => $languages,
             'filters' => [
                 'search' => $request->search,
-                'genres' => $request->genres,
+                'genres' => $genreIds,
                 'language' => $request->language,
                 'status' => $request->status,
                 'type' => $request->type,

@@ -3,6 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import { asTier, isPaidTier, TIER_LABEL, TIER_COLOR, type Tier } from '@/lib/tier';
+import { csrfHeaders } from '@/lib/csrf';
 
 interface User {
     id: number;
@@ -17,7 +18,34 @@ interface User {
     /** Most recent addresses first, capped server-side. */
     ips: { ip: string; last_seen: string; logins: number }[];
     ip_total: number;
+    /** Distinct networks (IPv4 /24, IPv6 /64) behind those addresses. */
+    ip_networks: number;
+    /** Most networks in use over the same stretch of time. */
+    ip_peak: number;
+    /** Active paid membership: the only kind worth sharing. */
+    paid_active: boolean;
+    /** Fraud check headline; null when nothing notable points at the account. */
+    risk: { level: 'high' | 'medium'; score: number; cleared: boolean } | null;
 }
+
+interface SuspectCard {
+    id: number; display_name: string; email: string;
+    is_banned: boolean; paid: boolean; joined: string | null; free_unlocks: number;
+}
+
+interface Suspect extends SuspectCard {
+    score: number;
+    level: 'high' | 'medium' | 'low';
+    reasons: string[];
+    cleared: boolean;
+    cleared_at: string | null;
+    linked: SuspectCard[];
+}
+
+const RISK_COLOR = { high: '#ef4444', medium: '#f59e0b', low: '#6b7280' } as const;
+/** Networks a paid member may use at once; mirrors FraudDetector::SHARING_TOLERANCE. */
+const SHARING_TOLERANCE = 5;
+const DEFAULT_FARM_REASON = 'Multiple accounts operated by one person to farm free chapter unlocks.';
 
 interface SharedGroup {
     ip: string;
@@ -78,7 +106,7 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [durationDays, setDurationDays] = useState('');
     const [grantTier, setGrantTier] = useState<'premium' | 'exclusive'>('premium');
-    type SortKey = 'user' | 'email' | 'role' | 'coins' | 'membership' | 'status' | 'joined';
+    type SortKey = 'user' | 'email' | 'role' | 'coins' | 'membership' | 'status' | 'joined' | 'ips';
     const sortKey = (sort?.key ?? 'joined') as SortKey;
     const sortDir = sort?.dir ?? 'desc';
 
@@ -86,7 +114,7 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
     // coins and join date newest/biggest first.
     const FIRST_DIR: Record<SortKey, 'asc' | 'desc'> = {
         user: 'asc', email: 'asc', role: 'asc',
-        coins: 'desc', membership: 'desc', status: 'asc', joined: 'desc',
+        coins: 'desc', membership: 'desc', status: 'asc', joined: 'desc', ips: 'desc',
     };
 
     // Re-queries instead of reshuffling the loaded page, so the ordering holds
@@ -104,6 +132,12 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
     const [showSharedModal, setShowSharedModal] = useState(false);
     const [sharedGroups, setSharedGroups] = useState<SharedGroup[]>([]);
     const [sharedLoading, setSharedLoading] = useState(false);
+    const [showSuspects, setShowSuspects] = useState(false);
+    const [suspects, setSuspects] = useState<Suspect[]>([]);
+    const [suspectsLoading, setSuspectsLoading] = useState(false);
+    const [suspectBusy, setSuspectBusy] = useState<number | null>(null);
+    const [banTarget, setBanTarget] = useState<Suspect | null>(null);
+    const [farmReason, setFarmReason] = useState(DEFAULT_FARM_REASON);
     const isFirstRender = useRef(true);
 
     // Debounced auto-search
@@ -155,6 +189,60 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
             setSharedGroups([]);
         } finally {
             setSharedLoading(false);
+        }
+    };
+
+    const loadSuspects = async () => {
+        setSuspectsLoading(true);
+        try {
+            const res = await fetch('/admin/users/suspects', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            const data = await res.json();
+            setSuspects(data.suspects ?? []);
+        } catch {
+            setSuspects([]);
+        } finally {
+            setSuspectsLoading(false);
+        }
+    };
+
+    const openSuspects = () => { setShowSuspects(true); loadSuspects(); };
+
+    // After any action the table behind the panel is refreshed too, so its
+    // risk chips and ban badges never disagree with what was just done.
+    const afterSuspectAction = async () => {
+        await loadSuspects();
+        router.reload({ only: ['users'] });
+    };
+
+    const setCleared = async (s: Suspect, cleared: boolean) => {
+        setSuspectBusy(s.id);
+        try {
+            await fetch(`/admin/users/${s.id}/fraud-clear`, {
+                method: cleared ? 'POST' : 'DELETE',
+                headers: { ...csrfHeaders(), Accept: 'application/json' },
+                credentials: 'same-origin',
+            });
+            await afterSuspectAction();
+        } finally {
+            setSuspectBusy(null);
+        }
+    };
+
+    const banGroup = async () => {
+        if (!banTarget || farmReason.trim().length < 3) return;
+        const ids = [banTarget, ...banTarget.linked].filter(u => !u.is_banned).map(u => u.id);
+        setSuspectBusy(banTarget.id);
+        try {
+            await fetch('/admin/users/suspects/ban', {
+                method: 'POST',
+                headers: { ...csrfHeaders(), Accept: 'application/json', 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({ ids, reason: farmReason.trim() }),
+            });
+            setBanTarget(null);
+            await afterSuspectAction();
+        } finally {
+            setSuspectBusy(null);
         }
     };
 
@@ -218,11 +306,18 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
         <div>
             <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
                 <h1 style={{ fontSize: '24px', fontWeight: 700, color: fg }}>User Management</h1>
-                <button type="button" onClick={openSharedIps}
-                    title="Accounts signing in from the same address"
-                    style={{ padding: '8px 14px', fontSize: '13px', fontWeight: 600, color: fg, background: panelBg, border: `1px solid ${border}`, borderRadius: '8px', cursor: 'pointer' }}>
-                    Shared IPs
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button type="button" onClick={openSuspects}
+                        title="Accounts the fraud check links to one person"
+                        style={{ padding: '8px 14px', fontSize: '13px', fontWeight: 600, color: '#ef4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.35)', borderRadius: '8px', cursor: 'pointer' }}>
+                        Suspects
+                    </button>
+                    <button type="button" onClick={openSharedIps}
+                        title="Accounts signing in from the same address"
+                        style={{ padding: '8px 14px', fontSize: '13px', fontWeight: 600, color: fg, background: panelBg, border: `1px solid ${border}`, borderRadius: '8px', cursor: 'pointer' }}>
+                        Shared IPs
+                    </button>
+                </div>
             </div>
 
             {/* Search */}
@@ -245,7 +340,7 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
                                 {([
                                     ['User', 'user'], ['Email', 'email'], ['Role', 'role'],
                                     ['Coins', 'coins'], ['Membership', 'membership'],
-                                    ['Status', 'status'], ['Joined', 'joined'],
+                                    ['Status', 'status'], ['Joined', 'joined'], ['IP History', 'ips'],
                                 ] as [string, SortKey][]).map(([label, key]) => (
                                     <th key={key} style={{ ...thStyle, padding: 0 }}>
                                         <button onClick={() => toggleSort(key)}
@@ -255,7 +350,9 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
                                                 font: 'inherit', textTransform: 'uppercase', letterSpacing: '0.05em',
                                                 color: sortKey === key ? fg : muted,
                                             }}
-                                            title={`Sort by ${label.toLowerCase()}`}>
+                                            title={key === 'ips'
+                                                ? 'Sort by most networks in use at once, then networks used (IPv4 /24, IPv6 /64), then addresses'
+                                                : `Sort by ${label.toLowerCase()}`}>
                                             {label}
                                             <span aria-hidden style={{ fontSize: '9px', opacity: sortKey === key ? 1 : 0.35 }}>
                                                 {sortKey === key ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
@@ -263,14 +360,22 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
                                         </button>
                                     </th>
                                 ))}
-                                <th style={thStyle}>IP History</th>
                                 <th style={thStyle}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {sortedUsers.map((user) => (
                                 <tr key={user.id} style={{ background: user.is_banned ? (light ? 'rgba(239,68,68,0.06)' : 'rgba(239,68,68,0.08)') : 'transparent' }}>
-                                    <td style={tdStyle}><span style={{ fontWeight: 600 }}>{user.display_name}</span></td>
+                                    <td style={tdStyle}>
+                                        <span style={{ fontWeight: 600 }}>{user.display_name}</span>
+                                        {user.risk && !user.risk.cleared && !user.is_banned && (
+                                            <button type="button" onClick={openSuspects}
+                                                title={`Fraud score ${user.risk.score}. Open Suspects for the reasons.`}
+                                                style={{ display: 'block', marginTop: '3px', padding: '1px 7px', fontSize: '10px', fontWeight: 700, borderRadius: '999px', border: 'none', cursor: 'pointer', color: RISK_COLOR[user.risk.level], background: RISK_COLOR[user.risk.level] + '1f' }}>
+                                                {user.risk.level === 'high' ? 'High risk' : 'Suspect'} · {user.risk.score}
+                                            </button>
+                                        )}
+                                    </td>
                                     <td style={tdStyle}>{user.email}</td>
                                     <td style={tdStyle}>{badge(user.role === 'admin' ? '#7c3aed' : '#6b7280', user.role)}</td>
                                     <td style={tdStyle}><span style={{ fontWeight: 700, color: '#d97706' }}>¢{user.coins.toLocaleString()}</span></td>
@@ -289,6 +394,27 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
                                             <span style={{ fontSize: '12px', color: muted }}>&mdash;</span>
                                         ) : (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '130px' }}>
+                                                {/* Networks, not addresses, are what count: an ISP reshuffling
+                                                    a home IP or IPv6 rotating a phone's address stays one network. */}
+                                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginBottom: '3px' }}>
+                                                    <span style={{ fontSize: '11px', color: muted }}
+                                                        title="Addresses grouped by network: IPv4 by /24, IPv6 by /64">
+                                                        {user.ip_networks} network{user.ip_networks === 1 ? '' : 's'} · {user.ip_total} IP{user.ip_total === 1 ? '' : 's'}
+                                                    </span>
+                                                    {/* Only paid memberships are worth sharing, so only they get the chip:
+                                                        amber at the tolerance, red past it. */}
+                                                    {user.paid_active && user.ip_peak >= SHARING_TOLERANCE && (
+                                                        <span
+                                                            title={`Paid membership used from up to ${user.ip_peak} networks over the same period (tolerance ${SHARING_TOLERANCE}). A changing ISP address moves from one network to the next; a membership shared between people keeps several going side by side. A lead, not proof.`}
+                                                            style={{
+                                                                fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '999px', cursor: 'help', whiteSpace: 'nowrap',
+                                                                color: user.ip_peak > SHARING_TOLERANCE ? '#ef4444' : '#d97706',
+                                                                background: user.ip_peak > SHARING_TOLERANCE ? 'rgba(239,68,68,0.12)' : 'rgba(217,119,6,0.12)',
+                                                            }}>
+                                                            {user.ip_peak} at once
+                                                        </span>
+                                                    )}
+                                                </span>
                                                 {user.ips.map(entry => (
                                                     // Hover carries the date, so the column stays a list of
                                                     // places rather than a wall of timestamps.
@@ -472,6 +598,116 @@ function UsersIndexContent({ users, search, sort }: UsersIndexProps) {
             )}
 
             {/* ── Accounts behind one address ── */}
+            {showSuspects && (
+                <div style={modalOverlay} onClick={() => { setShowSuspects(false); setBanTarget(null); }}>
+                    <div style={{ ...modalBox, maxWidth: '820px', maxHeight: '86vh', display: 'flex', flexDirection: 'column' }}
+                        onClick={e => e.stopPropagation()}>
+                        <div style={{ flexShrink: 0 }}>
+                            <h3 style={{ ...modalTitle, marginBottom: '6px' }}>Fraud suspects</h3>
+                            <p style={{ fontSize: '12px', color: muted, marginBottom: '6px', lineHeight: 1.6 }}>
+                                Accounts that look like one person's spares, and paid memberships used from more than
+                                {' '}{SHARING_TOLERANCE} networks at once. Sharing an IP alone barely counts, since mobile
+                                carriers put strangers behind one address; registering in a burst, the same Gmail inbox,
+                                numbered look-alike names and linked accounts pulling the same chapter do.
+                            </p>
+                            <p style={{ fontSize: '12px', color: muted, marginBottom: '16px', lineHeight: 1.6 }}>
+                                Nothing here happens automatically: every account keeps working until you act.
+                                "Not fraud" files it as reviewed until a new linked account appears.
+                            </p>
+                        </div>
+
+                        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', marginRight: '-8px', paddingRight: '8px' }}>
+                            {suspectsLoading && suspects.length === 0 ? (
+                                <p style={{ fontSize: '13px', color: muted, textAlign: 'center', padding: '28px 0' }}>Loading…</p>
+                            ) : suspects.length === 0 ? (
+                                <p style={{ fontSize: '13px', color: muted, textAlign: 'center', padding: '28px 0' }}>Nothing suspicious right now.</p>
+                            ) : suspects.map(s => {
+                                const color = s.cleared ? '#22c55e' : RISK_COLOR[s.level];
+                                const unbannedInGroup = [s, ...s.linked].filter(u => !u.is_banned).length;
+                                return (
+                                    <div key={s.id} style={{ border: `1px solid ${s.cleared ? border : color + '55'}`, borderRadius: '10px', marginBottom: '12px', overflow: 'hidden', opacity: suspectBusy === s.id ? 0.6 : 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px', padding: '10px 14px', background: panelBg, borderBottom: `1px solid ${border}`, flexWrap: 'wrap' }}>
+                                            <div style={{ minWidth: 0 }}>
+                                                <p style={{ fontSize: '14px', fontWeight: 700, color: fg, margin: 0 }}>
+                                                    {s.display_name}
+                                                    <span style={{ marginLeft: '8px' }}>{badge(color, s.cleared ? 'Cleared' : `${s.level === 'high' ? 'High' : 'Medium'} · ${s.score}`)}</span>
+                                                    {s.paid && <span style={{ marginLeft: '6px' }}>{badge('#7c3aed', 'Paid')}</span>}
+                                                </p>
+                                                <p style={{ fontSize: '11px', color: muted, margin: '2px 0 0', wordBreak: 'break-all' }}>
+                                                    {s.email} · joined {s.joined ? new Date(s.joined).toLocaleDateString() : '—'} · {s.free_unlocks} free unlock{s.free_unlocks === 1 ? '' : 's'}
+                                                </p>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                                {s.cleared ? (
+                                                    <button type="button" disabled={suspectBusy !== null} onClick={() => setCleared(s, false)}
+                                                        style={{ ...btnCancel, padding: '5px 10px', fontSize: '11px' }}>Undo clear</button>
+                                                ) : (
+                                                    <button type="button" disabled={suspectBusy !== null} onClick={() => setCleared(s, true)}
+                                                        title="Reviewed and fine: off the list until a new linked account appears"
+                                                        style={{ ...btnCancel, padding: '5px 10px', fontSize: '11px' }}>Not fraud</button>
+                                                )}
+                                                {unbannedInGroup > 0 && (
+                                                    <button type="button" disabled={suspectBusy !== null}
+                                                        onClick={() => { setBanTarget(s); setFarmReason(DEFAULT_FARM_REASON); }}
+                                                        style={{ padding: '5px 10px', fontSize: '11px', fontWeight: 600, color: '#fff', background: '#ef4444', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                                                        Ban {unbannedInGroup > 1 ? `all ${unbannedInGroup}` : ''}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <ul style={{ margin: 0, padding: '8px 14px 8px 30px' }}>
+                                            {s.reasons.map(r => (
+                                                <li key={r} style={{ fontSize: '12px', color: fg, lineHeight: 1.7 }}>{r}</li>
+                                            ))}
+                                        </ul>
+
+                                        {s.linked.length > 0 && (
+                                            <div style={{ borderTop: `1px solid ${border}` }}>
+                                                <p style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: muted, margin: 0, padding: '8px 14px 2px' }}>
+                                                    Linked accounts ({s.linked.length})
+                                                </p>
+                                                {s.linked.map(u => (
+                                                    <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '5px 14px' }}>
+                                                        <span style={{ fontSize: '12px', color: fg, minWidth: 0, wordBreak: 'break-all' }}>
+                                                            <b>{u.display_name}</b> <span style={{ color: muted }}>{u.email}</span>
+                                                            {u.is_banned && <span style={{ marginLeft: '6px' }}>{badge('#ef4444', 'Banned')}</span>}
+                                                            {u.paid && <span style={{ marginLeft: '6px' }}>{badge('#7c3aed', 'Paid')}</span>}
+                                                        </span>
+                                                        <span style={{ fontSize: '11px', color: muted, flexShrink: 0 }}>
+                                                            {u.joined ? new Date(u.joined).toLocaleDateString() : '—'} · {u.free_unlocks} unlock{u.free_unlocks === 1 ? '' : 's'}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {banTarget?.id === s.id && (
+                                            <div style={{ borderTop: `1px solid ${border}`, padding: '12px 14px', background: 'rgba(239,68,68,0.05)' }}>
+                                                <label style={lbl}>Ban reason (shown to the banned readers)</label>
+                                                <textarea value={farmReason} onChange={e => setFarmReason(e.target.value)} rows={2}
+                                                    style={{ ...inp, resize: 'vertical', fontFamily: 'inherit' }} />
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
+                                                    <button type="button" onClick={() => setBanTarget(null)} style={btnCancel}>Cancel</button>
+                                                    <button type="button" disabled={suspectBusy !== null || farmReason.trim().length < 3} onClick={banGroup}
+                                                        style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, color: '#fff', background: '#ef4444', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>
+                                                        Ban {unbannedInGroup} account{unbannedInGroup === 1 ? '' : 's'}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                            <button type="button" onClick={() => { setShowSuspects(false); setBanTarget(null); }} style={btnCancel}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {showSharedModal && (
                 <div style={modalOverlay} onClick={() => setShowSharedModal(false)}>
                     <div style={{ ...modalBox, maxWidth: '720px', maxHeight: '82vh', display: 'flex', flexDirection: 'column' }}

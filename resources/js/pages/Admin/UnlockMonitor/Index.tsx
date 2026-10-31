@@ -32,6 +32,8 @@ const OUTCOME_LABEL: Record<string, string> = {
     throttled: 'Too many refusals',
     expired_token: 'Expired link',
     disabled: 'Challenge off',
+    ip_limit: 'IP daily limit',
+    fraud_hold: 'Fraud hold',
     started: 'Started',
 };
 
@@ -44,6 +46,8 @@ const OUTCOME_COLOR: Record<string, string> = {
     throttled: '#ec4899',
     expired_token: '#f97316',
     disabled: '#6b7280',
+    ip_limit: '#0ea5e9',
+    fraud_hold: '#b91c1c',
     started: '#64748b',
 };
 

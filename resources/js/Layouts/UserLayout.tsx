@@ -26,7 +26,7 @@ interface SearchSuggestion {
   cover_url: string | null;
   chapters_count: number;
   status: string;
-  rating: number;
+  rating: number | string | null;
   genres: Array<{ id: number; name: string; }>;
   native_language: { id: number; name: string; };
 }

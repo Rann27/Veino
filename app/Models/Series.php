@@ -27,7 +27,6 @@ class Series extends Model
         'synopsis',
         'author',
         'artist',
-        'rating',
         'status',
         'type',
         'is_mature',

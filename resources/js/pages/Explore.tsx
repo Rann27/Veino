@@ -5,6 +5,7 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import { getStatusColor, getCardBg, SHINY_PURPLE, SHINY_PURPLE_DIM } from '@/constants/colors';
 import CoverImage from '@/Components/CoverImage';
 import EmptyState from '@/Components/EmptyState';
+import { formatRating } from '@/lib/rating';
 
 interface Genre {
     id: number;
@@ -24,7 +25,7 @@ interface Series {
     synopsis: string;
     cover_url: string | null;
     thumb_url?: string | null;
-    rating: number;
+    rating: number | string | null;
     status: string;
     chapters_count: number;
     genres: Genre[];
@@ -538,7 +539,7 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                                                 }}
                                             >
                                                 <span className="text-yellow-400 text-xs">★</span>
-                                                <span>{item.rating || 'N/A'}</span>
+                                                <span>{formatRating(item.rating)}</span>
                                             </div>
                                         </div>
 

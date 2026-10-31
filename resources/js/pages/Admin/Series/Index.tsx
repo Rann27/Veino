@@ -19,7 +19,7 @@ interface NativeLanguage { id: number; name: string; }
 interface Series {
   id: number; title: string; alternative_title?: string;
   cover_url?: string; status: string; type: string;
-  slug: string; author?: string; rating: number;
+  slug: string; author?: string; rating: number | string | null;
   views: number; chapters_count: number;
   native_language: NativeLanguage; genres: Genre[];
   created_at: string; is_mature?: boolean;
@@ -33,6 +33,7 @@ interface SeriesIndexProps {
     days: number;
     daily_limit: number;
     rotate_after: number;
+    ip_daily_limit: number;
     sandbox: boolean;
     sandbox_allowed: boolean;
     token_configured: boolean;
@@ -113,7 +114,7 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
   const [coverPreview, setCoverPreview] = useState<string|null>(null);
   const [formData, setFormData] = useState({
     title: '', alternative_title: '', cover_url: '', synopsis: '',
-    author: '', artist: '', rating: '8.5', status: 'ongoing',
+    author: '', artist: '', status: 'ongoing',
     type: 'web-novel', native_language_id: '',
     genre_ids: [] as number[], is_mature: false,
     show_epub_button: false, epub_series_slug: '',
@@ -139,7 +140,6 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
     fd.append('synopsis', formData.synopsis);
     fd.append('author', formData.author);
     fd.append('artist', formData.artist);
-    fd.append('rating', formData.rating);
     fd.append('status', formData.status);
     fd.append('type', formData.type);
     fd.append('native_language_id', formData.native_language_id);
@@ -219,11 +219,6 @@ function AddSeriesModal({ onClose, genres, nativeLanguages, ebookSeriesOptions, 
                   <p className="text-[10px] mt-1.5" style={{ color: muted }}>Max 2MB · JPG, PNG, WebP</p>
                 </div>
               )}
-
-              <div>
-                <TLabel fg={muted}>Rating (0–10)</TLabel>
-                <TInput type="number" value={formData.rating} onChange={v=>set('rating',v)} placeholder="8.5" {...inputProps} />
-              </div>
 
               <div className="p-3 rounded-xl border" style={{ borderColor: formData.show_epub_button ? '#16a34a50' : border, backgroundColor: formData.show_epub_button ? 'rgba(22,163,74,0.07)' : panelBg }}>
                 <div className="flex items-center justify-between mb-2">
@@ -502,6 +497,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
     challenge_days: String(unlockChallenge.days),
     challenge_daily_limit: String(unlockChallenge.daily_limit),
     challenge_rotate_after: String(unlockChallenge.rotate_after),
+    challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
     challenge_sandbox: unlockChallenge.sandbox,
   });
 
@@ -599,6 +595,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 challenge_days: String(unlockChallenge.days),
                 challenge_daily_limit: String(unlockChallenge.daily_limit),
                 challenge_rotate_after: String(unlockChallenge.rotate_after),
+                challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
                 challenge_sandbox: unlockChallenge.sandbox,
               });
               setShowSettingsModal(true);
@@ -858,6 +855,27 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                   </p>
                   <p className="text-xs mt-1 opacity-60" style={{ color: fg }}>
                     Readers already walking through the gate keep working for 30 minutes after a swap, so nobody loses an ad they sat through.
+                  </p>
+                </div>
+
+                {/* Per-address cap */}
+                <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>Daily limit per IP address</label>
+                  <input type="number" min={0} max={100} required
+                    value={settingsForm.data.challenge_ip_daily_limit}
+                    onChange={e => settingsForm.setData('challenge_ip_daily_limit', e.target.value)}
+                    className="block w-full px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
+                    style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                    onFocus={e => { e.currentTarget.style.borderColor = accent; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = border; }}
+                  />
+                  {settingsForm.errors.challenge_ip_daily_limit && (
+                    <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_ip_daily_limit}</p>
+                  )}
+                  <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
+                    {settingsForm.data.challenge_ip_daily_limit === '0'
+                      ? 'Off — only the per-reader limit applies.'
+                      : `At most ${settingsForm.data.challenge_ip_daily_limit} free unlock${settingsForm.data.challenge_ip_daily_limit === '1' ? '' : 's'} per day from one address, across all its accounts. Move2Link only pays for one view per IP per day. Careful: mobile carriers put many unrelated readers behind one address, so a low number can block honest readers too.`}
                   </p>
                 </div>
 

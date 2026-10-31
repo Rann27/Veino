@@ -28,7 +28,12 @@ class UserSeriesController extends Controller
         // not an edit. Only a tiebreaker on the homepage depends on this
         // column today, but a counter that quietly rewrites "last modified"
         // is a trap for whatever reads it next.
-        defer(fn () => Series::withoutTimestamps(fn () => $series->increment('views')));
+        //
+        // Partial reloads are skipped: those are the page refreshing its own
+        // props (after a rating vote, say), not someone opening it again.
+        if (! request()->header('X-Inertia-Partial-Data')) {
+            defer(fn () => Series::withoutTimestamps(fn () => $series->increment('views')));
+        }
 
         $chapters = Chapter::where('series_id', $series->id)
             ->orderBy('volume')
@@ -127,6 +132,14 @@ class UserSeriesController extends Controller
             'readChapterIds' => $readChapterIds,
             'lastRead'      => $lastRead,
             'temporaryAccess' => $temporaryAccess,
+            // This reader's own vote, 1–5, or null. The aggregate itself rides
+            // on the series (rating, rating_count).
+            'userRating'    => Auth::check()
+                ? \Illuminate\Support\Facades\DB::table('series_ratings')
+                    ->where('user_id', Auth::id())
+                    ->where('series_id', $series->id)
+                    ->value('stars')
+                : null,
         ]);
     }
 

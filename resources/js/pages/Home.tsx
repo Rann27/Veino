@@ -39,7 +39,7 @@ interface Series {
   synopsis?: string;
   author?: string;
   artist?: string;
-  rating: number;
+  rating: number | string | null;
   status: string;
   created_at: string;
   updated_at: string;

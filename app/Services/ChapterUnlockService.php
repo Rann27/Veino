@@ -183,6 +183,34 @@ class ChapterUnlockService
         return $limit > 0 && $this->grantsToday($user) >= $limit;
     }
 
+    /**
+     * Free unlocks one address may earn per day, across every account behind
+     * it. 0 turns the cap off.
+     *
+     * Mirrors Move2Link, which pays for one view per IP per day: past that,
+     * each extra unlock from the same address hands out a premium chapter for
+     * nothing. Off by default because the cost lands on strangers too; a
+     * mobile carrier's CGNAT can put many unrelated readers behind one address.
+     */
+    public function ipDailyLimit(): int
+    {
+        return max(0, (int) PaymentSetting::get('unlock_ip_daily_limit', 0));
+    }
+
+    public function reachedIpDailyLimit(?string $ip): bool
+    {
+        $limit = $this->ipDailyLimit();
+
+        if ($limit === 0 || ! $ip) {
+            return false;
+        }
+
+        return \App\Models\ChapterUnlockAttempt::where('ip', $ip)
+            ->where('outcome', 'granted')
+            ->where('created_at', '>=', now()->startOfDay())
+            ->count() >= $limit;
+    }
+
     // ─── Shortlink ───────────────────────────────────────────────────────────
 
     /**

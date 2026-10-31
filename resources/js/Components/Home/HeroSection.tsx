@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
+import { formatRating } from '@/lib/rating';
 
 interface Genre {
   id: number;
@@ -14,7 +15,7 @@ interface Series {
   slug: string;
   cover_url?: string;
   synopsis?: string;
-  rating: number;
+  rating: number | string | null;
   status: string;
   chapters_count?: number;
   genres: Genre[];
@@ -183,7 +184,7 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                 >
                   <span className="flex items-center gap-1 font-medium">
                     <span className="text-amber-500">★</span>
-                    <span>{series.rating}</span>
+                    <span>{formatRating(series.rating)}</span>
                   </span>
                   <span className="opacity-30">•</span>
                   <span className="capitalize">{series.status}</span>

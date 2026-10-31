@@ -5,6 +5,7 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
 import EmptyState from '@/Components/EmptyState';
 import { getStatusColor, getCardBg } from '@/constants/colors';
+import { formatRating } from '@/lib/rating';
 
 interface Bookmark {
     id: number;
@@ -13,7 +14,7 @@ interface Bookmark {
     series_cover: string | null;
     series_author: string;
     series_status: string;
-    series_rating: number;
+    series_rating: number | string | null;
     bookmarked_at: string;
     note?: string;
 }
@@ -49,7 +50,7 @@ export default function Bookmarks({ bookmarks }: Props) {
                 case 'series_title':
                     return a.series_title.localeCompare(b.series_title);
                 case 'series_rating':
-                    return b.series_rating - a.series_rating;
+                    return Number(b.series_rating ?? 0) - Number(a.series_rating ?? 0);
                 case 'bookmarked_at':
                 default:
                     return new Date(b.bookmarked_at).getTime() - new Date(a.bookmarked_at).getTime();
@@ -192,7 +193,7 @@ export default function Bookmarks({ bookmarks }: Props) {
                                             <div className="flex items-center gap-1.5 mb-2">
                                                 <span className="text-yellow-400 text-xs">★</span>
                                                 <span className="text-xs" style={{ color: `${currentTheme.foreground}70` }}>
-                                                    {bookmark.series_rating || 'N/A'}
+                                                    {formatRating(bookmark.series_rating)}
                                                 </span>
                                             </div>
 

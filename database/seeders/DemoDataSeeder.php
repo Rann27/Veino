@@ -42,7 +42,6 @@ class DemoDataSeeder extends Seeder
             'synopsis' => 'A young warrior embarks on an epic journey to become the greatest sword master in the realm. With ancient magic and legendary weapons, he must face powerful enemies and uncover the secrets of his mysterious past.',
             'author' => 'Yamamoto Kenji',
             'artist' => 'Tanaka Hiroshi',
-            'rating' => 8.5,
             'status' => 'ongoing',
             'native_language_id' => $japanese->id,
         ]);
@@ -69,7 +68,6 @@ class DemoDataSeeder extends Seeder
             'synopsis' => 'A fake marriage contract leads to unexpected love between a struggling artist and a cold-hearted CEO. Will their contract turn into something real?',
             'author' => 'Li Wei Ming',
             'artist' => 'Chen Xiao Yu',
-            'rating' => 9.2,
             'status' => 'ongoing',
             'native_language_id' => $chinese->id,
         ]);
@@ -96,7 +94,6 @@ class DemoDataSeeder extends Seeder
             'synopsis' => 'After 1000 years of slumber, the Demon King awakens to find the world has changed. Now he must reclaim his throne while navigating modern society.',
             'author' => 'Park Min Jun',
             'artist' => 'Kim Soo Jin',
-            'rating' => 8.8,
             'status' => 'complete',
             'native_language_id' => $korean->id,
         ]);

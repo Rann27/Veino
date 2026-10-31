@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
+import { formatRating } from '@/lib/rating';
 
 interface NativeLanguage {
   id: number;
@@ -16,7 +17,7 @@ interface SimpleSeriesCardProps {
     slug: string;
     cover_url?: string;
     thumb_url?: string | null;
-    rating: number;
+    rating: number | string | null;
     native_language?: NativeLanguage;
   };
   index?: number;
@@ -69,7 +70,7 @@ export default function SimpleSeriesCard({ series }: SimpleSeriesCardProps) {
                 className="text-xs font-medium"
                 style={{ color: `${currentTheme.foreground}70` }}
               >
-                {series.rating}
+                {formatRating(series.rating)}
               </span>
             </div>
             {series.native_language && (

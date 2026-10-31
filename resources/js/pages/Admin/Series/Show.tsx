@@ -6,6 +6,7 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import AdminSlugCombobox, { SlugOption } from '@/Components/AdminSlugCombobox';
 import { appendFile } from '@/lib/upload';
 import { csrfHeaders } from '@/lib/csrf';
+import { formatRating, formatRatingCount } from '@/lib/rating';
 
 // ── colour helpers ────────────────────────────────────────────────────────────
 function hexToRgb(hex: string) {
@@ -106,7 +107,8 @@ interface Series {
   synopsis?: string;
   author?: string;
   artist?: string;
-  rating: number;
+  rating: number | string | null;
+  rating_count?: number;
   status: string;
   type: string;
   slug: string;
@@ -163,7 +165,6 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
     synopsis: series.synopsis || '',
     author: series.author || '',
     artist: series.artist || '',
-    rating: series.rating.toString(),
     status: series.status,
     type: (series as any).type || 'web-novel',
     native_language_id: series.native_language.id.toString(),
@@ -305,7 +306,6 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
     submitData.append('synopsis', editFormData.synopsis);
     submitData.append('author', editFormData.author);
     submitData.append('artist', editFormData.artist);
-    submitData.append('rating', editFormData.rating);
     submitData.append('status', editFormData.status);
     submitData.append('type', editFormData.type);
     submitData.append('native_language_id', editFormData.native_language_id);
@@ -563,7 +563,7 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
               {[
                 { label: 'Author', value: series.author || '—' },
                 { label: 'Artist', value: series.artist || '—' },
-                { label: 'Rating', value: `${series.rating}/10` },
+                { label: 'Rating', value: series.rating_count ? `${formatRating(series.rating)}/10 · ${formatRatingCount(series.rating_count)}` : 'No ratings yet' },
                 { label: 'Language', value: series.native_language.name },
               ].map(item => (
                 <div key={item.label} className="px-3 py-2.5 rounded-xl" style={{ backgroundColor: panelBg }}>
@@ -817,7 +817,7 @@ ${chapter.unlock_shortlink}`}
 
             <form onSubmit={handleEditSubmit}>
               <div className="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 max-h-[78vh] overflow-y-auto">
-                {/* ── Left col: Cover + rating + toggles ─── */}
+                {/* ── Left col: Cover + toggles ─── */}
                 <div className="space-y-4">
                   {/* Cover preview */}
                   <div className="aspect-[2/3] rounded-xl overflow-hidden border-2 border-dashed flex items-center justify-center" style={{ borderColor: border, backgroundColor: panelBg }}>
@@ -858,10 +858,6 @@ ${chapter.unlock_shortlink}`}
                       <p className="text-[10px] mt-1.5" style={{ color: muted }}>Max 2MB · JPG, PNG, WebP</p>
                     </div>
                   )}
-
-                  <div><TLabel muted={muted}>Rating (0–10)</TLabel>
-                    <TInput type="number" value={editFormData.rating} onChange={v=>setEditFormData(p=>({...p,rating:v}))} placeholder="8.5" {...themeProps} />
-                  </div>
 
                   {/* Epub toggle */}
                   <div className="p-3 rounded-xl border" style={{ borderColor: editFormData.show_epub_button ? '#16a34a50' : border, backgroundColor: editFormData.show_epub_button ? 'rgba(22,163,74,0.07)' : panelBg }}>

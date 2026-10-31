@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
+import { formatRating } from '@/lib/rating';
 
 interface Bookmark {
     id: number;
@@ -11,7 +12,7 @@ interface Bookmark {
     series_cover: string | null;
     series_author: string;
     series_status: string;
-    series_rating: number;
+    series_rating: number | string | null;
     bookmarked_at: string;
     note?: string;
 }
@@ -55,7 +56,7 @@ function BookmarksContent({ bookmarks }: Props) {
         .filter(b => !search || b.series_title.toLowerCase().includes(search.toLowerCase()) || b.series_author.toLowerCase().includes(search.toLowerCase()))
         .sort((a, b) => {
             if (sortBy === 'series_title') return a.series_title.localeCompare(b.series_title);
-            if (sortBy === 'series_rating') return b.series_rating - a.series_rating;
+            if (sortBy === 'series_rating') return Number(b.series_rating ?? 0) - Number(a.series_rating ?? 0);
             return new Date(b.bookmarked_at).getTime() - new Date(a.bookmarked_at).getTime();
         });
 
@@ -155,7 +156,7 @@ function BookmarksContent({ bookmarks }: Props) {
                                         <div className="flex items-center justify-between mt-auto">
                                             <span className="flex items-center gap-0.5 text-[11px]">
                                                 <span className="text-yellow-400">★</span>
-                                                <span style={{ color: `${fg}70` }}>{b.series_rating || 'N/A'}</span>
+                                                <span style={{ color: `${fg}70` }}>{formatRating(b.series_rating)}</span>
                                             </span>
                                             <span className="text-[10px]" style={{ color: `${fg}45` }}>
                                                 {getTimeAgo(b.bookmarked_at)}

@@ -5,6 +5,7 @@ import { useTheme } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
 import EmptyState from '@/Components/EmptyState';
 import { getStatusColor, getCardBg, SHINY_PURPLE, SHINY_PURPLE_DIM } from '@/constants/colors';
+import { formatRating } from '@/lib/rating';
 
 interface Genre {
     id: number;
@@ -23,7 +24,7 @@ interface Series {
     slug: string;
     description: string;
     cover_image: string | null;
-    rating: number;
+    rating: number | string | null;
     status: string;
     chapters_count: number;
     genres: Genre[];
@@ -228,7 +229,7 @@ function LibraryContent({ followedSeries }: Props) {
                                                     style={{ color: `${currentTheme.foreground}55` }}
                                                 >
                                                     <span className="text-yellow-400">★</span>
-                                                    <span>{series.rating || 'N/A'}</span>
+                                                    <span>{formatRating(series.rating)}</span>
                                                     <span>•</span>
                                                     <span>{series.chapters_count} chapters</span>
                                                 </div>
