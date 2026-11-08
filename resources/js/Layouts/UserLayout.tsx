@@ -50,6 +50,8 @@ interface UserLayoutProps {
 
 function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideSiteChrome = false }: UserLayoutProps) {
   const { auth, flash } = usePage<PageProps>().props;
+  // The homepage places its top banner itself, under the hero.
+  const isHome = usePage().component === 'Home';
   const { currentTheme } = useTheme();
   const [showSearch, setShowSearch] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
@@ -1065,7 +1067,7 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
           : 'pt-0'
       }`}>
         {/* Network ads on every page (none for members and admins). */}
-        <AAdsAd position="top" />
+        {!isHome && <AAdsAd position="top" />}
         {children}
         <AAdsAd position="bottom" className="mt-6" />
       </main>

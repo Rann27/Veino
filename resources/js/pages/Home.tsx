@@ -5,7 +5,7 @@ import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import BannerSlider from '@/Components/Home/BannerSlider';
 import HeroSection from '@/Components/Home/HeroSection';
-import { NativeAd } from '@/Components/Ads/NetworkAds';
+import { AAdsAd, NativeAd } from '@/Components/Ads/NetworkAds';
 import AutoVoucherStrip from '@/Components/Home/AutoVoucherStrip';
 import type { AutoVoucher } from '@/lib/voucherHandoff';
 import SimpleSeriesCard from '@/Components/Home/SimpleSeriesCard';
@@ -292,6 +292,9 @@ function HomeContent({
 
       {/* ─── 2. Hero Section ─── */}
       <HeroSection heroSeries={heroSeries} />
+
+      {/* Top banner sits under the hero here, rather than above it as on other pages. */}
+      <AAdsAd position="top" className="pt-3" />
 
       {/* ─── Blog Announcements ─── */}
       {blogs && blogs.length > 0 && (
