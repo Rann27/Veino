@@ -17,9 +17,13 @@
 
 export type Isolation = 'strict' | 'frame';
 
+/** Matches the keys of config/ads.php `networks`. */
+export type Network = 'adsterra' | 'hilltop' | 'aads';
+
 export interface FrameUnit {
     /** Shown in the iframe title and in the console when debugging. */
     name: string;
+    network: Network;
     html: string;
     width: number;
     height: number;
@@ -56,6 +60,7 @@ export const UNITS = {
     /** Adsterra 728×90 — series page between sections, chapter mid-text (desktop). */
     adsterraLeaderboard: {
         name: 'Adsterra 728x90',
+        network: 'adsterra',
         html: adsterraBanner('926792a9a217ddcd295f7aa70e8a13fe', 728, 90),
         width: 728,
         height: 90,
@@ -64,6 +69,7 @@ export const UNITS = {
     /** Adsterra 160×600 — series page, under "You Might Also Like" (desktop). */
     adsterraSkyscraper: {
         name: 'Adsterra 160x600',
+        network: 'adsterra',
         html: adsterraBanner('e3228bac61ed55955fb416598ee5c1a9', 160, 600),
         width: 160,
         height: 600,
@@ -72,6 +78,7 @@ export const UNITS = {
     /** HilltopAds 300×250 #1 — stands in for the 728×90 on mobile. */
     hilltopRectangle1: {
         name: 'HilltopAds 300x250 #1',
+        network: 'hilltop',
         html: hilltopTag('//hurtfulseries.com/bqX.VpsrdTGQlh0RYRWZcc/Aezm_9auzZfU/lGkwPOT_cP2JM/Dzci4HNbjukWtaNRzVY/w/NyzFgy3pMRwo', 'blrj'),
         width: 300,
         height: 250,
@@ -80,6 +87,7 @@ export const UNITS = {
     /** HilltopAds 300×250 #2 — end of chapter, before the navigation. */
     hilltopRectangle2: {
         name: 'HilltopAds 300x250 #2',
+        network: 'hilltop',
         html: hilltopTag('//hurtfulseries.com/biXpV.s/d/GilP0yYSWcc_/ceim/9Gu-ZcU/l/k/PnTycB2/MsDvcs4QOeDfUDtINJznYnwBNVz/gU4cOLQm', 'yjyq'),
         width: 300,
         height: 250,
