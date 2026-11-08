@@ -42,21 +42,13 @@ const adsterraBanner = (key: string, width: number, height: number): string => `
 </script>
 <script src="https://bauval.org/22/${key}"></script>`;
 
-const hilltopTag = (src: string, settingsVar: string): string => `
-<script>
-(function(${settingsVar}){
-var d = document,
-    s = d.createElement('script'),
-    l = d.currentScript || d.scripts[d.scripts.length - 1];
-s.settings = ${settingsVar} || {};
-s.src = "${src}";
-s.async = true;
-s.referrerPolicy = 'no-referrer-when-downgrade';
-l.parentNode.insertBefore(s, l);
-})({})
-</script>`;
-
 export const UNITS = {
+    /*
+     * Adsterra serves one banner of a given size per page, so every page below
+     * uses each size at most once: 728×90 and 320×50 share a slot (desktop vs
+     * mobile), and 300×250 has a slot of its own.
+     */
+
     /** Adsterra 728×90 — series page between sections, chapter mid-text (desktop). */
     adsterraLeaderboard: {
         name: 'Adsterra 728x90',
@@ -66,7 +58,25 @@ export const UNITS = {
         height: 90,
         isolation: 'frame',
     },
-    /** Adsterra 160×600 — series page, under "You Might Also Like" (desktop). */
+    /** Adsterra 320×50 — the 728×90's slot on mobile. */
+    adsterraMobileBanner: {
+        name: 'Adsterra 320x50',
+        network: 'adsterra',
+        html: adsterraBanner('6467e1682de7360d65b614019bf9cb08', 320, 50),
+        width: 320,
+        height: 50,
+        isolation: 'frame',
+    },
+    /** Adsterra 300×250 — end of chapter, and as a card in "You Might Also Like". */
+    adsterraRectangle: {
+        name: 'Adsterra 300x250',
+        network: 'adsterra',
+        html: adsterraBanner('82b13c80593175e8c8da7221b187e733', 300, 250),
+        width: 300,
+        height: 250,
+        isolation: 'frame',
+    },
+    /** Adsterra 160×600 — not placed at the moment (left the series page). */
     adsterraSkyscraper: {
         name: 'Adsterra 160x600',
         network: 'adsterra',
@@ -74,24 +84,6 @@ export const UNITS = {
         width: 160,
         height: 600,
         isolation: 'frame',
-    },
-    /** HilltopAds 300×250 #1 — stands in for the 728×90 on mobile. */
-    hilltopRectangle1: {
-        name: 'HilltopAds 300x250 #1',
-        network: 'hilltop',
-        html: hilltopTag('//hurtfulseries.com/bqX.VpsrdTGQlh0RYRWZcc/Aezm_9auzZfU/lGkwPOT_cP2JM/Dzci4HNbjukWtaNRzVY/w/NyzFgy3pMRwo', 'blrj'),
-        width: 300,
-        height: 250,
-        isolation: 'strict',
-    },
-    /** HilltopAds 300×250 #2 — end of chapter, before the navigation. */
-    hilltopRectangle2: {
-        name: 'HilltopAds 300x250 #2',
-        network: 'hilltop',
-        html: hilltopTag('//hurtfulseries.com/biXpV.s/d/GilP0yYSWcc_/ceim/9Gu-ZcU/l/k/PnTycB2/MsDvcs4QOeDfUDtINJznYnwBNVz/gU4cOLQm', 'yjyq'),
-        width: 300,
-        height: 250,
-        isolation: 'strict',
     },
 } satisfies Record<string, FrameUnit>;
 
