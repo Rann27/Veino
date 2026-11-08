@@ -96,15 +96,25 @@ class MembershipController extends Controller
         // Handle voucher if provided
         if ($request->filled('voucher_code')) {
             $voucher = \App\Models\Voucher::where('code', strtoupper($request->voucher_code))->first();
-            
-            if ($voucher) {
-                $validation = $voucher->isValidFor($user->id, 'membership');
-                
-                if ($validation['valid']) {
-                    $discountAmount = $voucher->calculateDiscount($package->coin_price);
-                    $finalPrice = max(0, $package->coin_price - $discountAmount);
+            $validation = $voucher?->isValidFor($user->id, 'membership')
+                ?? ['valid' => false, 'message' => 'Invalid voucher code.'];
+
+            // Refused outright. A voucher that stopped working between the
+            // checkout page and this request used to be dropped silently and
+            // the buyer charged full price; with first-come vouchers that is
+            // a race someone loses every time.
+            if (! $validation['valid']) {
+                $errorMsg = $validation['message'].' Nothing was charged.';
+
+                if ($isInertiaRequest) {
+                    return back()->withInput()->withErrors(['membership' => $errorMsg])->with('error', $errorMsg);
                 }
+
+                return response()->json(['success' => false, 'error' => $errorMsg, 'message' => $errorMsg], 422);
             }
+
+            $discountAmount = $voucher->calculateDiscount($package->coin_price);
+            $finalPrice = max(0, $package->coin_price - $discountAmount);
         }
 
         // Check if user has enough coins
@@ -231,6 +241,17 @@ class MembershipController extends Controller
                 'membership_expires_at' => $user->fresh()->membership_expires_at,
             ]);
 
+        } catch (\App\Exceptions\VoucherUnavailableException $e) {
+            // Lost the race for a first-come voucher: rolled back whole, so
+            // the coins are untouched. The message is written for the buyer.
+            DB::rollBack();
+            $user->refresh();
+
+            if ($isInertiaRequest) {
+                return back()->withInput()->withErrors(['membership' => $e->getMessage()])->with('error', $e->getMessage());
+            }
+
+            return response()->json(['success' => false, 'error' => $e->getMessage(), 'message' => $e->getMessage()], 409);
         } catch (\Exception $e) {
             DB::rollBack();
             $user->refresh();

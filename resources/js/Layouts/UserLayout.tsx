@@ -5,6 +5,7 @@ import { ToastProvider } from '@/Contexts/ToastContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
 import { AAdsAd, AdOverlays } from '@/Components/Ads/NetworkAds';
+import MonthlyVoucherModal from '@/Components/MonthlyVoucherModal';
 import { TierStyles, TierIcon, ExclusiveCrownIcon, TIER_LABEL, TIER_COLOR, TIER_GRADIENT, TIER_GLOW, asTier, isPaidTier, tierRingStyle } from '@/lib/tier';
 
 
@@ -1069,6 +1070,7 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
         <AAdsAd position="bottom" className="mt-6" />
       </main>
       <AdOverlays />
+      <MonthlyVoucherModal />
 
       {/* Footer */}
       <footer

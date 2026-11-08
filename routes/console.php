@@ -45,6 +45,12 @@ Schedule::command('logs:prune --days=90')
     ->timezone('UTC')
     ->withoutOverlapping();
 
+// Daily/weekly/monthly first-come vouchers. Also created on first read, so
+// this mainly retires expired ones and makes the new ones exist on time.
+Schedule::command('vouchers:auto')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Catches any image the upload hooks missed — a file placed by FTP, or one
 // whose generation failed at the time. Cheap because anything that already has
 // a thumbnail is skipped, so on a normal night this does almost nothing.

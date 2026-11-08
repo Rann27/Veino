@@ -6,6 +6,8 @@ import PremiumDiamond from '@/Components/PremiumDiamond';
 import BannerSlider from '@/Components/Home/BannerSlider';
 import HeroSection from '@/Components/Home/HeroSection';
 import { NativeAd } from '@/Components/Ads/NetworkAds';
+import AutoVoucherStrip from '@/Components/Home/AutoVoucherStrip';
+import type { AutoVoucher } from '@/lib/voucherHandoff';
 import SimpleSeriesCard from '@/Components/Home/SimpleSeriesCard';
 import LatestUpdatesSection from '@/Components/Home/LatestUpdatesSection';
 import CoverImage from '@/Components/CoverImage';
@@ -94,6 +96,7 @@ interface HomeProps {
   banners: Banner[];
   showPremiumCongrats?: boolean;
   continueReading?: ContinueReadingEntry[];
+  autoVouchers?: AutoVoucher[];
 }
 
 function useDragScroll() {
@@ -138,6 +141,7 @@ function HomeContent({
   banners,
   showPremiumCongrats,
   continueReading = [],
+  autoVouchers = [],
 }: HomeProps) {
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const { currentTheme } = useTheme();
@@ -325,6 +329,15 @@ function HomeContent({
                 </Link>
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* ─── Daily / Weekly first-come vouchers, under the announcements ─── */}
+      {autoVouchers.length > 0 && (
+        <section className={blogs && blogs.length > 0 ? 'pb-3 sm:pb-4' : 'py-3 sm:py-4'} style={{ backgroundColor: currentTheme.background }}>
+          <div className="w-full px-4 sm:px-6 lg:px-10 xl:px-16">
+            <AutoVoucherStrip vouchers={autoVouchers} />
           </div>
         </section>
       )}

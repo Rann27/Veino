@@ -151,6 +151,9 @@ class HomeController extends Controller
             'newSeries' => $newSeries->makeHidden(['synopsis']),
             'showPremiumCongrats' => $showPremiumCongrats,
             'blogs' => $blogs,
+            // Today's and this week's first-come vouchers, claimed or not:
+            // a claimed one stays on show, greyed out, until it expires.
+            'autoVouchers' => array_values(app(\App\Services\AutoVoucherService::class)->forDisplay(['daily', 'weekly'])),
             'banners' => $banners,
             'continueReading' => $continueReading,
         ]);

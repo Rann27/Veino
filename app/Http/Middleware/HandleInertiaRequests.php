@@ -92,6 +92,13 @@ class HandleInertiaRequests extends Middleware
                 && ! ($request->user() && ($request->user()->role === 'admin' || $request->user()->hasActiveMembership())),
             // Which networks may serve, see config/ads.php.
             'adNetworks' => array_keys(array_filter(config('ads.networks', []))),
+            // This month's first-come voucher while it is still up for grabs,
+            // for the one-per-visit modal. Null once someone has claimed it.
+            'monthlyVoucher' => function () {
+                $v = app(\App\Services\AutoVoucherService::class)->forDisplay(['monthly'])['monthly'] ?? null;
+
+                return $v && ! $v['claimed'] ? $v : null;
+            },
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user() ? [
