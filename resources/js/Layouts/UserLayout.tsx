@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
 import { ToastProvider } from '@/Contexts/ToastContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
+import MonthlyVoucherModal from '@/Components/MonthlyVoucherModal';
 import { TierStyles, TierIcon, ExclusiveCrownIcon, TIER_LABEL, TIER_COLOR, TIER_GRADIENT, TIER_GLOW, asTier, isPaidTier, tierRingStyle } from '@/lib/tier';
 
 
@@ -1064,6 +1065,7 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
       }`}>
         {children}
       </main>
+      <MonthlyVoucherModal />
 
       {/* Footer */}
       <footer

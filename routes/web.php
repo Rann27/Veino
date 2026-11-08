@@ -177,7 +177,8 @@ Route::get('/blog/{blog}', [App\Http\Controllers\BlogController::class, 'show'])
 
 // Voucher validation (requires authentication)
 Route::post('/voucher/validate', [App\Http\Controllers\VoucherController::class, 'validate'])
-    ->middleware('auth')
+    // Throttled so codes cannot be guessed by trying them in bulk.
+    ->middleware(['auth', 'throttle:30,1'])
     ->name('voucher.validate');
 
 // Ebook Shop Routes

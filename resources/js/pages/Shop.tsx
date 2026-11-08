@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
@@ -7,6 +7,7 @@ import PremiumDiamond from '@/Components/PremiumDiamond';
 import { SHINY_PURPLE_DIM } from '@/constants/colors';
 import { asTier, TierIcon, ExclusiveCrownIcon, TIER_LABEL, TIER_GRADIENT, TIER_COLOR, TIER_GLOW, EXCLUSIVE_GOLD } from '@/lib/tier';
 import { csrfHeaders } from '@/lib/csrf';
+import { clearPendingVoucher, pendingVoucher } from '@/lib/voucherHandoff';
 
 /* ─── Interfaces ─── */
 interface CoinPackage {
@@ -821,10 +822,39 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
         setShowConfirmModal(true);
     };
 
+    // A code handed over from the homepage strip or the monthly modal
+    // (?voucher=CODE, or remembered across a sign-in). Pre-filled, coins
+    // selected since vouchers only apply to coin purchases, and applied as
+    // soon as a package is picked.
+    const autoVoucher = useRef<string | null>(null);
+    useEffect(() => {
+        const code = pendingVoucher();
+        if (!code) return;
+        autoVoucher.current = code;
+        setVoucherCode(code);
+        setPaymentMethod('coins');
+        toast.info('Pick a package and it will be applied automatically.', `Voucher ${code} ready`);
+    }, []);
+
+    // Applies on package pick for a handed-over code, and re-applies when the
+    // package changes under an applied voucher: the discount is a percentage
+    // of the package price, so the old figure would be wrong.
+    useEffect(() => {
+        if (!selectedPackage || !voucherCode.trim() || paymentMethod !== 'coins') return;
+        if (!autoVoucher.current && !voucherData) return;
+        autoVoucher.current = null;
+        clearPendingVoucher();
+        applyVoucher(voucherCode, selectedPackage);
+    }, [selectedPackage]);
+
     const handleApplyVoucher = async () => {
         if (!voucherCode.trim()) { toast.warning('Please enter a voucher code.'); return; }
         if (!selectedPackage) { toast.warning('Please select a membership package first.'); return; }
-        const pkg = packages.find(p => p.id === selectedPackage);
+        await applyVoucher(voucherCode, selectedPackage);
+    };
+
+    const applyVoucher = async (code: string, packageId: number) => {
+        const pkg = packages.find(p => p.id === packageId);
         if (!pkg) return;
 
         setIsApplyingVoucher(true); setVoucherError(null);
@@ -836,7 +866,7 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                     ...csrfHeaders(),
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ code: voucherCode.toUpperCase(), type: 'membership', amount: pkg.coin_price }),
+                body: JSON.stringify({ code: code.toUpperCase(), type: 'membership', amount: pkg.coin_price }),
             });
             const data = await response.json();
             if (data.success) {

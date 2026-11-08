@@ -270,6 +270,12 @@ class ChartController extends Controller
             // Return JSON success instead of redirect (for Inertia handling)
             return back()->with('success', 'Purchase successful! Items added to your bookshelf.');
 
+        } catch (\App\Exceptions\VoucherUnavailableException $e) {
+            // Lost the race for a first-come voucher; the rollback restores
+            // everything, and the message is written for the buyer.
+            DB::rollback();
+
+            return back()->with('error', $e->getMessage());
         } catch (\RuntimeException $e) {
             DB::rollback();
 

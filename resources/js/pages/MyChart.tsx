@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
@@ -7,6 +7,7 @@ import { useToast } from '@/Contexts/ToastContext';
 import CoverImage from '@/Components/CoverImage';
 import EmptyState from '@/Components/EmptyState';
 import { csrfHeaders } from '@/lib/csrf';
+import { clearPendingVoucher, pendingVoucher } from '@/lib/voucherHandoff';
 
 interface ChartItem {
     chart_item_id: number;
@@ -43,12 +44,30 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
         }, 'Remove Item', 'danger');
     };
 
+    // A code handed over from the homepage strip or the monthly modal: filled
+    // in and applied straight away if there is something to check out, kept
+    // for later if the chart is still empty.
+    useEffect(() => {
+        const code = pendingVoucher();
+        if (!code) return;
+        setVoucherCode(code);
+        if (chartItems.length === 0) {
+            toast.info('Add an epub to your chart and come back here. Your code is saved.', `Voucher ${code} ready`);
+            return;
+        }
+        clearPendingVoucher();
+        applyCode(code);
+    }, []);
+
     const handleApplyVoucher = async () => {
         if (!voucherCode.trim()) {
             toast.warning('Please enter a voucher code.');
             return;
         }
+        await applyCode(voucherCode);
+    };
 
+    const applyCode = async (code: string) => {
         if (chartItems.length === 0) {
             toast.warning('Your chart is empty. Please add items before applying a voucher.');
             return;
@@ -66,7 +85,7 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                    code: voucherCode.toUpperCase(),
+                    code: code.toUpperCase(),
                     type: 'ebook',
                     amount: totalPrice,
                 }),
@@ -78,8 +97,8 @@ function MyChartContent({ chartItems, totalPrice, onVoucherChange }: Props) {
             if (data.success) {
                 setVoucherData(data.data);
                 setVoucherError('');
-                onVoucherChange?.(data.data, voucherCode.toUpperCase());
-                toast.success(`Saved ¢${data.data.discount_amount.toLocaleString()}!`, `Voucher "${voucherCode.toUpperCase()}" Applied`);
+                onVoucherChange?.(data.data, code.toUpperCase());
+                toast.success(`Saved ¢${data.data.discount_amount.toLocaleString()}!`, `Voucher "${code.toUpperCase()}" Applied`);
             } else {
                 setVoucherError(data.message || 'Invalid voucher');
                 setVoucherData(null);

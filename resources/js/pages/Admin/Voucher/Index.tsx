@@ -15,7 +15,11 @@ interface Voucher {
     usage_count: number;
     expires_at: string | null;
     is_active: boolean;
+    /** Set on the automatic first-come vouchers. */
+    auto_kind?: 'daily' | 'weekly' | 'monthly' | null;
 }
+
+const AUTO_BADGE: Record<string, string> = { daily: '#d97706', weekly: '#059669', monthly: '#9333ea' };
 
 interface VoucherUsage {
     id: number;
@@ -152,6 +156,12 @@ function VoucherIndexContent({ vouchers }: Props) {
                                     onMouseLeave={e => (e.currentTarget.style.background = idx % 2 === 0 ? 'transparent' : wa(fg, 0.02))}>
                                     <td style={tdStyle}>
                                         <div style={{ fontSize: '13px', fontWeight: 700, color: fg, fontFamily: 'monospace', letterSpacing: '0.05em' }}>{voucher.code}</div>
+                                        {voucher.auto_kind && (
+                                            <span title="Created and retired automatically (Daily / Weekly / Monthly first-come voucher)"
+                                                style={{ display: 'inline-block', marginTop: '3px', padding: '1px 7px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: AUTO_BADGE[voucher.auto_kind], background: AUTO_BADGE[voucher.auto_kind] + '1f' }}>
+                                                Auto · {voucher.auto_kind}
+                                            </span>
+                                        )}
                                     </td>
                                     <td style={tdStyle}>
                                         <div style={{ fontSize: '13px', color: fg }}>{getRuleLabel(voucher)}</div>

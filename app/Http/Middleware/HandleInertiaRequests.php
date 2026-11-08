@@ -86,6 +86,13 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // This month's first-come voucher while it is still up for grabs,
+            // for the one-per-visit modal. Null once someone has claimed it.
+            'monthlyVoucher' => function () {
+                $v = app(\App\Services\AutoVoucherService::class)->forDisplay(['monthly'])['monthly'] ?? null;
+
+                return $v && ! $v['claimed'] ? $v : null;
+            },
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user() ? [
