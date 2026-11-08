@@ -8,12 +8,18 @@ use App\Models\ChapterTemporaryAccess;
 use App\Models\ChapterUnlockToken;
 use App\Models\PaymentSetting;
 use App\Models\User;
+use App\Services\Shortlinks\ShortlinkProvider;
+use App\Services\Shortlinks\ShrinkEarnClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Rules for unlocking a premium chapter through the Move2Link challenge.
+ * Rules for unlocking a premium chapter through the shortlink ad challenge.
+ *
+ * The shortener is pluggable (Move2Link, ShrinkEarn; see config/shortlink.php
+ * and the admin's provider setting). Everything below applies to whichever is
+ * live; only the timing floor and the accepted referers differ per provider.
  *
  * The security model, in short: the shortlink destination is the same URL for
  * everybody, so it guarantees nothing on its own. What authorises a grant is a
@@ -44,12 +50,41 @@ class ChapterUnlockService
      */
     private const MIN_CHALLENGE_SECONDS = 90;
 
-    public function __construct(private Move2LinkClient $move2link) {}
+    public function __construct(
+        private Move2LinkClient $move2link,
+        private ShrinkEarnClient $shrinkearn,
+    ) {}
 
     /** Why the last shortlink attempt failed, for showing in the admin. */
     public function lastError(): ?string
     {
-        return $this->move2link->lastError();
+        return $this->provider()->lastError();
+    }
+
+    // ─── Provider ────────────────────────────────────────────────────────────
+
+    /** @return array<string, ShortlinkProvider> */
+    public function providers(): array
+    {
+        return [
+            $this->move2link->name() => $this->move2link,
+            $this->shrinkearn->name() => $this->shrinkearn,
+        ];
+    }
+
+    /** The live shortener: the admin's choice, else config's default. */
+    public function provider(): ShortlinkProvider
+    {
+        $providers = $this->providers();
+        $chosen = (string) PaymentSetting::get('unlock_shortlink_provider', config('shortlink.default', 'move2link'));
+
+        return $providers[$chosen] ?? $this->move2link;
+    }
+
+    /** Per-provider tuning from config/shortlink.php. */
+    private function providerConfig(string $key, mixed $default = null): mixed
+    {
+        return config("shortlink.providers.{$this->provider()->name()}.{$key}", $default);
     }
 
     // ─── Settings ────────────────────────────────────────────────────────────
@@ -85,7 +120,7 @@ class ChapterUnlockService
     /** Whether the challenge can be *offered*. Live mode needs the API token. */
     public function enabled(): bool
     {
-        return $this->claimable() && ($this->sandbox() || $this->move2link->configured());
+        return $this->claimable() && ($this->sandbox() || $this->provider()->configured());
     }
 
     /**
@@ -245,6 +280,86 @@ class ChapterUnlockService
     }
 
     /**
+     * Where the live provider's links are kept.
+     *
+     * Move2Link links that land on the main site stay in the original
+     * chapters.unlock_shortlink column, exactly as before, so the main site
+     * running Move2Link behaves the same as it always has (and code from
+     * before this change can still read them). Any other provider, or a copy
+     * of the app on another host, keeps its links in chapter_shortlinks: a
+     * test subdomain sharing this database must never write a link into the
+     * column the main site serves, because that link would land readers on
+     * the test subdomain.
+     */
+    private function usesLegacyColumn(): bool
+    {
+        return $this->provider()->name() === 'move2link'
+            && $this->landingHost() === strtolower((string) parse_url((string) config('shortlink.legacy_url'), PHP_URL_HOST));
+    }
+
+    private function landingHost(): string
+    {
+        return strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
+    }
+
+    private function storedLink(Chapter $chapter, string $token): ?string
+    {
+        if ($this->usesLegacyColumn()) {
+            return $chapter->unlock_shortlink ?: null;
+        }
+
+        return DB::table('chapter_shortlinks')
+            ->where('chapter_id', $chapter->id)
+            ->where('provider', $this->provider()->name())
+            ->where('token', $token)
+            ->where('host', $this->landingHost())
+            ->value('url');
+    }
+
+    /** Records a link for $token. The caller persists the chapter itself. */
+    private function storeLink(Chapter $chapter, string $token, string $url): void
+    {
+        if ($this->usesLegacyColumn()) {
+            $chapter->unlock_shortlink = $url;
+            $chapter->unlock_shortlink_at = now();
+
+            return;
+        }
+
+        DB::table('chapter_shortlinks')->upsert(
+            [[
+                'chapter_id' => $chapter->id,
+                'provider' => $this->provider()->name(),
+                'token' => $token,
+                'host' => $this->landingHost(),
+                'url' => $url,
+                'created_at' => now(),
+            ]],
+            ['chapter_id', 'provider', 'token', 'host'],
+            ['url', 'created_at'],
+        );
+    }
+
+    /**
+     * The live provider's current link for each chapter, for the admin's
+     * chapter list. Chapters without one are left out.
+     *
+     * @return array<int, string> chapter id => shortlink
+     */
+    public function currentShortlinks(iterable $chapters): array
+    {
+        $map = [];
+
+        foreach ($chapters as $chapter) {
+            if ($chapter->unlock_token && ($url = $this->storedLink($chapter, $chapter->unlock_token))) {
+                $map[$chapter->id] = $url;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * Replaces the token once it has served its allotted grants.
      *
      * Ordered so a failure changes nothing: the replacement shortlink has to
@@ -295,14 +410,13 @@ class ChapterUnlockService
             );
 
             $fresh->unlock_token = $newToken;
-            $fresh->unlock_shortlink = $shortlink;
-            $fresh->unlock_shortlink_at = now();
+            $this->storeLink($fresh, $newToken, $shortlink);
             $fresh->unlock_claim_count = 0;
             $this->persist($fresh);
 
             // Keep the caller's copy in step so it serves the new link now.
             $chapter->unlock_token = $newToken;
-            $chapter->unlock_shortlink = $shortlink;
+            $chapter->unlock_shortlink = $fresh->unlock_shortlink;
             $chapter->unlock_claim_count = 0;
         } finally {
             $lock->release();
@@ -366,8 +480,8 @@ class ChapterUnlockService
 
     public function shortlinkFor(Chapter $chapter, bool $regenerate = false): ?string
     {
-        if (! $regenerate && $chapter->unlock_shortlink) {
-            return $chapter->unlock_shortlink;
+        if (! $regenerate && $chapter->unlock_token && ($stored = $this->storedLink($chapter, $chapter->unlock_token))) {
+            return $stored;
         }
 
         if (! $chapter->unlock_token) {
@@ -383,15 +497,14 @@ class ChapterUnlockService
             return null;
         }
 
-        $chapter->unlock_shortlink = $shortlink;
-        $chapter->unlock_shortlink_at = now();
+        $this->storeLink($chapter, $chapter->unlock_token, $shortlink);
         $this->persist($chapter);
 
         return $shortlink;
     }
 
     /**
-     * Asks Move2Link for a link pointing at one specific token.
+     * Asks the live provider for a link pointing at one specific token.
      *
      * Takes the token as an argument rather than reading it off the chapter so
      * rotation can mint a link for its replacement before anything is written —
@@ -408,7 +521,7 @@ class ChapterUnlockService
         $claimUrl = rtrim((string) config('app.url'), '/')
             .route('chapters.unlock.claim', $token, false);
 
-        return $this->move2link->createLink(
+        return $this->provider()->createLink(
             $claimUrl,
             $series ? Str::limit($series->title.' — '.($chapter->title ?: 'Chapter '.$chapter->chapter_number), 250, '') : null
         );
@@ -432,10 +545,15 @@ class ChapterUnlockService
         return "unlock:pending:{$userId}:{$chapterId}";
     }
 
-    /** The floor a run has to clear, for showing in the admin. */
+    /**
+     * The floor a run has to clear. Per provider: Move2Link's gate takes two
+     * minutes, ShrinkEarn's about fifteen seconds, and one floor for both
+     * would either refuse every honest ShrinkEarn reader or wave Move2Link
+     * skippers through.
+     */
     public function minChallengeSeconds(): int
     {
-        return self::MIN_CHALLENGE_SECONDS;
+        return max(0, (int) $this->providerConfig('min_seconds', self::MIN_CHALLENGE_SECONDS));
     }
 
     /**
@@ -486,7 +604,7 @@ class ChapterUnlockService
         // sandbox to the live threshold would just mean waiting 45 seconds for
         // nothing. Everything else — the pending record, single use, the tie to
         // this reader — is enforced exactly as in live mode.
-        if (! $this->sandbox() && $elapsed < self::MIN_CHALLENGE_SECONDS) {
+        if (! $this->sandbox() && $elapsed < $this->minChallengeSeconds()) {
             return [false, 'too_fast', $elapsed];
         }
 
@@ -513,12 +631,33 @@ class ChapterUnlockService
             $matchesOwnHost = in_array($host, $allowed, true)
                 || collect($allowed)->contains(fn ($own) => $own !== '' && str_ends_with($host, '.'.$own));
 
-            if (! str_contains($host, 'move2link') && ! $matchesOwnHost) {
+            if (! $this->fromProvider($host) && ! $matchesOwnHost) {
                 return [false, 'bad_referer', $elapsed];
             }
         }
 
         return [true, 'ok', $elapsed];
+    }
+
+    /** Whether a referer host belongs to the live provider (config/shortlink.php). */
+    private function fromProvider(string $host): bool
+    {
+        foreach ((array) $this->providerConfig('referer_hosts', []) as $entry) {
+            $entry = strtolower(trim((string) $entry));
+            if ($entry === '') {
+                continue;
+            }
+
+            $matches = str_contains($entry, '.')
+                ? $host === $entry || str_ends_with($host, '.'.$entry)
+                : str_contains($host, $entry);
+
+            if ($matches) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ─── Granting ────────────────────────────────────────────────────────────

@@ -145,7 +145,14 @@ class SeriesController extends Controller
                 // here rather than showing a toggle that quietly does nothing.
                 'sandbox_allowed' => app(\App\Services\ChapterUnlockService::class)->sandboxAllowed(),
                 // Surfaced so the modal can warn instead of silently doing nothing.
-                'token_configured' => ! empty(config('move2link.token')),
+                'token_configured' => app(\App\Services\ChapterUnlockService::class)->provider()->configured(),
+                // The shortener the challenge runs through, and the ones on
+                // offer (with whether each has its API token in .env).
+                'provider' => app(\App\Services\ChapterUnlockService::class)->provider()->name(),
+                'providers' => collect(app(\App\Services\ChapterUnlockService::class)->providers())
+                    ->map(fn ($p) => ['name' => $p->name(), 'label' => $p->label(), 'configured' => $p->configured()])
+                    ->values()->all(),
+                'min_seconds' => app(\App\Services\ChapterUnlockService::class)->minChallengeSeconds(),
             ],
         ]);
     }
@@ -160,9 +167,17 @@ class SeriesController extends Controller
             $query->select([
                 'id', 'series_id', 'title', 'chapter_number', 'chapter_link',
                 'volume', 'is_premium', 'coin_price', 'is_published', 'views',
-                'unlock_shortlink', 'created_at', 'updated_at',
+                'unlock_shortlink', 'unlock_token', 'created_at', 'updated_at',
             ])->orderBy('chapter_number');
         }]);
+
+        // Show the live provider's link per chapter: with ShrinkEarn (or on a
+        // non-main host) links are not kept in the unlock_shortlink column.
+        $links = app(\App\Services\ChapterUnlockService::class)->currentShortlinks($series->chapters);
+        $series->chapters->each(function ($chapter) use ($links) {
+            $chapter->unlock_shortlink = $links[$chapter->id] ?? null;
+            $chapter->makeHidden('unlock_token');
+        });
 
         // Add raw cover URL for editing (bypass accessor)
         $seriesData = $series->toArray();
@@ -308,6 +323,7 @@ class SeriesController extends Controller
             'challenge_rotate_after' => 'required|integer|min:0|max:100',
             'challenge_ip_daily_limit' => 'required|integer|min:0|max:100',
             'challenge_sandbox' => 'required|boolean',
+            'challenge_provider' => 'required|in:'.implode(',', array_keys(app(\App\Services\ChapterUnlockService::class)->providers())),
         ]);
 
         PaymentSetting::set('premium_chapter_price', $validated['price'], 'integer', 'Global coin price for unlocking a premium chapter');
@@ -317,6 +333,7 @@ class SeriesController extends Controller
         PaymentSetting::set('unlock_rotate_after', $validated['challenge_rotate_after'], 'integer', 'Grants a claim token may serve before it is retired (0 = never rotate)');
         PaymentSetting::set('unlock_ip_daily_limit', $validated['challenge_ip_daily_limit'], 'integer', 'Free unlocks one IP address may earn per day across all accounts (0 = off)');
         PaymentSetting::set('unlock_challenge_sandbox', $validated['challenge_sandbox'] ? 1 : 0, 'boolean', 'Bypass Move2Link with a local stand-in gate — testing only');
+        PaymentSetting::set('unlock_shortlink_provider', $validated['challenge_provider'], 'string', 'Shortlink provider the free-unlock challenge runs through');
 
         return back()->with('success', $validated['challenge_sandbox']
             ? 'Settings saved. Sandbox is ON — readers can unlock without seeing an ad.'
