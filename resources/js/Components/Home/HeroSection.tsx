@@ -14,6 +14,8 @@ interface Series {
   title: string;
   slug: string;
   cover_url?: string;
+  /** 400px rendition; null until one has been generated. */
+  thumb_url?: string | null;
   synopsis?: string;
   rating: number | string | null;
   status: string;
@@ -33,6 +35,19 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+
+  // Slides whose background has been asked for. Every slide used to load its
+  // cover the moment the page opened, five full-size images for one visible
+  // slide. Now only the current slide and the next one load, so the next
+  // fade still has its picture ready.
+  const [primed, setPrimed] = useState<Set<number>>(() => new Set([0, 1]));
+  useEffect(() => {
+    setPrimed((prev) => {
+      const nextIndex = (current + 1) % Math.max(1, heroSeries.length);
+      if (prev.has(current) && prev.has(nextIndex)) return prev;
+      return new Set([...prev, current, nextIndex]);
+    });
+  }, [current, heroSeries.length]);
 
   const slideTo = useCallback(
     (index: number) => {
@@ -109,11 +124,13 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
             className="absolute inset-0 transition-opacity duration-300 ease-out"
             style={{ opacity: i === current ? 1 : 0 }}
           >
-            {s.cover_url && (
+            {/* Blurred and darkened, so the thumbnail is indistinguishable
+                from the full cover here, at a fraction of the download. */}
+            {(s.thumb_url || s.cover_url) && primed.has(i) && (
               <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{
-                  backgroundImage: `url(${s.cover_url})`,
+                  backgroundImage: `url(${s.thumb_url || s.cover_url})`,
                   transform: 'scale(1.05)',
                   filter: 'blur(4px) brightness(0.7)',
                 }}
@@ -209,6 +226,8 @@ export default function HeroSection({ heroSeries }: HeroSectionProps) {
                     <CoverImage
                       priority
                       src={series.cover_url}
+                      thumbSrc={series.thumb_url}
+                      sizes="(min-width: 1280px) 224px, 192px"
                       alt={series.title}
                       containerClassName="w-48 xl:w-56"
                       hoverScale={false}

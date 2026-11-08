@@ -6,7 +6,6 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Symfony\Component\HttpFoundation\Response;
-use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -111,10 +110,6 @@ class HandleInertiaRequests extends Middleware
                 'otp_sent' => session('otp_sent'),
                 'otp_email' => session('otp_email'),
                 'request_commission_sent' => session('request_commission_sent'),
-            ],
-            'ziggy' => fn (): array => [
-                ...(new Ziggy)->toArray(),
-                'location' => $request->url(),
             ],
         ];
     }

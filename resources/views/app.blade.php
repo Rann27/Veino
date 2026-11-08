@@ -12,8 +12,20 @@
         <link rel="shortcut icon" href="/favicon2.ico">
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600|poppins:400,500,600,700,800" rel="stylesheet" />
+        {{-- Self-hosted (resources/css/fonts.css). The two faces every page
+             paints first are preloaded so text does not wait on CSS parsing
+             to discover them. --}}
+        <link rel="preload" href="/fonts/instrument-sans-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+        <link rel="preload" href="/fonts/poppins-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin>
+
+        {{-- The homepage's largest paint is the hero. The page is rendered in
+             the browser, so without this the image is only discovered once the
+             JavaScript has run; preloading it lets the two download together. --}}
+        @php($hero = ($page['component'] ?? null) === 'Home' ? collect(data_get($page, 'props.heroSeries', []))->first() : null)
+        @php($heroImage = $hero ? (data_get($hero, 'thumb_url') ?: data_get($hero, 'cover_url')) : null)
+        @if($heroImage)
+        <link rel="preload" href="{{ $heroImage }}" as="image" fetchpriority="high">
+        @endif
 
         <!-- Google Analytics 4 — set GA_MEASUREMENT_ID in .env to enable -->
         @if(config('analytics.ga_measurement_id') && !(config('analytics.exclude_admins') && Auth::check() && Auth::user()->role === 'admin'))
@@ -34,10 +46,6 @@
             });
         </script>
         @endif
-
-        <!-- Google AdSense -->
-        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6459699146085990"
-             crossorigin="anonymous"></script>
 
         <!-- Theme CSS Custom Properties -->
         <style>
@@ -99,7 +107,9 @@
             })();
         </script>
 
-        @routes
+        {{-- Admin route names stay out of the page for everyone but admins:
+             readers never call them, and the list was most of the payload. --}}
+        @routes(Auth::user()?->role === 'admin' ? null : 'public')
         @viteReactRefresh
         @vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         @inertiaHead

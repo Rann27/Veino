@@ -18,6 +18,13 @@ interface CoverImageProps {
      * it is meant to help, because the browser only queues it after layout.
      */
     priority?: boolean;
+    /**
+     * A smaller rendition (the 400px thumbnail). With it the browser picks per
+     * screen: the thumbnail where it is sharp enough, the full cover on dense
+     * displays. `sizes` must then say how wide the image is drawn.
+     */
+    thumbSrc?: string | null;
+    sizes?: string;
 }
 
 export default function CoverImage({
@@ -28,6 +35,8 @@ export default function CoverImage({
     hoverScale = true,
     aspectClass = 'aspect-[2/3]',
     priority = false,
+    thumbSrc = null,
+    sizes,
 }: CoverImageProps) {
     const { currentTheme } = useTheme();
     const [loaded, setLoaded] = useState(false);
@@ -79,6 +88,8 @@ export default function CoverImage({
                 <img
                     ref={imgRef}
                     src={src}
+                    srcSet={thumbSrc && thumbSrc !== src ? `${thumbSrc} 400w, ${src} 1200w` : undefined}
+                    sizes={thumbSrc && thumbSrc !== src ? sizes : undefined}
                     alt={alt}
                     loading={priority ? 'eager' : 'lazy'}
                     fetchPriority={priority ? 'high' : 'auto'}
