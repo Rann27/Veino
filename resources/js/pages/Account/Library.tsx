@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { NativeAd } from '@/Components/Ads/NetworkAds';
 import CoverImage from '@/Components/CoverImage';
 import EmptyState from '@/Components/EmptyState';
 import { getStatusColor, getCardBg, SHINY_PURPLE, SHINY_PURPLE_DIM } from '@/constants/colors';
@@ -168,6 +169,8 @@ function LibraryContent({ followedSeries }: Props) {
                         </div>
                     </div>
                 </div>
+
+                <NativeAd className="mb-6" />
 
                 {/* Series Grid */}
                 {filteredAndSortedSeries.length > 0 ? (

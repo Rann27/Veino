@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { NativeAd } from '@/Components/Ads/NetworkAds';
 import CoverImage from '@/Components/CoverImage';
 import { getStatusColor, getCardBg, SHINY_PURPLE } from '@/constants/colors';
 import { formatRating } from '@/lib/rating';
@@ -178,6 +179,8 @@ function SearchResultsContent({ series, query }: Props) {
                                     </Link>
                                 ))}
                             </div>
+
+                            <NativeAd className="my-6" />
 
                             {/* Pagination */}
                             {series.last_page > 1 && (

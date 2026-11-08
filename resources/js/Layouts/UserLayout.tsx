@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from '@/Contexts/ThemeContext';
 import { ToastProvider } from '@/Contexts/ToastContext';
 import ThemeSelectorModal from '@/Components/ThemeSelectorModal';
 import SearchSuggestions from '@/Components/Search/SearchSuggestions';
+import { AAdsAd, AdOverlays } from '@/Components/Ads/NetworkAds';
 import { TierStyles, TierIcon, ExclusiveCrownIcon, TIER_LABEL, TIER_COLOR, TIER_GRADIENT, TIER_GLOW, asTier, isPaidTier, tierRingStyle } from '@/lib/tier';
 
 
@@ -1062,8 +1063,12 @@ function UserLayoutContent({ children, title, hideMobileBottomNav = false, hideS
           ? (showNavbar ? 'pt-16' : 'pt-4')
           : 'pt-0'
       }`}>
+        {/* Network ads on every page (none for members and admins). */}
+        <AAdsAd position="top" />
         {children}
+        <AAdsAd position="bottom" className="mt-6" />
       </main>
+      <AdOverlays />
 
       {/* Footer */}
       <footer

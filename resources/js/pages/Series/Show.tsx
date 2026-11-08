@@ -14,6 +14,8 @@ import { getVisitedChapters } from '@/lib/reading';
 import { csrfHeaders } from '@/lib/csrf';
 import { formatRating, formatRatingCount } from '@/lib/rating';
 import StarRating from '@/Components/StarRating';
+import { DesktopOnlyAd, ResponsiveAd } from '@/Components/Ads/NetworkAds';
+import { UNITS } from '@/ads/units';
 
 // SVG Icons
 const GridIcon = ({ size = 16, color = 'currentColor' }) => (
@@ -1024,6 +1026,8 @@ function SeriesShowContent({
                     </section>
                 )}
 
+                <ResponsiveAd desktop={UNITS.adsterraLeaderboard} mobile={UNITS.hilltopRectangle1} className="px-4 pb-6" />
+
                 {/* ─── Two Column: Chapters + Related ─── */}
                 <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-6">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -1402,6 +1406,7 @@ function SeriesShowContent({
                                     </div>
                                 </div>
                             )}
+                            <DesktopOnlyAd unit={UNITS.adsterraSkyscraper} className="mt-6" />
                         </div>
 
                     </div>

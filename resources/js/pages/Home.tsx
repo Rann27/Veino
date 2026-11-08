@@ -5,6 +5,7 @@ import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 import BannerSlider from '@/Components/Home/BannerSlider';
 import HeroSection from '@/Components/Home/HeroSection';
+import { NativeAd } from '@/Components/Ads/NetworkAds';
 import SimpleSeriesCard from '@/Components/Home/SimpleSeriesCard';
 import LatestUpdatesSection from '@/Components/Home/LatestUpdatesSection';
 import CoverImage from '@/Components/CoverImage';
@@ -431,6 +432,8 @@ function HomeContent({
 
       {/* ─── 5. Latest Updates Section (Tabbed) ─── */}
       <LatestUpdatesSection initialData={latestUpdates} />
+
+      <NativeAd className="px-4 sm:px-6 lg:px-10 xl:px-16 py-6" />
 
       {epubSeries.length > 0 && (
         <section className="py-8 sm:py-12" style={{ backgroundColor: currentTheme.background }}>

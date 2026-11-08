@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { NativeAd } from '@/Components/Ads/NetworkAds';
 import { getStatusColor, getCardBg, SHINY_PURPLE, SHINY_PURPLE_DIM } from '@/constants/colors';
 import CoverImage from '@/Components/CoverImage';
 import EmptyState from '@/Components/EmptyState';
@@ -605,6 +606,8 @@ function ExploreContent({ series, genres, languages, filters }: Props) {
                             action={{ label: 'Clear All Filters', onClick: clearFilters, variant: 'ghost' }}
                         />
                     )}
+
+                    <NativeAd className="my-6" />
 
                     {/* ─── Pagination ─── */}
                     {series.last_page > 1 && (

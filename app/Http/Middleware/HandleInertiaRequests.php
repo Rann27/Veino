@@ -86,6 +86,10 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // Whether this visitor sees third-party network ads. Paid members
+            // and admins never do; ADS_ENABLED turns them off for everyone.
+            'showAds' => (bool) config('ads.enabled', true)
+                && ! ($request->user() && ($request->user()->role === 'admin' || $request->user()->hasActiveMembership())),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user() ? [

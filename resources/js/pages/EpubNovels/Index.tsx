@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import ShopLayout from '@/Layouts/ShopLayout';
 import { useTheme } from '@/Contexts/ThemeContext';
+import { NativeAd } from '@/Components/Ads/NetworkAds';
 import CoverImage from '@/Components/CoverImage';
 import PremiumDiamond from '@/Components/PremiumDiamond';
 
@@ -422,6 +423,8 @@ function IndexContent({ series, genres, filters, chartItems = [], totalPrice = 0
                             </p>
                         </div>
                     )}
+
+                    <NativeAd className="my-6" />
 
                     {/* ── Pagination ──────────────────────────────── */}
                     {series.last_page > 1 && (

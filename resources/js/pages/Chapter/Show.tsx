@@ -8,6 +8,8 @@ import PremiumDiamond from '@/Components/PremiumDiamond';
 import InTextAd from '@/Components/Ads/InTextAd';
 import { markChapterVisited, saveScrollPosition, getScrollPosition, clearScrollPosition } from '@/lib/reading';
 import InterstitialAd from '@/Components/Ads/InterstitialAd';
+import { ResponsiveAd, UnitAd, useShowAds } from '@/Components/Ads/NetworkAds';
+import { UNITS } from '@/ads/units';
 import axios from 'axios';
 import { csrfHeaders } from '@/lib/csrf';
 const ReaderSettingsModal = lazy(() => import('@/Components/ReaderSettingsModal'));
@@ -36,6 +38,38 @@ function addParagraphIndices(html: string): string {
     return html.replace(/<p(\s[^>]*)?>/gi, (_match, attrs) => {
         return `<p${attrs || ''} data-p-index="${idx++}">`;
     });
+}
+
+/**
+ * Splits the chapter in two at a paragraph boundary near the middle, for the
+ * mid-chapter ad to sit between the halves as an ordinary element. Only cuts
+ * where no block element is left open (a paragraph inside a blockquote or a
+ * list is skipped), so neither half is malformed. Short chapters are not
+ * split: an ad every few lines reads as spam. Paragraph indices are assigned
+ * before this, so marks are unaffected.
+ */
+const BLOCK_TAGS = ['div', 'blockquote', 'section', 'ul', 'ol', 'table', 'figure', 'article', 'aside'];
+
+function splitForMidAd(html: string): [string, string] {
+    const closes = [...html.matchAll(/<\/p>/gi)];
+    if (closes.length < 8) return [html, ''];
+
+    const balanced = (head: string) => BLOCK_TAGS.every((tag) =>
+        (head.match(new RegExp(`<${tag}[\\s>]`, 'gi')) ?? []).length
+            === (head.match(new RegExp(`</${tag}>`, 'gi')) ?? []).length);
+
+    // Middle first, then step outwards until a clean cut turns up.
+    const mid = Math.floor(closes.length / 2);
+    for (let step = 0; step < closes.length; step++) {
+        for (const i of [mid + step, mid - step]) {
+            const at = closes[i];
+            if (!at || i < 3 || i > closes.length - 3) continue;
+            const cut = (at.index ?? 0) + at[0].length;
+            if (balanced(html.slice(0, cut))) return [html.slice(0, cut), html.slice(cut)];
+        }
+    }
+
+    return [html, ''];
 }
 
 // ── types ──────────────────────────────────────────────────────────────────
@@ -473,6 +507,9 @@ function ChapterShowContent({
 
     // ── in-text ads ────────────────────────────────────────────────────────
     const isAdFree = isPremiumMember || (hasCoinPurchase && chapter.is_premium);
+    // Network ads inside the chapter follow the same rule as the in-text ads:
+    // none on a chapter the reader paid for, nor for members.
+    const showNetworkAds = useShowAds() && !isAdFree;
     useEffect(() => {
         if (!isAdFree) {
             axios.get('/api/ads/in-text/random', { params: { count: 5 } })
@@ -555,6 +592,16 @@ function ChapterShowContent({
         html = injectInTextAds(html);
         return html;
     }, [chapter.content, readerSettings, isAdFree, inTextAds]);
+
+    const contentStyle: React.CSSProperties = {
+        whiteSpace: 'normal', lineHeight: readerSettings.lineHeight, fontSize: 'inherit',
+        fontFamily: 'inherit', color: 'inherit', cursor: isAuthenticated ? 'text' : 'auto',
+    };
+
+    const [contentHead, contentTail] = useMemo(
+        () => (showNetworkAds ? splitForMidAd(processedContent) : [processedContent, ''] as [string, string]),
+        [processedContent, showNetworkAds],
+    );
 
     // ── jump to marked paragraph from URL hash (#mark-N) ──────────────────
     useEffect(() => {
@@ -1013,11 +1060,23 @@ function ChapterShowContent({
                             ${markHighlightCss}
                         `}</style>
                         <div
-                            style={{ whiteSpace: 'normal', lineHeight: readerSettings.lineHeight, fontSize: 'inherit', fontFamily: 'inherit', color: 'inherit', cursor: isAuthenticated ? 'text' : 'auto' }}
+                            style={contentStyle}
                             onClick={handleContentClick}
-                            dangerouslySetInnerHTML={{ __html: processedContent }}
+                            dangerouslySetInnerHTML={{ __html: contentHead }}
                         />
+                        {contentTail && (
+                            <>
+                                <ResponsiveAd desktop={UNITS.adsterraLeaderboard} mobile={UNITS.hilltopRectangle1} className="my-8" />
+                                <div
+                                    style={contentStyle}
+                                    onClick={handleContentClick}
+                                    dangerouslySetInnerHTML={{ __html: contentTail }}
+                                />
+                            </>
+                        )}
                     </div>
+
+                    {showNetworkAds && <UnitAd unit={UNITS.hilltopRectangle2} className="mt-10" />}
 
                     {/* Chapter Navigation Footer */}
                     <div className="mt-14 pt-8" style={{ borderTop: `1px solid ${border}` }}>

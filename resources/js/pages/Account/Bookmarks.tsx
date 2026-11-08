@@ -4,6 +4,7 @@ import UserLayout from '@/Layouts/UserLayout';
 import { useTheme, SHINY_PURPLE } from '@/Contexts/ThemeContext';
 import CoverImage from '@/Components/CoverImage';
 import { formatRating } from '@/lib/rating';
+import { NativeAd } from '@/Components/Ads/NetworkAds';
 
 interface Bookmark {
     id: number;
@@ -120,6 +121,8 @@ function BookmarksContent({ bookmarks }: Props) {
                             <option value="series_rating" style={{ background: bg, color: fg }}>Highest Rated</option>
                         </select>
                     </div>
+
+                    <NativeAd className="mb-6" />
 
                     {/* ── Grid ── */}
                     {displayed.length > 0 ? (
