@@ -34,6 +34,7 @@ const OUTCOME_LABEL: Record<string, string> = {
     disabled: 'Challenge off',
     ip_limit: 'IP daily limit',
     fraud_hold: 'Fraud hold',
+    early_access: 'Early access',
     started: 'Started',
 };
 
@@ -48,6 +49,7 @@ const OUTCOME_COLOR: Record<string, string> = {
     disabled: '#6b7280',
     ip_limit: '#0ea5e9',
     fraud_hold: '#b91c1c',
+    early_access: '#fab219',
     started: '#64748b',
 };
 

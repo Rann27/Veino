@@ -98,6 +98,11 @@ class UserChapterController extends Controller
             'hasCoinPurchase' => $hasCoinPurchase,
             'challenge' => [
                 'available' => $unlock->availableFor($user, $chapter),
+                // Seconds until the free unlock opens; null once it is open.
+                'opens_in' => ($opens = $unlock->freeUnlockOpensAt($chapter))
+                    ? (int) now()->diffInSeconds($opens)
+                    : null,
+                'opens_at' => $opens?->toIso8601String(),
                 'days' => $unlock->accessDays(),
                 'daily_limit' => $unlock->dailyLimit(),
                 'used_today' => $user ? $unlock->grantsToday($user) : 0,

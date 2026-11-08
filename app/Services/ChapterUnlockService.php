@@ -184,6 +184,60 @@ class ChapterUnlockService
     }
 
     /**
+     * Days a premium chapter stays members-only before the free unlock opens.
+     * 0 turns early access off. Coins and membership are unaffected.
+     */
+    public function earlyAccessDays(): int
+    {
+        return max(0, (int) PaymentSetting::get('unlock_early_access_days', 0));
+    }
+
+    /**
+     * When the free unlock opens for this chapter, or null once it is open.
+     *
+     * Counted from created_at: chapters are published the moment they are
+     * created (there is no draft step), so that is the release time.
+     */
+    public function freeUnlockOpensAt(Chapter $chapter): ?\Illuminate\Support\Carbon
+    {
+        $days = $this->earlyAccessDays();
+
+        if ($days === 0 || ! $chapter->is_premium || ! $chapter->created_at) {
+            return null;
+        }
+
+        $opens = $chapter->created_at->copy()->addDays($days);
+
+        return $opens->isFuture() ? $opens : null;
+    }
+
+    /**
+     * Seconds until the free unlock opens, for each premium chapter still in
+     * early access — the series page badges these without a query per row.
+     *
+     * Seconds rather than a timestamp so the countdown runs off the page's
+     * own clock: a reader whose device is a few minutes out would otherwise
+     * see the button unlock early and then be refused.
+     *
+     * @return array<int, int> chapter id => seconds left
+     */
+    public function earlyAccessMap(iterable $chapters): array
+    {
+        if ($this->earlyAccessDays() === 0 || ! $this->enabled()) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($chapters as $chapter) {
+            if ($opens = $this->freeUnlockOpensAt($chapter)) {
+                $map[$chapter->id] = (int) now()->diffInSeconds($opens);
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * Free unlocks one address may earn per day, across every account behind
      * it. 0 turns the cap off.
      *

@@ -10,6 +10,7 @@ import { markChapterVisited, saveScrollPosition, getScrollPosition, clearScrollP
 import InterstitialAd from '@/Components/Ads/InterstitialAd';
 import axios from 'axios';
 import { csrfHeaders } from '@/lib/csrf';
+import { formatOpensIn, useCountdown } from '@/lib/earlyAccess';
 const ReaderSettingsModal = lazy(() => import('@/Components/ReaderSettingsModal'));
 const CommentSection = lazy(() => import('@/Components/CommentSection'));
 const ReactionBar = lazy(() => import('@/Components/ReactionBar'));
@@ -91,6 +92,9 @@ interface Challenge {
     daily_limit: number;
     used_today: number;
     sandbox?: boolean;
+    /** Seconds until the free unlock opens (premium early access); null once open. */
+    opens_in?: number | null;
+    opens_at?: string | null;
 }
 
 interface Props {
@@ -369,7 +373,13 @@ function ChapterShowContent({
         ? chapter.title
         : `Chapter ${chapter.chapter_number}`;
 
+    // Premium early access: the button stays visible but disabled, counting
+    // down, and comes alive by itself the moment the window closes.
+    const opensIn = useCountdown(challenge?.opens_in);
+    const inEarlyAccess = opensIn !== null && opensIn > 0;
+
     const startChallenge = async () => {
+        if (inEarlyAccess) return;
         if (!auth?.user) {
             router.visit(route('login'));
             return;
@@ -681,20 +691,33 @@ function ChapterShowContent({
                                 </div>
                                 <button
                                     onClick={startChallenge}
-                                    disabled={startingChallenge}
-                                    className="w-full py-3 px-6 rounded-lg font-semibold text-sm sm:text-base text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                                    style={{ backgroundColor: '#16a34a' }}
+                                    disabled={startingChallenge || inEarlyAccess}
+                                    className={`w-full py-3 px-6 rounded-lg font-semibold text-sm sm:text-base transition-opacity ${inEarlyAccess ? 'cursor-not-allowed' : 'text-white hover:opacity-90 disabled:opacity-60'}`}
+                                    style={inEarlyAccess
+                                        ? { backgroundColor: `${currentTheme.foreground}0d`, color: muted, border: `1px dashed ${border}`, fontVariantNumeric: 'tabular-nums' }
+                                        : { backgroundColor: '#16a34a' }}
                                 >
-                                    {startingChallenge
-                                        ? 'Preparing…'
-                                        : challenge.sandbox
-                                            ? `SANDBOX — ${challenge.days}d Free (no ad)`
-                                            : `${challenge.days}d Free with challenge`}
+                                    {inEarlyAccess
+                                        ? `Will be available in ${formatOpensIn(opensIn)}`
+                                        : startingChallenge
+                                            ? 'Preparing…'
+                                            : challenge.sandbox
+                                                ? `SANDBOX — ${challenge.days}d Free (no ad)`
+                                                : `${challenge.days}d Free with challenge`}
                                 </button>
                                 <p className="-mt-1 text-xs" style={{ color: muted }}>
-                                    Complete a short sponsored link to read this chapter free for {challenge.days} days.
-                                    {challenge.daily_limit > 0 && auth?.user && (
-                                        <> {Math.max(0, challenge.daily_limit - challenge.used_today)} of {challenge.daily_limit} left today.</>
+                                    {inEarlyAccess ? (
+                                        <>
+                                            New chapters are Premium early access first. The free unlock opens
+                                            {challenge.opens_at ? ` on ${new Date(challenge.opens_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}` : ' soon'}.
+                                        </>
+                                    ) : (
+                                        <>
+                                            Complete a short sponsored link to read this chapter free for {challenge.days} days.
+                                            {challenge.daily_limit > 0 && auth?.user && (
+                                                <> {Math.max(0, challenge.daily_limit - challenge.used_today)} of {challenge.daily_limit} left today.</>
+                                            )}
+                                        </>
                                     )}
                                 </p>
                                 {challengeError && (

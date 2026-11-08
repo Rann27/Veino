@@ -63,6 +63,18 @@ class ChapterUnlockController extends Controller
             return response()->json(['message' => 'You already have access to this chapter.'], 409);
         }
 
+        // Members-only for the first days after release. The page shows a
+        // countdown instead of the button, so this only answers someone
+        // calling the endpoint directly, and it can say so plainly: the
+        // release date is public.
+        if ($this->unlock->freeUnlockOpensAt($chapter)) {
+            $this->log($request, $user->id, $chapter->id, 'early_access');
+
+            return response()->json([
+                'message' => 'This chapter is still in premium early access. The free unlock opens soon.',
+            ], 423);
+        }
+
         if ($this->unlock->reachedDailyLimit($user)) {
             return response()->json([
                 'message' => "You've reached today's limit of {$this->unlock->dailyLimit()} free unlocks. Try again tomorrow.",
@@ -165,6 +177,14 @@ class ChapterUnlockController extends Controller
         // Already covered — send them straight in rather than burning a grant.
         if ($this->unlock->hasActiveAccess($user, $chapter)) {
             return redirect()->to($chapterUrl.'?unlocked=1');
+        }
+
+        // A run cannot be started inside the window, so a claim arriving in
+        // it is a hand-made request, or the window was lengthened mid-run.
+        if ($this->unlock->freeUnlockOpensAt($chapter)) {
+            $this->log($request, $user->id, $chapter->id, 'early_access');
+
+            return redirect()->to($chapterUrl)->with('error', 'This chapter is still in premium early access.');
         }
 
         if (! $this->unlock->claimable()) {
