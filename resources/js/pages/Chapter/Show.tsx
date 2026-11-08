@@ -1089,7 +1089,7 @@ function ChapterShowContent({
                         />
                         {contentTail && (
                             <>
-                                <ResponsiveAd desktop={UNITS.adsterraLeaderboard} mobile={UNITS.hilltopRectangle1} className="my-8" />
+                                <ResponsiveAd desktop={UNITS.adsterraLeaderboard} mobile={UNITS.adsterraMobileBanner} className="my-8" />
                                 <div
                                     style={contentStyle}
                                     onClick={handleContentClick}
@@ -1099,7 +1099,7 @@ function ChapterShowContent({
                         )}
                     </div>
 
-                    {showNetworkAds && <UnitAd unit={UNITS.hilltopRectangle2} className="mt-10" />}
+                    {showNetworkAds && <UnitAd unit={UNITS.adsterraRectangle} className="mt-10" />}
 
                     {/* Chapter Navigation Footer */}
                     <div className="mt-14 pt-8" style={{ borderTop: `1px solid ${border}` }}>

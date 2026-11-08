@@ -15,7 +15,7 @@ import { csrfHeaders } from '@/lib/csrf';
 import { formatRating, formatRatingCount } from '@/lib/rating';
 import { formatOpensIn, useElapsedSeconds } from '@/lib/earlyAccess';
 import StarRating from '@/Components/StarRating';
-import { DesktopOnlyAd, ResponsiveAd } from '@/Components/Ads/NetworkAds';
+import { ResponsiveAd, UnitAd } from '@/Components/Ads/NetworkAds';
 import { UNITS } from '@/ads/units';
 
 // SVG Icons
@@ -1041,7 +1041,7 @@ function SeriesShowContent({
                     </section>
                 )}
 
-                <ResponsiveAd desktop={UNITS.adsterraLeaderboard} mobile={UNITS.hilltopRectangle1} className="px-4 pb-6" />
+                <ResponsiveAd desktop={UNITS.adsterraLeaderboard} mobile={UNITS.adsterraMobileBanner} className="px-4 pb-6" />
 
                 {/* ─── Two Column: Chapters + Related ─── */}
                 <section className="w-full px-4 sm:px-6 lg:px-10 xl:px-16 pb-6">
@@ -1391,9 +1391,9 @@ function SeriesShowContent({
                                             '--scrollbar-track': 'transparent',
                                         } as React.CSSProperties}
                                     >
-                                        {relatedSeries.map((related) => (
+                                        {relatedSeries.map((related, i) => (
+                                            <React.Fragment key={related.id}>
                                             <Link
-                                                key={related.id}
                                                 href={route('series.show', related.slug)}
                                                 className="flex gap-3 p-2.5 rounded-lg transition-all duration-150 group hover:opacity-90"
                                                 style={{
@@ -1432,11 +1432,16 @@ function SeriesShowContent({
                                                     </div>
                                                 </div>
                                             </Link>
+                                            {/* One ad among the recommendations, sized like the cards
+                                                around it, after the second (or the last, if fewer). */}
+                                            {i === Math.min(1, relatedSeries.length - 1) && (
+                                                <UnitAd unit={UNITS.adsterraRectangle} className="py-2" />
+                                            )}
+                                            </React.Fragment>
                                         ))}
                                     </div>
                                 </div>
                             )}
-                            <DesktopOnlyAd unit={UNITS.adsterraSkyscraper} className="mt-6" />
                         </div>
 
                     </div>
