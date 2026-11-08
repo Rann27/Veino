@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdFrame from '@/Components/Ads/AdFrame';
-import { AADS_UNITS, NATIVE, OVERLAYS, type FrameUnit } from '@/ads/units';
+import { AADS_UNITS, NATIVE, OVERLAYS, type FrameUnit, type Network } from '@/ads/units';
 
 /**
  * Third-party network ads. Every component here renders nothing unless the
@@ -11,6 +11,13 @@ import { AADS_UNITS, NATIVE, OVERLAYS, type FrameUnit } from '@/ads/units';
  */
 export function useShowAds(): boolean {
     return usePage<{ showAds?: boolean }>().props.showAds === true;
+}
+
+/** Ads on for this visitor, and this particular network switched on. */
+export function useNetworkAds(network: Network): boolean {
+    const { showAds, adNetworks } = usePage<{ showAds?: boolean; adNetworks?: string[] }>().props;
+
+    return showAds === true && (adNetworks ?? []).includes(network);
 }
 
 function useMediaQuery(query: string): boolean {
@@ -44,7 +51,7 @@ function Labelled({ children, className = '' }: { children: React.ReactNode; cla
 
 /** One fixed-size unit. */
 export function UnitAd({ unit, className = '' }: { unit: FrameUnit; className?: string }) {
-    if (!useShowAds()) return null;
+    if (!useNetworkAds(unit.network)) return null;
 
     return (
         <Labelled className={className}>
@@ -59,13 +66,11 @@ export function UnitAd({ unit, className = '' }: { unit: FrameUnit; className?: 
  * mounted, so the other never loads.
  */
 export function ResponsiveAd({ desktop, mobile, className = '' }: { desktop: FrameUnit; mobile: FrameUnit | null; className?: string }) {
-    const show = useShowAds();
     const wide = useMediaQuery('(min-width: 768px)');
-
-    if (!show) return null;
-
     const unit = wide ? desktop : mobile;
-    if (!unit) return null;
+    const allowed = useNetworkAds(unit?.network ?? 'adsterra');
+
+    if (!unit || !allowed) return null;
 
     return (
         <Labelled className={className}>
@@ -76,10 +81,10 @@ export function ResponsiveAd({ desktop, mobile, className = '' }: { desktop: Fra
 
 /** Only on wide screens (the 160×600 has nowhere to go on a phone). */
 export function DesktopOnlyAd({ unit, minWidth = 1024, className = '' }: { unit: FrameUnit; minWidth?: number; className?: string }) {
-    const show = useShowAds();
+    const allowed = useNetworkAds(unit.network);
     const wide = useMediaQuery(`(min-width: ${minWidth}px)`);
 
-    if (!show || !wide) return null;
+    if (!allowed || !wide) return null;
 
     return (
         <Labelled className={className}>
@@ -94,7 +99,7 @@ export function DesktopOnlyAd({ unit, minWidth = 1024, className = '' }: { unit:
  * (two units on one page would otherwise share an id).
  */
 export function AAdsAd({ position, className = '' }: { position: keyof typeof AADS_UNITS; className?: string }) {
-    if (!useShowAds()) return null;
+    if (!useNetworkAds('aads')) return null;
 
     const id = AADS_UNITS[position];
 
@@ -120,7 +125,7 @@ export function AAdsAd({ position, className = '' }: { position: keyof typeof AA
  * font and colour are set to "inherit" in the Adsterra dashboard.
  */
 export function NativeAd({ className = '' }: { className?: string }) {
-    const show = useShowAds();
+    const show = useNetworkAds('adsterra');
     const { currentTheme } = useTheme();
 
     if (!show) return null;
@@ -160,6 +165,8 @@ declare global {
  */
 export function AdOverlays() {
     const show = useShowAds();
+    const socialBar = useNetworkAds('adsterra');
+    const videoSlider = useNetworkAds('hilltop');
 
     useEffect(() => {
         if (!show) {
@@ -174,17 +181,21 @@ export function AdOverlays() {
             done = true;
             window.__veinoOverlaysLoaded = true;
 
-            const social = document.createElement('script');
-            social.setAttribute('data-cfasync', 'false');
-            social.src = OVERLAYS.socialBarSrc;
-            document.body.appendChild(social);
+            if (socialBar) {
+                const social = document.createElement('script');
+                social.setAttribute('data-cfasync', 'false');
+                social.src = OVERLAYS.socialBarSrc;
+                document.body.appendChild(social);
+            }
 
-            // The HilltopAds loader as issued, run as an inline script so its
-            // own currentScript lookup finds it.
-            const { src, settingsVar } = OVERLAYS.videoSlider;
-            const slider = document.createElement('script');
-            slider.text = `(function(${settingsVar}){var d=document,s=d.createElement('script'),l=d.currentScript||d.scripts[d.scripts.length-1];s.settings=${settingsVar}||{};s.src=${JSON.stringify(src)};s.async=true;s.referrerPolicy='no-referrer-when-downgrade';l.parentNode.insertBefore(s,l);})({})`;
-            document.body.appendChild(slider);
+            if (videoSlider) {
+                // The HilltopAds loader as issued, run as an inline script so
+                // its own currentScript lookup finds it.
+                const { src, settingsVar } = OVERLAYS.videoSlider;
+                const slider = document.createElement('script');
+                slider.text = `(function(${settingsVar}){var d=document,s=d.createElement('script'),l=d.currentScript||d.scripts[d.scripts.length-1];s.settings=${settingsVar}||{};s.src=${JSON.stringify(src)};s.async=true;s.referrerPolicy='no-referrer-when-downgrade';l.parentNode.insertBefore(s,l);})({})`;
+                document.body.appendChild(slider);
+            }
 
             cleanup();
         };
@@ -198,7 +209,7 @@ export function AdOverlays() {
         };
 
         return cleanup;
-    }, [show]);
+    }, [show, socialBar, videoSlider]);
 
     return null;
 }

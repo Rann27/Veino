@@ -90,6 +90,8 @@ class HandleInertiaRequests extends Middleware
             // and admins never do; ADS_ENABLED turns them off for everyone.
             'showAds' => (bool) config('ads.enabled', true)
                 && ! ($request->user() && ($request->user()->role === 'admin' || $request->user()->hasActiveMembership())),
+            // Which networks may serve, see config/ads.php.
+            'adNetworks' => array_keys(array_filter(config('ads.networks', []))),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user() ? [
