@@ -34,6 +34,7 @@ interface SeriesIndexProps {
     daily_limit: number;
     rotate_after: number;
     ip_daily_limit: number;
+    early_access_days: number;
     sandbox: boolean;
     sandbox_allowed: boolean;
     token_configured: boolean;
@@ -498,6 +499,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
     challenge_daily_limit: String(unlockChallenge.daily_limit),
     challenge_rotate_after: String(unlockChallenge.rotate_after),
     challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
+    challenge_early_access_days: String(unlockChallenge.early_access_days),
     challenge_sandbox: unlockChallenge.sandbox,
   });
 
@@ -596,6 +598,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 challenge_daily_limit: String(unlockChallenge.daily_limit),
                 challenge_rotate_after: String(unlockChallenge.rotate_after),
                 challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
+                challenge_early_access_days: String(unlockChallenge.early_access_days),
                 challenge_sandbox: unlockChallenge.sandbox,
               });
               setShowSettingsModal(true);
@@ -829,6 +832,29 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                     ? 'No daily cap — readers can unlock as many chapters as they like.'
                     : `A reader may earn ${settingsForm.data.challenge_daily_limit} free unlocks per day. A cap protects your Move2Link account from invalid-traffic flags.`}
                 </p>
+
+                {/* Premium early access — off by default */}
+                <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>
+                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>
+                    Premium early access (days)
+                  </label>
+                  <input type="number" min={0} max={365} required
+                    value={settingsForm.data.challenge_early_access_days}
+                    onChange={e => settingsForm.setData('challenge_early_access_days', e.target.value)}
+                    className="block w-full px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
+                    style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                    onFocus={e => { e.currentTarget.style.borderColor = accent; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = border; }}
+                  />
+                  {settingsForm.errors.challenge_early_access_days && (
+                    <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_early_access_days}</p>
+                  )}
+                  <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
+                    {settingsForm.data.challenge_early_access_days === '0' || settingsForm.data.challenge_early_access_days === ''
+                      ? 'Off — the free unlock is offered as soon as a premium chapter is released.'
+                      : `For the first ${settingsForm.data.challenge_early_access_days} day${settingsForm.data.challenge_early_access_days === '1' ? '' : 's'} after release, a premium chapter is members-only: the free unlock button shows a countdown instead, and coins still work. Applies to chapters already released too, counted from their release date.`}
+                  </p>
+                </div>
 
                 {/* Link rotation — off by default */}
                 <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>

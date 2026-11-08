@@ -13,6 +13,7 @@ import PremiumDiamond from '@/Components/PremiumDiamond';
 import { getVisitedChapters } from '@/lib/reading';
 import { csrfHeaders } from '@/lib/csrf';
 import { formatRating, formatRatingCount } from '@/lib/rating';
+import { formatOpensIn, useElapsedSeconds } from '@/lib/earlyAccess';
 import StarRating from '@/Components/StarRating';
 import { DesktopOnlyAd, ResponsiveAd } from '@/Components/Ads/NetworkAds';
 import { UNITS } from '@/ads/units';
@@ -200,6 +201,8 @@ interface Props {
     lastRead?: LastRead | null;
     /** chapter id → ISO expiry of challenge-earned access */
     temporaryAccess?: Record<string, string>;
+    /** chapter id → seconds until the free unlock opens (premium early access) */
+    earlyAccess?: Record<string, number>;
     /** This reader's own vote, 1–5. */
     userRating?: number | null;
     auth?: {
@@ -255,9 +258,21 @@ const sanitizeContent = (html: string): string => {
 function SeriesShowContent({
     series, chapters, relatedSeries, isBookmarked = false, seriesMarks = [], auth,
     firstChapter = null, readChapterIds = [], lastRead = null, temporaryAccess = {},
-    userRating = null,
+    userRating = null, earlyAccess = {},
 }: Props) {
     const { currentTheme } = useTheme();
+
+    // One timer for every early-access badge on the page, ticking each second
+    // only while one of them is under a day away.
+    const earlyElapsed = useElapsedSeconds(Object.values(earlyAccess).some(s => s < 86400));
+
+    /** Seconds until this chapter's free unlock opens, or null when it is open. */
+    const earlyLeft = (chapterId: number): number | null => {
+        const s = earlyAccess[String(chapterId)];
+        if (s === undefined) return null;
+        const left = s - earlyElapsed;
+        return left > 0 ? left : null;
+    };
 
     /** Whole days left on challenge-earned access, or null when there is none. */
     const temporaryDaysLeft = (chapterId: number): number | null => {
@@ -1231,6 +1246,15 @@ function SeriesShowContent({
                                                                     Owned for {temporaryDaysLeft(chapter.id)}d
                                                                 </span>
                                                             )}
+                                                            {!chapter.is_owned && temporaryDaysLeft(chapter.id) === null && earlyLeft(chapter.id) !== null && (
+                                                                <span
+                                                                    title="Premium early access: members read it now, the free unlock opens when the countdown ends"
+                                                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-lg"
+                                                                    style={{ backgroundColor: '#fab21915', color: '#fab219', border: '1px solid #fab21930', fontVariantNumeric: 'tabular-nums' }}>
+                                                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fab219" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
+                                                                    Early Access · free in {formatOpensIn(earlyLeft(chapter.id)!)}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
                                                     <ChevronRightIcon size={15} color={`${currentTheme.foreground}25`} />
@@ -1294,6 +1318,12 @@ function SeriesShowContent({
                                                             <EyeIcon className="w-2.5 h-2.5" />
                                                             {formatNumber(chapter.views)}
                                                         </span>
+                                                        {!chapter.is_owned && temporaryDaysLeft(chapter.id) === null && earlyLeft(chapter.id) !== null && (
+                                                            <span title="Premium early access: members read it now, the free unlock opens when the countdown ends"
+                                                                className="font-semibold" style={{ color: '#fab219', fontVariantNumeric: 'tabular-nums' }}>
+                                                                EA · {formatOpensIn(earlyLeft(chapter.id)!)}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </Link>

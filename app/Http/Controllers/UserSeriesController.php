@@ -99,6 +99,10 @@ class UserSeriesController extends Controller
         $temporaryAccess = app(\App\Services\ChapterUnlockService::class)
             ->activeAccessMap(Auth::user(), $chapters->pluck('id')->all());
 
+        // Premium chapters still members-only, with seconds until the free
+        // unlock opens, for the "Early Access" badge on each row.
+        $earlyAccess = app(\App\Services\ChapterUnlockService::class)->earlyAccessMap($chapters);
+
         // Fetch marks for this series (grouped by chapter)
         $seriesMarks = [];
         if (Auth::check()) {
@@ -132,6 +136,7 @@ class UserSeriesController extends Controller
             'readChapterIds' => $readChapterIds,
             'lastRead'      => $lastRead,
             'temporaryAccess' => $temporaryAccess,
+            'earlyAccess'   => $earlyAccess,
             // This reader's own vote, 1–5, or null. The aggregate itself rides
             // on the series (rating, rating_count).
             'userRating'    => Auth::check()
