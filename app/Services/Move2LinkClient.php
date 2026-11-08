@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Services\Shortlinks\ShortlinkProvider;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -13,8 +14,18 @@ use Illuminate\Support\Facades\Log;
  * and cached in the database, because Move2Link rate limits per IP — and that
  * IP is our server, shared by every reader.
  */
-class Move2LinkClient
+class Move2LinkClient implements ShortlinkProvider
 {
+    public function name(): string
+    {
+        return 'move2link';
+    }
+
+    public function label(): string
+    {
+        return 'Move2Link';
+    }
+
     /**
      * Why the last call failed, in words an admin can act on.
      *
@@ -39,6 +50,12 @@ class Move2LinkClient
      * Catching this before the call turns a confusing 400 into a clear answer.
      */
     private function publiclyReachable(string $url): bool
+    {
+        return self::isPubliclyReachable($url);
+    }
+
+    /** Shared with the other providers: none of them can reach a local address. */
+    public static function isPubliclyReachable(string $url): bool
     {
         $host = strtolower((string) parse_url($url, PHP_URL_HOST));
 

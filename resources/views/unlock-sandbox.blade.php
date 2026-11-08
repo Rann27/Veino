@@ -47,7 +47,7 @@
     <div class="card">
         <span class="tag">Sandbox — not the real challenge</span>
         <h1>Simulated ad gate</h1>
-        <p>Move2Link is bypassed. Continuing grants the same access a completed challenge would, so the rest of the flow can be tested.</p>
+        <p>The shortlink gate is bypassed. Continuing grants the same access a completed challenge would, so the rest of the flow can be tested.</p>
 
         <div class="meta">
             <div><span>Series</span><span>{{ $series->title }}</span></div>

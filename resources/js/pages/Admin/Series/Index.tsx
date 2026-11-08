@@ -38,6 +38,9 @@ interface SeriesIndexProps {
     sandbox: boolean;
     sandbox_allowed: boolean;
     token_configured: boolean;
+    provider: string;
+    providers: { name: string; label: string; configured: boolean }[];
+    min_seconds: number;
   };
 }
 
@@ -501,6 +504,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
     challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
     challenge_early_access_days: String(unlockChallenge.early_access_days),
     challenge_sandbox: unlockChallenge.sandbox,
+    challenge_provider: unlockChallenge.provider,
   });
 
   // Request ID — prevents stale responses from overwriting newer results
@@ -600,6 +604,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
                 challenge_early_access_days: String(unlockChallenge.early_access_days),
                 challenge_sandbox: unlockChallenge.sandbox,
+                challenge_provider: unlockChallenge.provider,
               });
               setShowSettingsModal(true);
             }}
@@ -776,7 +781,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 {settingsForm.errors.price && <p className="mt-1 text-xs text-red-500">{settingsForm.errors.price}</p>}
               </div>
 
-              {/* ── Free access through the Move2Link challenge ── */}
+              {/* ── Free access through the shortlink challenge ── */}
               <div className="pt-4" style={{ borderTop: `1px solid ${border}` }}>
                 <div className="flex items-start justify-between gap-3 mb-1.5">
                   <div>
@@ -795,11 +800,42 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                   </button>
                 </div>
 
-                {!unlockChallenge.token_configured && (
-                  <p className="text-xs mb-3 font-medium" style={{ color: '#d03b3b' }}>
-                    MOVE2LINK_TOKEN is not set in .env — the button stays hidden from readers until it is.
-                  </p>
-                )}
+                {/* Which shortener the challenge runs through. Each keeps its own
+                    links, so switching back and forth loses nothing. */}
+                <div className="mt-3">
+                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>Shortlink provider</label>
+                  <div className="flex gap-1 p-1 rounded-xl" style={{ backgroundColor: cardBg, border: `1px solid ${border}` }}>
+                    {unlockChallenge.providers.map(p => {
+                      const active = settingsForm.data.challenge_provider === p.name;
+                      return (
+                        <button key={p.name} type="button"
+                          onClick={() => settingsForm.setData('challenge_provider', p.name)}
+                          className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                          style={{ backgroundColor: active ? accent : 'transparent', color: active ? bg : fg, opacity: p.configured ? 1 : 0.6 }}
+                          title={p.configured ? undefined : 'API token missing in .env'}>
+                          {p.label}{!p.configured && ' ⚠'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(() => {
+                    const chosen = unlockChallenge.providers.find(p => p.name === settingsForm.data.challenge_provider);
+                    if (chosen && !chosen.configured) {
+                      return (
+                        <p className="text-xs mt-1.5 font-medium" style={{ color: '#d03b3b' }}>
+                          {chosen.name === 'shrinkearn' ? 'SHRINKEARN_TOKEN' : 'MOVE2LINK_TOKEN'} is not set in .env — the button stays hidden from readers until it is.
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className="text-xs mt-1.5 opacity-60" style={{ color: fg }}>
+                        {settingsForm.data.challenge_provider === unlockChallenge.provider
+                          ? `Live. A claim faster than ${unlockChallenge.min_seconds}s is refused as a skipped gate.`
+                          : 'Takes effect when you save. Existing links of the other provider are kept.'}
+                      </p>
+                    );
+                  })()}
+                </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-3">
                   <div>
@@ -830,7 +866,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
                   {settingsForm.data.challenge_daily_limit === '0'
                     ? 'No daily cap — readers can unlock as many chapters as they like.'
-                    : `A reader may earn ${settingsForm.data.challenge_daily_limit} free unlocks per day. A cap protects your Move2Link account from invalid-traffic flags.`}
+                    : `A reader may earn ${settingsForm.data.challenge_daily_limit} free unlocks per day. A cap protects your shortlink account from invalid-traffic flags.`}
                 </p>
 
                 {/* Premium early access — off by default */}
@@ -876,7 +912,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                     {settingsForm.data.challenge_rotate_after === '0'
                       ? 'Off — a chapter keeps one claim link forever. Anyone who saves that link from the ad gate can reuse it without watching another ad.'
                       : settingsForm.data.challenge_rotate_after === '1'
-                        ? 'Tightest setting: every unlock retires the link, so a saved one never works twice. Costs one Move2Link API call per unlock.'
+                        ? 'Tightest setting: every unlock retires the link, so a saved one never works twice. Costs one shortlink API call per unlock.'
                         : `After ${settingsForm.data.challenge_rotate_after} unlocks the link is replaced. A saved link works at most ${Number(settingsForm.data.challenge_rotate_after) - 1} more time before it dies. Fewer API calls than 1, less airtight.`}
                   </p>
                   <p className="text-xs mt-1 opacity-60" style={{ color: fg }}>
@@ -901,7 +937,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                   <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
                     {settingsForm.data.challenge_ip_daily_limit === '0'
                       ? 'Off — only the per-reader limit applies.'
-                      : `At most ${settingsForm.data.challenge_ip_daily_limit} free unlock${settingsForm.data.challenge_ip_daily_limit === '1' ? '' : 's'} per day from one address, across all its accounts. Move2Link only pays for one view per IP per day. Careful: mobile carriers put many unrelated readers behind one address, so a low number can block honest readers too.`}
+                      : `At most ${settingsForm.data.challenge_ip_daily_limit} free unlock${settingsForm.data.challenge_ip_daily_limit === '1' ? '' : 's'} per day from one address, across all its accounts. Shortlink networks pay for one view per IP per day. Careful: mobile carriers put many unrelated readers behind one address, so a low number can block honest readers too.`}
                   </p>
                 </div>
 
@@ -912,8 +948,8 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                       <label className="block text-sm font-medium" style={{ color: fg }}>🧪 Sandbox mode</label>
                       <p className="text-xs mt-0.5 opacity-60" style={{ color: fg }}>
                         {unlockChallenge.sandbox_allowed
-                          ? 'Skips Move2Link entirely and uses a local stand-in gate, so the flow can be tested without a public URL.'
-                          : 'Available only when APP_ENV=local. On this server the switch has no effect — readers always go through the real Move2Link gate.'}
+                          ? 'Skips the shortener entirely and uses a local stand-in gate, so the flow can be tested without a public URL.'
+                          : 'Available only when APP_ENV=local. On this server the switch has no effect — readers always go through the real shortlink gate.'}
                       </p>
                     </div>
                     <button type="button"
@@ -947,7 +983,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                       </p>
                       <p className="text-xs leading-relaxed" style={{ color: fg, opacity: 0.75 }}>
                         Turn this off before going live. Sandbox links are never saved to a chapter, so switching back
-                        restores real Move2Link links immediately — nothing to clean up. Grants made here are tagged
+                        restores real shortlinks immediately — nothing to clean up. Grants made here are tagged
                         <strong> sandbox</strong>, and the reader&rsquo;s button says so too.
                       </p>
                     </div>

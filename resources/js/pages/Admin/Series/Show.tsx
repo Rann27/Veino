@@ -428,7 +428,7 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
   const handleGenerateUnlockLink = (chapterId: number, regenerate = false) => {
     // Regenerating replaces a link readers may already be using, so it asks
     // first; a first-time generation has nothing to lose and does not.
-    if (regenerate && !confirm('Replace this shortlink? The old one stops working once Move2Link issues the new one.')) {
+    if (regenerate && !confirm('Replace this shortlink? The old one stops working once the shortener issues the new one.')) {
       return;
     }
 
@@ -440,7 +440,7 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
         setTimeout(() => setAlertMessage(null), 3000);
       },
       onError: () => {
-        setAlertMessage({ type: 'error', message: 'Could not generate the shortlink. Check the Move2Link token.' });
+        setAlertMessage({ type: 'error', message: 'Could not generate the shortlink. Check the shortlink provider token in .env.' });
         setTimeout(() => setAlertMessage(null), 5000);
       },
       onFinish: () => setGeneratingLink(null),
