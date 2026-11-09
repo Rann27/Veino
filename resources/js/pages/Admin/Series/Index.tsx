@@ -34,6 +34,7 @@ interface SeriesIndexProps {
     daily_limit: number;
     rotate_after: number;
     ip_daily_limit: number;
+    ip_limit_mode: 'off' | 'rotation' | 'custom';
     early_access_days: number;
     sandbox: boolean;
     sandbox_allowed: boolean;
@@ -503,6 +504,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
     challenge_daily_limit: String(unlockChallenge.daily_limit),
     challenge_rotate_after: String(unlockChallenge.rotate_after),
     challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
+    challenge_ip_limit_mode: unlockChallenge.ip_limit_mode,
     challenge_early_access_days: String(unlockChallenge.early_access_days),
     challenge_sandbox: unlockChallenge.sandbox,
     challenge_rotation: unlockChallenge.rotation,
@@ -603,6 +605,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 challenge_daily_limit: String(unlockChallenge.daily_limit),
                 challenge_rotate_after: String(unlockChallenge.rotate_after),
                 challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
+                challenge_ip_limit_mode: unlockChallenge.ip_limit_mode,
                 challenge_early_access_days: String(unlockChallenge.early_access_days),
                 challenge_sandbox: unlockChallenge.sandbox,
                 challenge_rotation: unlockChallenge.rotation,
@@ -927,22 +930,56 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 {/* Per-address cap */}
                 <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>
                   <label className="block text-xs font-medium mb-1" style={{ color: fg }}>Daily limit per IP address</label>
-                  <input type="number" min={0} max={100} required
-                    value={settingsForm.data.challenge_ip_daily_limit}
-                    onChange={e => settingsForm.setData('challenge_ip_daily_limit', e.target.value)}
-                    className="block w-full px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
-                    style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
-                    onFocus={e => { e.currentTarget.style.borderColor = accent; }}
-                    onBlur={e => { e.currentTarget.style.borderColor = border; }}
-                  />
-                  {settingsForm.errors.challenge_ip_daily_limit && (
-                    <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_ip_daily_limit}</p>
-                  )}
-                  <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
-                    {settingsForm.data.challenge_ip_daily_limit === '0'
-                      ? 'Off — only the per-reader limit applies.'
-                      : `At most ${settingsForm.data.challenge_ip_daily_limit} free unlock${settingsForm.data.challenge_ip_daily_limit === '1' ? '' : 's'} per day from one address, across all its accounts. Shortlink networks pay for one view per IP per day. Careful: mobile carriers put many unrelated readers behind one address, so a low number can block honest readers too.`}
-                  </p>
+                  {(() => {
+                    const mode = settingsForm.data.challenge_ip_limit_mode;
+                    // The rotation as it will be saved: only networks with a token count.
+                    const networks = settingsForm.data.challenge_rotation
+                      .filter(n => unlockChallenge.providers.find(p => p.name === n)?.configured).length;
+                    const custom = Number(settingsForm.data.challenge_ip_daily_limit) || 0;
+                    const modes: { key: typeof mode; label: string }[] = [
+                      { key: 'off', label: 'Off' },
+                      { key: 'rotation', label: `Match rotation (${networks})` },
+                      { key: 'custom', label: 'Custom' },
+                    ];
+                    return (
+                      <>
+                        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl" style={{ backgroundColor: cardBg, border: `1px solid ${border}` }}>
+                          {modes.map(m => (
+                            <button key={m.key} type="button"
+                              onClick={() => settingsForm.setData(d => ({
+                                ...d,
+                                challenge_ip_limit_mode: m.key,
+                                // Custom starts from a usable number rather than 0.
+                                challenge_ip_daily_limit: m.key === 'custom' && custom < 1 ? String(Math.max(networks, 1)) : d.challenge_ip_daily_limit,
+                              }))}
+                              className="px-2 py-1.5 rounded-lg text-xs font-semibold transition"
+                              style={mode === m.key ? { backgroundColor: accent, color: '#fff' } : { color: fg, opacity: 0.7 }}>
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                        {mode === 'custom' && (
+                          <input type="number" min={1} max={100} required
+                            value={settingsForm.data.challenge_ip_daily_limit}
+                            onChange={e => settingsForm.setData('challenge_ip_daily_limit', e.target.value)}
+                            className="block w-full mt-2 px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
+                            style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
+                            onFocus={e => { e.currentTarget.style.borderColor = accent; }}
+                            onBlur={e => { e.currentTarget.style.borderColor = border; }}
+                          />
+                        )}
+                        {(settingsForm.errors.challenge_ip_daily_limit || settingsForm.errors.challenge_ip_limit_mode) && (
+                          <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_ip_daily_limit || settingsForm.errors.challenge_ip_limit_mode}</p>
+                        )}
+                        <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
+                          {mode === 'off' && 'Off: only the per-reader limit applies. Unlocks past the rotation from one address still go through, but no network pays for them.'}
+                          {mode === 'rotation' && `At most ${networks} free unlock${networks === 1 ? '' : 's'} per day from one address (one per network in rotation), across all its accounts. Every unlock is a paid view; the cap follows the rotation as you add or drop networks.`}
+                          {mode === 'custom' && `At most ${custom} free unlock${custom === 1 ? '' : 's'} per day from one address, across all its accounts.${custom > networks ? ` Unlocks past ${networks} from one address are not paid by any network.` : ''}`}
+                          {mode !== 'off' && ' Careful: mobile carriers put many unrelated readers behind one address, so a tight cap can block honest readers too.'}
+                        </p>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* Sandbox — testing only */}

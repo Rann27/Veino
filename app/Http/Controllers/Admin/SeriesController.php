@@ -140,6 +140,7 @@ class SeriesController extends Controller
                 'daily_limit' => (int) PaymentSetting::get('unlock_challenge_daily_limit', 10),
                 'rotate_after' => (int) PaymentSetting::get('unlock_rotate_after', 0),
                 'ip_daily_limit' => (int) PaymentSetting::get('unlock_ip_daily_limit', 0),
+                'ip_limit_mode' => app(\App\Services\ChapterUnlockService::class)->ipLimitMode(),
                 'early_access_days' => (int) PaymentSetting::get('unlock_early_access_days', 0),
                 'sandbox' => app(\App\Services\ChapterUnlockService::class)->sandbox(),
                 // False outside local, so the modal can say the switch is inert
@@ -330,7 +331,9 @@ class SeriesController extends Controller
             'challenge_daily_limit' => 'required|integer|min:0|max:100',
             // 0 disables rotation, which is why the floor is 0 rather than 1.
             'challenge_rotate_after' => 'required|integer|min:0|max:100',
-            'challenge_ip_daily_limit' => 'required|integer|min:0|max:100',
+            'challenge_ip_limit_mode' => 'required|in:'.implode(',', \App\Services\ChapterUnlockService::IP_LIMIT_MODES),
+            // Only read in custom mode, where a cap of 0 would just be "off".
+            'challenge_ip_daily_limit' => 'required|integer|max:100|min:'.($request->input('challenge_ip_limit_mode') === 'custom' ? 1 : 0),
             // 0 turns early access off, which is why the floor is 0.
             'challenge_early_access_days' => 'required|integer|min:0|max:365',
             'challenge_sandbox' => 'required|boolean',
@@ -343,7 +346,8 @@ class SeriesController extends Controller
         PaymentSetting::set('unlock_challenge_days', $validated['challenge_days'], 'integer', 'How many days challenge-earned access lasts');
         PaymentSetting::set('unlock_challenge_daily_limit', $validated['challenge_daily_limit'], 'integer', 'Free unlocks a reader may earn per day (0 = unlimited)');
         PaymentSetting::set('unlock_rotate_after', $validated['challenge_rotate_after'], 'integer', 'Grants a claim token may serve before it is retired (0 = never rotate)');
-        PaymentSetting::set('unlock_ip_daily_limit', $validated['challenge_ip_daily_limit'], 'integer', 'Free unlocks one IP address may earn per day across all accounts (0 = off)');
+        PaymentSetting::set('unlock_ip_limit_mode', $validated['challenge_ip_limit_mode'], 'string', 'Per-IP daily cap on free unlocks: off, rotation (one per network in rotation) or custom');
+        PaymentSetting::set('unlock_ip_daily_limit', $validated['challenge_ip_daily_limit'], 'integer', 'Free unlocks one IP address may earn per day across all accounts, in custom mode');
         PaymentSetting::set('unlock_early_access_days', $validated['challenge_early_access_days'], 'integer', 'Days a premium chapter stays members-only before the free unlock opens (0 = off)');
         PaymentSetting::set('unlock_challenge_sandbox', $validated['challenge_sandbox'] ? 1 : 0, 'boolean', 'Bypass Move2Link with a local stand-in gate — testing only');
         PaymentSetting::set('unlock_shortlink_rotation', implode(',', $validated['challenge_rotation']), 'string', 'Shortlink networks the free unlock rotates through, best-paying first');

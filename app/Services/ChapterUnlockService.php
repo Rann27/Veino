@@ -341,18 +341,42 @@ class ChapterUnlockService
         return $map;
     }
 
+    public const IP_LIMIT_MODES = ['off', 'rotation', 'custom'];
+
+    /**
+     * How the per-address cap is set: off, matched to the rotation, or a
+     * fixed number. Settings saved before the modes existed only held the
+     * number, so a positive one there reads as custom.
+     */
+    public function ipLimitMode(): string
+    {
+        $mode = (string) PaymentSetting::get('unlock_ip_limit_mode', '');
+
+        if (in_array($mode, self::IP_LIMIT_MODES, true)) {
+            return $mode;
+        }
+
+        return (int) PaymentSetting::get('unlock_ip_daily_limit', 0) > 0 ? 'custom' : 'off';
+    }
+
     /**
      * Free unlocks one address may earn per day, across every account behind
-     * it. 0 turns the cap off.
+     * it. 0 means no cap.
      *
-     * Mirrors Move2Link, which pays for one view per IP per day: past that,
-     * each extra unlock from the same address hands out a premium chapter for
-     * nothing. Off by default because the cost lands on strangers too; a
-     * mobile carrier's CGNAT can put many unrelated readers behind one address.
+     * Every network pays for one view per IP per day, so with N networks in
+     * rotation an address earns N paid views a day and each unlock past that
+     * hands out a premium chapter for nothing: "rotation" caps it right there
+     * and follows the rotation as networks are added or dropped. Off by
+     * default because the cost lands on strangers too; a mobile carrier's
+     * CGNAT can put many unrelated readers behind one address.
      */
     public function ipDailyLimit(): int
     {
-        return max(0, (int) PaymentSetting::get('unlock_ip_daily_limit', 0));
+        return match ($this->ipLimitMode()) {
+            'rotation' => count($this->rotation()),
+            'custom' => max(0, (int) PaymentSetting::get('unlock_ip_daily_limit', 0)),
+            default => 0,
+        };
     }
 
     public function reachedIpDailyLimit(?string $ip): bool
