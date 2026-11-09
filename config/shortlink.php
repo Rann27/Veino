@@ -15,7 +15,9 @@
  *   referer_hosts  hosts a reader may come back from. null skips the check,
  *                  for gates that hop through blogs whose domains change. A missing referer is
  *                  always accepted (shorteners often strip it); a present one
- *                  from anywhere else is refused. An entry with a dot matches
+ *                  from anywhere else is let through but recorded in the
+ *                  monitor (referer_host), since the per-run claim code is
+ *                  what actually proves the gate was passed. An entry with a dot matches
  *                  that host or any subdomain of it; one without a dot matches
  *                  any host containing it (how the Move2Link check always
  *                  worked).

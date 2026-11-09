@@ -174,7 +174,7 @@ class ChapterUnlockController extends Controller
                 'chapter' => $chapter,
                 'series' => $series,
                 'days' => $this->unlock->accessDays(),
-                'claimUrl' => route('chapters.unlock.claim', array_filter(['token' => $chapter->unlock_token, 'run' => request()->query('run')])),
+                'claimUrl' => route('chapters.unlock.claim', array_filter(['token' => $chapter->unlock_token, 'run' => is_string(request()->query('run')) ? request()->query('run') : null])),
                 'cancelUrl' => route('chapters.show', [$series->slug, $chapter->chapter_link]),
             ])
             // Never let a proxy keep a copy of a test-only page.
@@ -275,7 +275,8 @@ class ChapterUnlockController extends Controller
             $chapter,
             $request->headers->get('referer'),
             $request->getHost(),
-            $request->query('run'),
+            // ?run[]=x would arrive as an array; anything but a string is no code.
+            is_string($request->query('run')) ? $request->query('run') : null,
         ) + [3 => null];
 
         if (! $ok) {
