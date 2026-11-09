@@ -912,31 +912,15 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                   </p>
                 </div>
 
-                {/* Link rotation — off by default */}
+                {/* Every run gets its own claim link, which replaces "Retire claim
+                    link after": the value is still sent (unchanged) so older
+                    settings validation keeps passing, but nothing uses it. */}
                 <div className="mt-4 pt-3" style={{ borderTop: `1px dashed ${border}` }}>
-                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>
-                    Retire claim link after (unlocks)
-                  </label>
-                  <input type="number" min={0} max={100} required
-                    value={settingsForm.data.challenge_rotate_after}
-                    onChange={e => settingsForm.setData('challenge_rotate_after', e.target.value)}
-                    className="block w-full px-3 py-2 rounded-xl outline-none transition text-center font-semibold"
-                    style={{ backgroundColor: cardBg, color: fg, border: `1px solid ${border}` }}
-                    onFocus={e => { e.currentTarget.style.borderColor = accent; }}
-                    onBlur={e => { e.currentTarget.style.borderColor = border; }}
-                  />
-                  {settingsForm.errors.challenge_rotate_after && (
-                    <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_rotate_after}</p>
-                  )}
-                  <p className="text-xs mt-2 opacity-60" style={{ color: fg }}>
-                    {settingsForm.data.challenge_rotate_after === '0'
-                      ? 'Off — a chapter keeps one claim link forever. Anyone who saves that link from the ad gate can reuse it without watching another ad.'
-                      : settingsForm.data.challenge_rotate_after === '1'
-                        ? 'Tightest setting: every unlock retires the link, so a saved one never works twice. Costs one shortlink API call per unlock.'
-                        : `After ${settingsForm.data.challenge_rotate_after} unlocks the link is replaced. A saved link works at most ${Number(settingsForm.data.challenge_rotate_after) - 1} more time before it dies. Fewer API calls than 1, less airtight.`}
-                  </p>
-                  <p className="text-xs mt-1 opacity-60" style={{ color: fg }}>
-                    Readers already walking through the gate keep working for 30 minutes after a swap, so nobody loses an ad they sat through.
+                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>One-time claim links</label>
+                  <p className="text-xs opacity-60" style={{ color: fg }}>
+                    Always on. Every unlock gets its own shortlink, whose claim URL carries a code the reader only sees at the end of the gate.
+                    A saved or shared claim URL never works twice, so the old &quot;Retire claim link after&quot; setting is no longer needed.
+                    Costs one API call per unlock.
                   </p>
                 </div>
 

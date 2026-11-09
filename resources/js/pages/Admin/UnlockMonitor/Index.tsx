@@ -39,6 +39,7 @@ const OUTCOME_LABEL: Record<string, string> = {
     ip_limit: 'IP daily limit',
     fraud_hold: 'Fraud hold',
     early_access: 'Early access',
+    bad_run: 'Wrong run code',
     started: 'Started',
 };
 
@@ -54,6 +55,7 @@ const OUTCOME_COLOR: Record<string, string> = {
     ip_limit: '#0ea5e9',
     fraud_hold: '#b91c1c',
     early_access: '#fab219',
+    bad_run: '#dc2626',
     started: '#64748b',
 };
 

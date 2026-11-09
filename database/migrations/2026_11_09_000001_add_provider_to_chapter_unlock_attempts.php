@@ -17,6 +17,9 @@ return new class extends Migration
     {
         Schema::table('chapter_unlock_attempts', function (Blueprint $table) {
             $table->string('provider', 20)->nullable()->after('source');
+            // A referer from outside the network's known hosts. Recorded,
+            // not refused: see ChapterUnlockService::consumeChallenge().
+            $table->string('referer_host', 100)->nullable()->after('provider');
             $table->index(['provider', 'created_at']);
         });
     }
@@ -25,7 +28,7 @@ return new class extends Migration
     {
         Schema::table('chapter_unlock_attempts', function (Blueprint $table) {
             $table->dropIndex(['provider', 'created_at']);
-            $table->dropColumn('provider');
+            $table->dropColumn(['provider', 'referer_host']);
         });
     }
 };

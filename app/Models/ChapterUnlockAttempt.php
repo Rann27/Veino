@@ -16,7 +16,7 @@ class ChapterUnlockAttempt extends Model
     public const UPDATED_AT = null;
 
     protected $fillable = [
-        'user_id', 'chapter_id', 'outcome', 'elapsed_seconds', 'source', 'provider', 'ip', 'created_at',
+        'user_id', 'chapter_id', 'outcome', 'elapsed_seconds', 'source', 'provider', 'referer_host', 'ip', 'created_at',
     ];
 
     protected $casts = [
@@ -28,7 +28,7 @@ class ChapterUnlockAttempt extends Model
      * Outcomes of a *claim*. 'started' is deliberately absent: it records a
      * button press, not a verdict, and mixing it in would inflate every rate.
      */
-    public const OUTCOMES = ['granted', 'too_fast', 'bad_referer', 'not_started', 'daily_limit', 'throttled', 'expired_token', 'disabled', 'ip_limit', 'fraud_hold', 'early_access'];
+    public const OUTCOMES = ['granted', 'too_fast', 'bad_referer', 'not_started', 'daily_limit', 'throttled', 'expired_token', 'disabled', 'ip_limit', 'fraud_hold', 'early_access', 'bad_run'];
 
     /** Logged when the reader sets off, before any verdict exists. */
     public const STARTED = 'started';

@@ -93,32 +93,49 @@ class ChapterUnlockController extends Controller
         // its own (pressing the button again must not switch gates); a new
         // one takes the next network in rotation for this address, so each
         // of a reader's unlocks today is a view a different network pays for.
-        $pending = $this->unlock->pendingProvider($user, $chapter);
-        $provider = $pending ?? $this->unlock->providerForRun($request->ip());
-        $shortlink = $this->unlock->challengeUrlFor($chapter, $provider);
+        $pending = $this->unlock->pendingRun($user, $chapter);
 
-        // A network down or rate limited should not cost the reader their
-        // unlock: a new run moves on to the next network that answers.
-        if (! $shortlink && ! $pending) {
+        // A run already under way: same gate, same link, no new API call.
+        if ($pending && $pending['link']) {
+            return response()->json([
+                'shortlink' => $pending['link'],
+                'sandbox' => $this->unlock->sandbox(),
+            ]);
+        }
+
+        // A new run: the next network in rotation for this address, with a
+        // link made for this run alone. A network down or rate limited
+        // should not cost the reader their unlock, so the next one answers.
+        $provider = $this->unlock->providerForRun($request->ip());
+        $made = $this->unlock->oneTimeLink($chapter, $provider);
+
+        if (! $made) {
             foreach ($this->unlock->rotation() as $next) {
                 if ($next->name() === $provider->name()) {
                     continue;
                 }
-                if ($shortlink = $this->unlock->challengeUrlFor($chapter, $next)) {
+                if ($made = $this->unlock->oneTimeLink($chapter, $next)) {
                     $provider = $next;
                     break;
                 }
             }
         }
 
-        if (! $shortlink) {
+        if (! $made) {
             return response()->json([
                 'message' => $this->unlock->lastError()
                     ?? 'Could not prepare the challenge link. Please try again in a moment.',
             ], 503);
         }
 
-        $fresh = $this->unlock->startChallenge($user, $chapter, $provider);
+        [$shortlink, $run] = $made;
+        $fresh = $this->unlock->startChallenge($user, $chapter, $provider, $run, $shortlink);
+
+        // Lost a race with a second press of the button: that run is the one
+        // on record, so send its link rather than this one.
+        if (! $fresh && ($winner = $this->unlock->pendingRun($user, $chapter)) && $winner['link']) {
+            $shortlink = $winner['link'];
+        }
 
         // Logged here too, not only on the way back. Without a row at the start
         // a reader who presses the button and wanders off leaves no trace at
@@ -157,7 +174,7 @@ class ChapterUnlockController extends Controller
                 'chapter' => $chapter,
                 'series' => $series,
                 'days' => $this->unlock->accessDays(),
-                'claimUrl' => route('chapters.unlock.claim', $chapter->unlock_token),
+                'claimUrl' => route('chapters.unlock.claim', array_filter(['token' => $chapter->unlock_token, 'run' => request()->query('run')])),
                 'cancelUrl' => route('chapters.show', [$series->slug, $chapter->chapter_link]),
             ])
             // Never let a proxy keep a copy of a test-only page.
@@ -253,12 +270,13 @@ class ChapterUnlockController extends Controller
         // Read before consuming: the pending record goes once it is spent.
         $runProvider = $this->unlock->pendingProvider($user, $chapter)?->name();
 
-        [$ok, $reason, $elapsed] = $this->unlock->consumeChallenge(
+        [$ok, $reason, $elapsed, $foreignReferer] = $this->unlock->consumeChallenge(
             $user,
             $chapter,
             $request->headers->get('referer'),
             $request->getHost(),
-        );
+            $request->query('run'),
+        ) + [3 => null];
 
         if (! $ok) {
             // The real reason goes to the log, never to the reader. Distinct
@@ -271,7 +289,7 @@ class ChapterUnlockController extends Controller
         }
 
         $this->unlock->grant($user, $chapter);
-        $this->log($request, $user->id, $chapter->id, 'granted', $elapsed, $runProvider);
+        $this->log($request, $user->id, $chapter->id, 'granted', $elapsed, $runProvider, $foreignReferer);
 
         return redirect()->to($chapterUrl.'?unlocked=1');
     }
@@ -301,7 +319,7 @@ class ChapterUnlockController extends Controller
      * Never allowed to break the claim: an audit row failing to write must not
      * cost a reader the access they just earned.
      */
-    private function log(Request $request, ?int $userId, ?int $chapterId, string $outcome, ?int $elapsed = null, ?string $provider = null): void
+    private function log(Request $request, ?int $userId, ?int $chapterId, string $outcome, ?int $elapsed = null, ?string $provider = null, ?string $foreignReferer = null): void
     {
         try {
             ChapterUnlockAttempt::create([
@@ -311,6 +329,9 @@ class ChapterUnlockController extends Controller
                 'elapsed_seconds' => $elapsed,
                 'source' => $this->unlock->sandbox() ? 'sandbox' : 'shortlink',
                 'provider' => $provider,
+                // Only set when the reader came back from a host outside the
+                // network's list: recorded for the monitor, never refused.
+                'referer_host' => $foreignReferer ? mb_substr($foreignReferer, 0, 100) : null,
                 'ip' => $request->ip(),
                 'created_at' => now(),
             ]);

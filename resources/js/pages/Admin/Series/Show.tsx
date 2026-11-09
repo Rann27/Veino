@@ -421,32 +421,6 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
     }
   };
 
-  // Normally the link is minted the first time a reader presses the challenge
-  // button. This is the manual path, for preparing a chapter before release.
-  const [generatingLink, setGeneratingLink] = useState<number | null>(null);
-
-  const handleGenerateUnlockLink = (chapterId: number, regenerate = false) => {
-    // Regenerating replaces a link readers may already be using, so it asks
-    // first; a first-time generation has nothing to lose and does not.
-    if (regenerate && !confirm('Replace this shortlink? The old one stops working once the shortener issues the new one.')) {
-      return;
-    }
-
-    setGeneratingLink(chapterId);
-    router.post(`/admin/chapters/${chapterId}/unlock-link`, {}, {
-      preserveScroll: true,
-      onSuccess: () => {
-        setAlertMessage({ type: 'success', message: regenerate ? 'Shortlink replaced.' : 'Shortlink generated.' });
-        setTimeout(() => setAlertMessage(null), 3000);
-      },
-      onError: () => {
-        setAlertMessage({ type: 'error', message: 'Could not generate the shortlink. Check the shortlink provider token in .env.' });
-        setTimeout(() => setAlertMessage(null), 5000);
-      },
-      onFinish: () => setGeneratingLink(null),
-    });
-  };
-
   const handleTogglePremium = (chapterId: number, newPremiumStatus: boolean) => {
     router.patch(`/admin/chapters/${chapterId}/toggle-premium`, {
       is_premium: newPremiumStatus
@@ -748,46 +722,12 @@ function SeriesShowContent({ series, ebookSeriesOptions: initialEbookSeriesOptio
                       </button>
                     </div>
 
-                    {/* Free-access shortlink. Only premium chapters have a
-                        paywall to bypass, so only they need one. */}
+                    {/* Free unlock: links are now made per reader, per run, so
+                        there is nothing to prepare here. */}
                     {chapter.is_premium && (
-                      <div className="px-3 pb-3">
-                        {chapter.unlock_shortlink ? (
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className="inline-flex items-center gap-1.5 text-[11px] font-medium"
-                              style={{ color: '#1baf7a' }}
-                              title={chapter.unlock_shortlink}
-                            >
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1baf7a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                              Shortlink ready
-                            </span>
-                            {/* A link already minted can still be wrong — one made
-                                from a staging host points at a domain that will
-                                stop existing. This mints a fresh one. */}
-                            <button
-                              onClick={() => handleGenerateUnlockLink(chapter.id, true)}
-                              disabled={generatingLink === chapter.id}
-                              className="px-2 py-1 rounded-md text-[11px] font-semibold transition-opacity hover:opacity-80 disabled:opacity-50 shrink-0"
-                              style={{ backgroundColor: wa(fg, 0.06), color: fg, border: `1px solid ${wa(fg, 0.12)}` }}
-                              title={`Replace this shortlink:
-${chapter.unlock_shortlink}`}
-                            >
-                              {generatingLink === chapter.id ? 'Working…' : 'Regenerate'}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => handleGenerateUnlockLink(chapter.id)}
-                            disabled={generatingLink === chapter.id}
-                            className="w-full py-1.5 rounded-lg text-[11px] font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-                            style={{ backgroundColor: wa(fg, 0.06), color: fg, border: `1px solid ${wa(fg, 0.12)}` }}
-                          >
-                            {generatingLink === chapter.id ? 'Generating…' : 'Generate Shortlink'}
-                          </button>
-                        )}
+                      <div className="px-3 pb-3 text-[11px]" style={{ color: wa(fg, 0.45) }}
+                        title="Each reader's free unlock gets its own one-time shortlink when they press the button.">
+                        Free unlock: one-time link per reader
                       </div>
                     )}
                   </div>

@@ -673,6 +673,66 @@ class ChapterUnlockService
 
     // ─── Pending challenge ───────────────────────────────────────────────────
 
+    /**
+     * A shortlink made for one run only.
+     *
+     * The claim URL behind it carries a random code for this run, stored with
+     * the run and checked on the claim. The reader only learns the code at
+     * the end of the gate, so starting a run and opening the claim URL
+     * directly (with a URL saved from before, or shared by someone) gets
+     * nothing: every run's URL is different and dies with the run. This is
+     * what makes the timing floor a second line rather than the only one.
+     *
+     * One API call per run, which at the free unlock's volume is far inside
+     * every network's rate limit.
+     *
+     * @return array{0: string, 1: string}|null the shortlink and the run code
+     */
+    public function oneTimeLink(Chapter $chapter, ShortlinkProvider $provider): ?array
+    {
+        $this->ensureToken($chapter);
+        $this->lastProvider = $provider;
+        $run = Str::lower(Str::random(24));
+
+        if ($this->sandbox()) {
+            return [route('chapters.unlock.sandbox', ['token' => $chapter->unlock_token, 'run' => $run]), $run];
+        }
+
+        // Pinned to APP_URL, like the shared links were: the destination must
+        // be the site the reader is on, not whatever host made the request.
+        $claimUrl = rtrim((string) config('app.url'), '/')
+            .route('chapters.unlock.claim', $chapter->unlock_token, false)
+            .'?run='.$run;
+
+        $series = $chapter->series;
+        $link = $provider->createLink(
+            $claimUrl,
+            $series ? Str::limit($series->title.' — '.($chapter->title ?: 'Chapter '.$chapter->chapter_number), 250, '') : null
+        );
+
+        return $link ? [$link, $run] : null;
+    }
+
+    /**
+     * The run this reader has under way for this chapter: its network, code
+     * and link. Null when there is none.
+     *
+     * @return array{at: int, provider: ?string, run: ?string, link: ?string}|null
+     */
+    public function pendingRun(User $user, Chapter $chapter): ?array
+    {
+        $pending = Cache::get($this->pendingKey($user->id, $chapter->id));
+
+        if ($pending === null) {
+            return null;
+        }
+
+        // Runs started before one-time links hold a bare timestamp.
+        return is_array($pending)
+            ? ['at' => (int) ($pending['at'] ?? 0), 'provider' => $pending['provider'] ?? null, 'run' => $pending['run'] ?? null, 'link' => $pending['link'] ?? null]
+            : ['at' => (int) $pending, 'provider' => null, 'run' => null, 'link' => null];
+    }
+
     private function pendingKey(int $userId, int $chapterId): string
     {
         return "unlock:pending:{$userId}:{$chapterId}";
@@ -702,14 +762,19 @@ class ChapterUnlockService
      * @return bool true when this press began a new run, false when one was
      *              already under way
      */
-    public function startChallenge(User $user, Chapter $chapter, ?ShortlinkProvider $provider = null): bool
+    public function startChallenge(User $user, Chapter $chapter, ?ShortlinkProvider $provider = null, ?string $run = null, ?string $link = null): bool
     {
         // The network is kept with the start time: the claim is checked
         // against that network's timing floor and referers, whichever one
         // the rotation would pick by the time the reader comes back.
         return Cache::add(
             $this->pendingKey($user->id, $chapter->id),
-            ['at' => now()->timestamp, 'provider' => ($provider ?? $this->provider())->name()],
+            [
+                'at' => now()->timestamp,
+                'provider' => ($provider ?? $this->provider())->name(),
+                'run' => $run,
+                'link' => $link,
+            ],
             now()->addMinutes(self::PENDING_TTL_MINUTES)
         );
     }
@@ -740,12 +805,13 @@ class ChapterUnlockService
      *
      * @return array{0: bool, 1: string, 2: ?int} success, reason, elapsed seconds
      */
-    public function consumeChallenge(User $user, Chapter $chapter, ?string $referer, ?string $currentHost = null): array
+    public function consumeChallenge(User $user, Chapter $chapter, ?string $referer, ?string $currentHost = null, ?string $run = null): array
     {
         $key = $this->pendingKey($user->id, $chapter->id);
         $pending = Cache::get($key);
         $provider = is_array($pending) ? $this->providerNamed($pending['provider'] ?? null) : $this->provider();
         $startedAt = is_array($pending) ? ($pending['at'] ?? null) : $pending;
+        $expectedRun = is_array($pending) ? ($pending['run'] ?? null) : null;
 
         if ($startedAt === null) {
             return [false, 'not_started', null];
@@ -754,6 +820,13 @@ class ChapterUnlockService
         Cache::forget($key);
 
         $elapsed = max(0, now()->timestamp - (int) $startedAt);
+
+        // The run's own code, only learnt at the end of its gate. A run from
+        // before one-time links has none to compare and is let through on the
+        // other checks.
+        if ($expectedRun !== null && ! hash_equals($expectedRun, (string) $run)) {
+            return [false, 'bad_run', $elapsed];
+        }
 
         // The stand-in gate has no real countdown to sit through, so holding
         // sandbox to the live threshold would just mean waiting 45 seconds for
@@ -786,8 +859,12 @@ class ChapterUnlockService
             $matchesOwnHost = in_array($host, $allowed, true)
                 || collect($allowed)->contains(fn ($own) => $own !== '' && str_ends_with($host, '.'.$own));
 
+            // Recorded, no longer refused. With a code per run the referer
+            // proves nothing the code does not, and networks forward readers
+            // through domains nobody can list in advance; refusing on it only
+            // ever turned away honest readers. The monitor still shows it.
             if (! $this->fromProvider($host, $provider) && ! $matchesOwnHost) {
-                return [false, 'bad_referer', $elapsed];
+                return [true, 'ok', $elapsed, $host];
             }
         }
 
