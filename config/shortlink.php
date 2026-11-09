@@ -48,9 +48,8 @@ return [
             'referer_hosts' => ['move2link'],
         ],
         'shrinkearn' => [
-            // The gate is a 15-second countdown plus a captcha. Starts just
-            // under the countdown; raise it once real runs show the floor.
-            'min_seconds' => (int) env('SHRINKEARN_MIN_SECONDS', 12),
+            // 15-second countdown plus a captcha and an ad page.
+            'min_seconds' => (int) env('SHRINKEARN_MIN_SECONDS', 25),
             'referer_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env(
                 'SHRINKEARN_REFERER_HOSTS',
                 'srnky.com,shrinkearn.com,shrinkbixby.com,shrinke.me'
@@ -61,7 +60,7 @@ return [
             'token' => env('SHRTFLY_TOKEN'),
             'endpoint' => env('SHRTFLY_ENDPOINT', 'https://shrtfly.com/api'),
             'query' => ['type' => 1], // mainstream ads only
-            'min_seconds' => (int) env('SHRTFLY_MIN_SECONDS', 10),
+            'min_seconds' => (int) env('SHRTFLY_MIN_SECONDS', 45),
             'referer_hosts' => ['shrtslug.biz', 'shrtfly.com', 'stfly.me'],
         ],
         'safelinku' => [
@@ -69,7 +68,7 @@ return [
             'token' => env('SAFELINKU_TOKEN'),
             'endpoint' => env('SAFELINKU_ENDPOINT', 'https://safelinku.com/api/v1/links'),
             'link_path' => 'url',
-            'min_seconds' => (int) env('SAFELINKU_MIN_SECONDS', 15),
+            'min_seconds' => (int) env('SAFELINKU_MIN_SECONDS', 25),
             // The blog domains it hops through change; checking them would
             // refuse honest readers. The timing floor and single-use claim
             // still apply.
@@ -81,7 +80,7 @@ return [
             'endpoint' => env('NEXOLINK_ENDPOINT', 'https://nexolink.cc/api/v1/links'),
             'link_path' => 'data.short_url',
             'send_title' => true,
-            'min_seconds' => (int) env('NEXOLINK_MIN_SECONDS', 10),
+            'min_seconds' => (int) env('NEXOLINK_MIN_SECONDS', 45),
             'referer_hosts' => ['nxlnk.cc', 'nexolink.cc', 'gtechupdate.com'],
         ],
     ],
