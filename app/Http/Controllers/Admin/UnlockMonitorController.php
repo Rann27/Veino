@@ -91,8 +91,59 @@ class UnlockMonitorController extends Controller
             'buckets' => $this->buckets($timings),
             'topUsers' => $this->topUsers($since),
             'topChapters' => $this->topChapters($since),
+            'byProvider' => $this->byProvider($since, $unlock),
             'recent' => $this->recent($since),
         ]);
+    }
+
+    /**
+     * One row per shortlink network: how far readers get through each gate,
+     * and how long an honest run takes there. The fastest granted time is
+     * what the network's timing floor (config/shortlink.php) is tuned from.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function byProvider(\DateTimeInterface $since, ChapterUnlockService $unlock): array
+    {
+        $rows = ChapterUnlockAttempt::where('created_at', '>=', $since)
+            ->whereNotNull('provider')
+            ->select('provider', 'outcome', DB::raw('COUNT(*) as n'))
+            ->groupBy('provider', 'outcome')
+            ->get()
+            ->groupBy('provider');
+
+        $times = ChapterUnlockAttempt::where('created_at', '>=', $since)
+            ->whereNotNull('provider')
+            ->where('outcome', 'granted')
+            ->whereNotNull('elapsed_seconds')
+            ->orderBy('elapsed_seconds')
+            ->get(['provider', 'elapsed_seconds'])
+            ->groupBy('provider');
+
+        $inRotation = collect($unlock->rotation())->map->name()->all();
+
+        return collect($unlock->providers())
+            ->map(function ($p) use ($rows, $times, $inRotation, $unlock) {
+                $counts = ($rows[$p->name()] ?? collect())->pluck('n', 'outcome');
+                $t = ($times[$p->name()] ?? collect())->pluck('elapsed_seconds')->values();
+                $started = (int) ($counts[ChapterUnlockAttempt::STARTED] ?? 0);
+                $granted = (int) ($counts['granted'] ?? 0);
+
+                return [
+                    'name' => $p->name(),
+                    'label' => $p->label(),
+                    'position' => ($i = array_search($p->name(), $inRotation, true)) === false ? null : $i + 1,
+                    'started' => $started,
+                    'granted' => $granted,
+                    'refused' => (int) $counts->except([ChapterUnlockAttempt::STARTED, 'granted'])->sum(),
+                    'fastest' => $t->first(),
+                    'median' => $t->isEmpty() ? null : (int) $t[intdiv($t->count(), 2)],
+                    'floor' => $unlock->minChallengeSeconds($p),
+                ];
+            })
+            ->sortBy(fn ($r) => $r['position'] ?? 99)
+            ->values()
+            ->all();
     }
 
     /**
@@ -210,6 +261,7 @@ class UnlockMonitorController extends Controller
                 'outcome' => $a->outcome,
                 'elapsed' => $a->elapsed_seconds,
                 'source' => $a->source,
+                'provider' => $a->provider,
                 'ip' => $a->ip,
                 'at' => $a->created_at?->toIso8601String(),
                 'user' => $a->user?->display_name ?? '—',

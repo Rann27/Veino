@@ -150,8 +150,16 @@ class SeriesController extends Controller
                 // The shortener the challenge runs through, and the ones on
                 // offer (with whether each has its API token in .env).
                 'provider' => app(\App\Services\ChapterUnlockService::class)->provider()->name(),
+                // Networks in rotation, in order, and every network on offer
+                // (with whether its token is in .env and its timing floor).
+                'rotation' => collect(app(\App\Services\ChapterUnlockService::class)->rotation())->map->name()->values()->all(),
                 'providers' => collect(app(\App\Services\ChapterUnlockService::class)->providers())
-                    ->map(fn ($p) => ['name' => $p->name(), 'label' => $p->label(), 'configured' => $p->configured()])
+                    ->map(fn ($p) => [
+                        'name' => $p->name(),
+                        'label' => $p->label(),
+                        'configured' => $p->configured(),
+                        'min_seconds' => app(\App\Services\ChapterUnlockService::class)->minChallengeSeconds($p),
+                    ])
                     ->values()->all(),
                 'min_seconds' => app(\App\Services\ChapterUnlockService::class)->minChallengeSeconds(),
             ],
@@ -326,7 +334,8 @@ class SeriesController extends Controller
             // 0 turns early access off, which is why the floor is 0.
             'challenge_early_access_days' => 'required|integer|min:0|max:365',
             'challenge_sandbox' => 'required|boolean',
-            'challenge_provider' => 'required|in:'.implode(',', array_keys(app(\App\Services\ChapterUnlockService::class)->providers())),
+            'challenge_rotation' => 'required|array|min:1|max:10',
+            'challenge_rotation.*' => 'distinct|in:'.implode(',', array_keys(app(\App\Services\ChapterUnlockService::class)->providers())),
         ]);
 
         PaymentSetting::set('premium_chapter_price', $validated['price'], 'integer', 'Global coin price for unlocking a premium chapter');
@@ -337,7 +346,7 @@ class SeriesController extends Controller
         PaymentSetting::set('unlock_ip_daily_limit', $validated['challenge_ip_daily_limit'], 'integer', 'Free unlocks one IP address may earn per day across all accounts (0 = off)');
         PaymentSetting::set('unlock_early_access_days', $validated['challenge_early_access_days'], 'integer', 'Days a premium chapter stays members-only before the free unlock opens (0 = off)');
         PaymentSetting::set('unlock_challenge_sandbox', $validated['challenge_sandbox'] ? 1 : 0, 'boolean', 'Bypass Move2Link with a local stand-in gate — testing only');
-        PaymentSetting::set('unlock_shortlink_provider', $validated['challenge_provider'], 'string', 'Shortlink provider the free-unlock challenge runs through');
+        PaymentSetting::set('unlock_shortlink_rotation', implode(',', $validated['challenge_rotation']), 'string', 'Shortlink networks the free unlock rotates through, best-paying first');
 
         return back()->with('success', $validated['challenge_sandbox']
             ? 'Settings saved. Sandbox is ON — readers can unlock without seeing an ad.'

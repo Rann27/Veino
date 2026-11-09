@@ -39,7 +39,8 @@ interface SeriesIndexProps {
     sandbox_allowed: boolean;
     token_configured: boolean;
     provider: string;
-    providers: { name: string; label: string; configured: boolean }[];
+    rotation: string[];
+    providers: { name: string; label: string; configured: boolean; min_seconds: number }[];
     min_seconds: number;
   };
 }
@@ -504,7 +505,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
     challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
     challenge_early_access_days: String(unlockChallenge.early_access_days),
     challenge_sandbox: unlockChallenge.sandbox,
-    challenge_provider: unlockChallenge.provider,
+    challenge_rotation: unlockChallenge.rotation,
   });
 
   // Request ID — prevents stale responses from overwriting newer results
@@ -604,7 +605,7 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                 challenge_ip_daily_limit: String(unlockChallenge.ip_daily_limit),
                 challenge_early_access_days: String(unlockChallenge.early_access_days),
                 challenge_sandbox: unlockChallenge.sandbox,
-                challenge_provider: unlockChallenge.provider,
+                challenge_rotation: unlockChallenge.rotation,
               });
               setShowSettingsModal(true);
             }}
@@ -800,41 +801,60 @@ function SeriesIndexContent({ series: initialSeries, currentPage, hasMore, searc
                   </button>
                 </div>
 
-                {/* Which shortener the challenge runs through. Each keeps its own
-                    links, so switching back and forth loses nothing. */}
+                {/* Networks the challenge rotates through. Each pays for one view
+                    per IP per day, so a reader's 1st unlock of the day goes through
+                    #1, the 2nd through #2, and so on. */}
                 <div className="mt-3">
-                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>Shortlink provider</label>
-                  <div className="flex gap-1 p-1 rounded-xl" style={{ backgroundColor: cardBg, border: `1px solid ${border}` }}>
-                    {unlockChallenge.providers.map(p => {
-                      const active = settingsForm.data.challenge_provider === p.name;
-                      return (
-                        <button key={p.name} type="button"
-                          onClick={() => settingsForm.setData('challenge_provider', p.name)}
-                          className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                          style={{ backgroundColor: active ? accent : 'transparent', color: active ? bg : fg, opacity: p.configured ? 1 : 0.6 }}
-                          title={p.configured ? undefined : 'API token missing in .env'}>
-                          {p.label}{!p.configured && ' ⚠'}
-                        </button>
-                      );
-                    })}
+                  <label className="block text-xs font-medium mb-1" style={{ color: fg }}>Shortlink rotation</label>
+                  <div className="rounded-xl overflow-hidden" style={{ backgroundColor: cardBg, border: `1px solid ${border}` }}>
+                    {(() => {
+                      const order = settingsForm.data.challenge_rotation;
+                      const rows = [
+                        ...order.map(n => unlockChallenge.providers.find(p => p.name === n)).filter(Boolean),
+                        ...unlockChallenge.providers.filter(p => !order.includes(p.name)),
+                      ] as typeof unlockChallenge.providers;
+                      const move = (name: string, dir: -1 | 1) => {
+                        const next = [...order];
+                        const i = next.indexOf(name);
+                        const j = i + dir;
+                        if (i < 0 || j < 0 || j >= next.length) return;
+                        [next[i], next[j]] = [next[j], next[i]];
+                        settingsForm.setData('challenge_rotation', next);
+                      };
+                      const toggle = (name: string) => {
+                        settingsForm.setData('challenge_rotation', order.includes(name)
+                          ? order.filter(n => n !== name)
+                          : [...order, name]);
+                      };
+                      return rows.map((p, idx) => {
+                        const pos = order.indexOf(p.name);
+                        const on = pos >= 0;
+                        return (
+                          <div key={p.name} className="flex items-center gap-2 px-3 py-2 text-xs"
+                            style={{ borderTop: idx === 0 ? 'none' : `1px solid ${border}`, opacity: on ? 1 : 0.55 }}>
+                            <input type="checkbox" checked={on} onChange={() => toggle(p.name)}
+                              disabled={on && order.length === 1} className="w-3.5 h-3.5" style={{ accentColor: accent }} />
+                            <span className="w-5 text-center font-bold" style={{ color: on ? accent : `${fg}50` }}>{on ? pos + 1 : '–'}</span>
+                            <span className="flex-1 font-semibold" style={{ color: fg }}>
+                              {p.label}
+                              {!p.configured && <span className="ml-1.5 font-medium" style={{ color: '#d03b3b' }} title="Skipped until its API token is in .env">⚠ no token</span>}
+                            </span>
+                            <span className="opacity-60" style={{ color: fg }} title="A claim faster than this is refused as a skipped gate">≥{p.min_seconds}s</span>
+                            <button type="button" disabled={!on || pos === 0} onClick={() => move(p.name, -1)}
+                              className="px-1.5 rounded disabled:opacity-25" style={{ color: fg }} aria-label={`Move ${p.label} up`}>▲</button>
+                            <button type="button" disabled={!on || pos === order.length - 1} onClick={() => move(p.name, 1)}
+                              className="px-1.5 rounded disabled:opacity-25" style={{ color: fg }} aria-label={`Move ${p.label} down`}>▼</button>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
-                  {(() => {
-                    const chosen = unlockChallenge.providers.find(p => p.name === settingsForm.data.challenge_provider);
-                    if (chosen && !chosen.configured) {
-                      return (
-                        <p className="text-xs mt-1.5 font-medium" style={{ color: '#d03b3b' }}>
-                          {chosen.name === 'shrinkearn' ? 'SHRINKEARN_TOKEN' : 'MOVE2LINK_TOKEN'} is not set in .env — the button stays hidden from readers until it is.
-                        </p>
-                      );
-                    }
-                    return (
-                      <p className="text-xs mt-1.5 opacity-60" style={{ color: fg }}>
-                        {settingsForm.data.challenge_provider === unlockChallenge.provider
-                          ? `Live. A claim faster than ${unlockChallenge.min_seconds}s is refused as a skipped gate.`
-                          : 'Takes effect when you save. Existing links of the other provider are kept.'}
-                      </p>
-                    );
-                  })()}
+                  <p className="text-xs mt-1.5 opacity-60" style={{ color: fg }}>
+                    A reader&apos;s 1st free unlock of the day goes through #1, the 2nd through #2, and so on (counted per IP, since networks pay one view per IP per day). If a network is down, the next one answers. Networks without a token are skipped.
+                  </p>
+                  {settingsForm.errors.challenge_rotation && (
+                    <p className="mt-1 text-xs text-red-500">{settingsForm.errors.challenge_rotation}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-3">

@@ -89,7 +89,27 @@ class ChapterUnlockController extends Controller
             ], 429);
         }
 
-        $shortlink = $this->unlock->challengeUrlFor($chapter);
+        // Which network this run goes through. A run already under way keeps
+        // its own (pressing the button again must not switch gates); a new
+        // one takes the next network in rotation for this address, so each
+        // of a reader's unlocks today is a view a different network pays for.
+        $pending = $this->unlock->pendingProvider($user, $chapter);
+        $provider = $pending ?? $this->unlock->providerForRun($request->ip());
+        $shortlink = $this->unlock->challengeUrlFor($chapter, $provider);
+
+        // A network down or rate limited should not cost the reader their
+        // unlock: a new run moves on to the next network that answers.
+        if (! $shortlink && ! $pending) {
+            foreach ($this->unlock->rotation() as $next) {
+                if ($next->name() === $provider->name()) {
+                    continue;
+                }
+                if ($shortlink = $this->unlock->challengeUrlFor($chapter, $next)) {
+                    $provider = $next;
+                    break;
+                }
+            }
+        }
 
         if (! $shortlink) {
             return response()->json([
@@ -98,7 +118,7 @@ class ChapterUnlockController extends Controller
             ], 503);
         }
 
-        $fresh = $this->unlock->startChallenge($user, $chapter);
+        $fresh = $this->unlock->startChallenge($user, $chapter, $provider);
 
         // Logged here too, not only on the way back. Without a row at the start
         // a reader who presses the button and wanders off leaves no trace at
@@ -110,7 +130,7 @@ class ChapterUnlockController extends Controller
         // would inflate both the start tally and the abandonment figure derived
         // from it.
         if ($fresh) {
-            $this->log($request, $user->id, $chapter->id, 'started');
+            $this->log($request, $user->id, $chapter->id, 'started', null, $provider->name());
         }
 
         return response()->json([
@@ -230,6 +250,9 @@ class ChapterUnlockController extends Controller
             return redirect()->to($chapterUrl)->with('error', self::REFUSAL_MESSAGE);
         }
 
+        // Read before consuming: the pending record goes once it is spent.
+        $runProvider = $this->unlock->pendingProvider($user, $chapter)?->name();
+
         [$ok, $reason, $elapsed] = $this->unlock->consumeChallenge(
             $user,
             $chapter,
@@ -242,13 +265,13 @@ class ChapterUnlockController extends Controller
             // wording per failure told anyone testing the boundaries exactly
             // which rule they had tripped, which is the one thing that makes
             // the rules cheap to map.
-            $this->log($request, $user->id, $chapter->id, $reason, $elapsed);
+            $this->log($request, $user->id, $chapter->id, $reason, $elapsed, $runProvider);
 
             return redirect()->to($chapterUrl)->with('error', self::REFUSAL_MESSAGE);
         }
 
         $this->unlock->grant($user, $chapter);
-        $this->log($request, $user->id, $chapter->id, 'granted', $elapsed);
+        $this->log($request, $user->id, $chapter->id, 'granted', $elapsed, $runProvider);
 
         return redirect()->to($chapterUrl.'?unlocked=1');
     }
@@ -278,7 +301,7 @@ class ChapterUnlockController extends Controller
      * Never allowed to break the claim: an audit row failing to write must not
      * cost a reader the access they just earned.
      */
-    private function log(Request $request, ?int $userId, ?int $chapterId, string $outcome, ?int $elapsed = null): void
+    private function log(Request $request, ?int $userId, ?int $chapterId, string $outcome, ?int $elapsed = null, ?string $provider = null): void
     {
         try {
             ChapterUnlockAttempt::create([
@@ -287,6 +310,7 @@ class ChapterUnlockController extends Controller
                 'outcome' => $outcome,
                 'elapsed_seconds' => $elapsed,
                 'source' => $this->unlock->sandbox() ? 'sandbox' : 'shortlink',
+                'provider' => $provider,
                 'ip' => $request->ip(),
                 'created_at' => now(),
             ]);

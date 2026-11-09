@@ -15,8 +15,12 @@ interface Props {
     buckets: { label: string; count: number }[];
     topUsers: { id: number; display_name: string; email: string; attempts: number; granted: number; refused: number; fastest: number | null }[];
     topChapters: { id: number; chapter: string; url: string | null; granted: number; attempts: number; avg: number | null }[];
+    byProvider?: {
+        name: string; label: string; position: number | null; started: number; granted: number;
+        refused: number; fastest: number | null; median: number | null; floor: number;
+    }[];
     recent: {
-        id: number; outcome: string; elapsed: number | null; source: string; ip: string | null;
+        id: number; outcome: string; elapsed: number | null; source: string; provider?: string | null; ip: string | null;
         at: string | null; user: string; email: string | null; chapter: string; url: string | null;
     }[];
 }
@@ -55,7 +59,7 @@ const OUTCOME_COLOR: Record<string, string> = {
 
 const secs = (s: number | null) => (s === null || s === undefined ? '—' : `${s}s`);
 
-function UnlockMonitorContent({ filters, threshold, stats, outcomes, buckets, topUsers, topChapters, recent }: Props) {
+function UnlockMonitorContent({ filters, threshold, stats, outcomes, buckets, topUsers, topChapters, byProvider = [], recent }: Props) {
     const { currentTheme } = useTheme();
     const fg = currentTheme.foreground;
     const bg = currentTheme.background;
@@ -206,6 +210,44 @@ function UnlockMonitorContent({ filters, threshold, stats, outcomes, buckets, to
                 </div>
             </div>
 
+            {/* One row per shortlink network in the rotation. */}
+            {byProvider.length > 0 && (
+                <div style={card} className="overflow-hidden">
+                    <div className="px-5 py-4" style={{ borderBottom: `1px solid ${border}` }}>
+                        <h2 className="font-bold" style={{ color: fg }}>By network</h2>
+                        <p className="text-xs mt-1" style={{ color: muted }}>
+                            How readers fare at each gate. If a network&apos;s fastest honest run sits close to its floor,
+                            or many runs are refused as too fast, adjust that network&apos;s floor in .env.
+                        </p>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: `1px solid ${border}` }}>
+                                    {['#', 'Network', 'Started', 'Granted', 'Refused', 'Fastest', 'Median', 'Floor'].map(h => (
+                                        <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider" style={{ color: muted }}>{h}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {byProvider.map(p => (
+                                    <tr key={p.name} style={{ borderBottom: `1px solid ${border}`, opacity: p.position ? 1 : 0.5 }}>
+                                        <td className="px-4 py-3 font-bold tabular-nums" style={{ color: fg }}>{p.position ?? '–'}</td>
+                                        <td className="px-4 py-3 font-semibold" style={{ color: fg }}>{p.label}</td>
+                                        <td className="px-4 py-3 tabular-nums" style={{ color: fg }}>{p.started}</td>
+                                        <td className="px-4 py-3 tabular-nums" style={{ color: '#22c55e' }}>{p.granted}</td>
+                                        <td className="px-4 py-3 tabular-nums" style={{ color: p.refused > 0 ? '#ef4444' : muted }}>{p.refused}</td>
+                                        <td className="px-4 py-3 tabular-nums" style={{ color: fg }}>{secs(p.fastest)}</td>
+                                        <td className="px-4 py-3 tabular-nums" style={{ color: fg }}>{secs(p.median)}</td>
+                                        <td className="px-4 py-3 tabular-nums" style={{ color: muted }}>{p.floor}s</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {/* Which chapters the free route is actually being spent on. */}
             <div style={card} className="p-5">
                 <h2 className="font-bold mb-1" style={{ color: fg }}>Most unlocked chapters</h2>
@@ -258,7 +300,7 @@ function UnlockMonitorContent({ filters, threshold, stats, outcomes, buckets, to
                         <table className="w-full text-sm" style={{ borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ borderBottom: `1px solid ${border}` }}>
-                                    {['Outcome', 'Duration', 'Reader', 'Chapter', 'IP', 'When'].map(h => (
+                                    {['Outcome', 'Duration', 'Network', 'Reader', 'Chapter', 'IP', 'When'].map(h => (
                                         <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider"
                                             style={{ color: muted }}>{h}</th>
                                     ))}
@@ -279,6 +321,9 @@ function UnlockMonitorContent({ filters, threshold, stats, outcomes, buckets, to
                                         <td className="px-4 py-3 tabular-nums whitespace-nowrap"
                                             style={{ color: r.elapsed !== null && r.elapsed <= threshold.suspiciousCeiling ? '#f59e0b' : fg }}>
                                             {secs(r.elapsed)}
+                                        </td>
+                                        <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: muted }}>
+                                            {byProvider.find(p => p.name === r.provider)?.label ?? r.provider ?? '—'}
                                         </td>
                                         <td className="px-4 py-3">
                                             <div style={{ color: fg }}>{r.user}</div>

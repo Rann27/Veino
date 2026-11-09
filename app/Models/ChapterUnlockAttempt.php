@@ -16,7 +16,7 @@ class ChapterUnlockAttempt extends Model
     public const UPDATED_AT = null;
 
     protected $fillable = [
-        'user_id', 'chapter_id', 'outcome', 'elapsed_seconds', 'source', 'ip', 'created_at',
+        'user_id', 'chapter_id', 'outcome', 'elapsed_seconds', 'source', 'provider', 'ip', 'created_at',
     ];
 
     protected $casts = [

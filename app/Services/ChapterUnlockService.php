@@ -8,6 +8,8 @@ use App\Models\ChapterTemporaryAccess;
 use App\Models\ChapterUnlockToken;
 use App\Models\PaymentSetting;
 use App\Models\User;
+use App\Services\Shortlinks\AdLinkFlyClient;
+use App\Services\Shortlinks\BearerJsonClient;
 use App\Services\Shortlinks\ShortlinkProvider;
 use App\Services\Shortlinks\ShrinkEarnClient;
 use Illuminate\Support\Facades\Cache;
@@ -55,36 +57,103 @@ class ChapterUnlockService
         private ShrinkEarnClient $shrinkearn,
     ) {}
 
+    /** The network asked most recently, so lastError() reports its reason. */
+    private ?ShortlinkProvider $lastProvider = null;
+
     /** Why the last shortlink attempt failed, for showing in the admin. */
     public function lastError(): ?string
     {
-        return $this->provider()->lastError();
+        return ($this->lastProvider ?? $this->provider())->lastError();
     }
 
     // ─── Provider ────────────────────────────────────────────────────────────
 
-    /** @return array<string, ShortlinkProvider> */
+    /** @var array<string, ShortlinkProvider>|null */
+    private ?array $providerCache = null;
+
+    /** Every network the free unlock knows how to use, keyed by name. */
     public function providers(): array
     {
-        return [
-            $this->move2link->name() => $this->move2link,
-            $this->shrinkearn->name() => $this->shrinkearn,
+        return $this->providerCache ??= [
+            'shrinkearn' => $this->shrinkearn,
+            'shrtfly' => new AdLinkFlyClient('shrtfly', 'ShrtFly'),
+            'safelinku' => new BearerJsonClient('safelinku', 'SafelinkU'),
+            'move2link' => $this->move2link,
+            'nexolink' => new BearerJsonClient('nexolink', 'Nexolink'),
         ];
     }
 
-    /** The live shortener: the admin's choice, else config's default. */
-    public function provider(): ShortlinkProvider
+    /**
+     * The networks in rotation, in order: the admin's list (Series
+     * Management → Settings), else config's. Networks without a token are
+     * left out, so a missing credential never sends a reader to a dead gate.
+     *
+     * @return array<int, ShortlinkProvider>
+     */
+    public function rotation(): array
     {
-        $providers = $this->providers();
-        $chosen = (string) PaymentSetting::get('unlock_shortlink_provider', config('shortlink.default', 'move2link'));
+        $saved = PaymentSetting::get('unlock_shortlink_rotation');
+        $names = $saved !== null && $saved !== ''
+            ? array_map('trim', explode(',', (string) $saved))
+            : (array) config('shortlink.rotation', []);
 
-        return $providers[$chosen] ?? $this->move2link;
+        // Settings saved before rotation existed named a single provider.
+        if (($saved === null || $saved === '') && ($single = PaymentSetting::get('unlock_shortlink_provider'))) {
+            $names = array_values(array_unique(array_merge([(string) $single], $names)));
+        }
+
+        $all = $this->providers();
+        $list = [];
+        foreach ($names as $name) {
+            if (isset($all[$name]) && $all[$name]->configured() && ! in_array($all[$name], $list, true)) {
+                $list[] = $all[$name];
+            }
+        }
+
+        return $list ?: [$this->move2link];
     }
 
-    /** Per-provider tuning from config/shortlink.php. */
-    private function providerConfig(string $key, mixed $default = null): mixed
+    /** The first network in rotation: what a reader's first unlock of the day uses. */
+    public function provider(): ShortlinkProvider
     {
-        return config("shortlink.providers.{$this->provider()->name()}.{$key}", $default);
+        return $this->rotation()[0];
+    }
+
+    public function providerNamed(?string $name): ShortlinkProvider
+    {
+        return $this->providers()[(string) $name] ?? $this->provider();
+    }
+
+    /**
+     * The network for a reader's next run.
+     *
+     * Networks pay for one view per IP per day, so the Nth unlock granted to
+     * an address today goes through the Nth network in rotation: a reader
+     * using all five of their daily unlocks earns five paid views rather than
+     * one paid and four ignored. Counted per address rather than per account
+     * because that is what the networks count, and several accounts behind
+     * one address are one visitor to them.
+     */
+    public function providerForRun(?string $ip): ShortlinkProvider
+    {
+        $rotation = $this->rotation();
+
+        $done = $ip
+            ? \App\Models\ChapterUnlockAttempt::where('ip', $ip)
+                ->where('outcome', 'granted')
+                ->where('created_at', '>=', now()->startOfDay())
+                ->count()
+            : 0;
+
+        return $rotation[$done % count($rotation)];
+    }
+
+    /** Per-network tuning from config/shortlink.php. */
+    private function providerConfig(string $key, mixed $default = null, ?ShortlinkProvider $provider = null): mixed
+    {
+        $name = ($provider ?? $this->provider())->name();
+
+        return config("shortlink.providers.{$name}.{$key}", $default);
     }
 
     // ─── Settings ────────────────────────────────────────────────────────────
@@ -316,8 +385,10 @@ class ChapterUnlockService
      * never stored — the whole point is that turning sandbox off leaves no
      * trace behind.
      */
-    public function challengeUrlFor(Chapter $chapter): ?string
+    public function challengeUrlFor(Chapter $chapter, ?ShortlinkProvider $provider = null): ?string
     {
+        $provider ??= $this->provider();
+
         if ($this->sandbox()) {
             $this->ensureToken($chapter);
 
@@ -328,9 +399,9 @@ class ChapterUnlockService
         // reader is already waiting on an API call at this point, so the cost
         // is hidden; doing it during the claim would put a Move2Link round trip
         // in front of the redirect that hands them their chapter.
-        $this->rotateIfDue($chapter);
+        $this->rotateIfDue($chapter, $provider);
 
-        return $this->shortlinkFor($chapter);
+        return $this->shortlinkFor($chapter, false, $provider);
     }
 
     /**
@@ -345,9 +416,9 @@ class ChapterUnlockService
      * column the main site serves, because that link would land readers on
      * the test subdomain.
      */
-    private function usesLegacyColumn(): bool
+    private function usesLegacyColumn(ShortlinkProvider $provider): bool
     {
-        return $this->provider()->name() === 'move2link'
+        return $provider->name() === 'move2link'
             && $this->landingHost() === strtolower((string) parse_url((string) config('shortlink.legacy_url'), PHP_URL_HOST));
     }
 
@@ -356,24 +427,28 @@ class ChapterUnlockService
         return strtolower((string) parse_url((string) config('app.url'), PHP_URL_HOST));
     }
 
-    private function storedLink(Chapter $chapter, string $token): ?string
+    private function storedLink(Chapter $chapter, string $token, ?ShortlinkProvider $provider = null): ?string
     {
-        if ($this->usesLegacyColumn()) {
+        $provider ??= $this->provider();
+
+        if ($this->usesLegacyColumn($provider)) {
             return $chapter->unlock_shortlink ?: null;
         }
 
         return DB::table('chapter_shortlinks')
             ->where('chapter_id', $chapter->id)
-            ->where('provider', $this->provider()->name())
+            ->where('provider', $provider->name())
             ->where('token', $token)
             ->where('host', $this->landingHost())
             ->value('url');
     }
 
     /** Records a link for $token. The caller persists the chapter itself. */
-    private function storeLink(Chapter $chapter, string $token, string $url): void
+    private function storeLink(Chapter $chapter, string $token, string $url, ?ShortlinkProvider $provider = null): void
     {
-        if ($this->usesLegacyColumn()) {
+        $provider ??= $this->provider();
+
+        if ($this->usesLegacyColumn($provider)) {
             $chapter->unlock_shortlink = $url;
             $chapter->unlock_shortlink_at = now();
 
@@ -383,7 +458,7 @@ class ChapterUnlockService
         DB::table('chapter_shortlinks')->upsert(
             [[
                 'chapter_id' => $chapter->id,
-                'provider' => $this->provider()->name(),
+                'provider' => $provider->name(),
                 'token' => $token,
                 'host' => $this->landingHost(),
                 'url' => $url,
@@ -425,7 +500,7 @@ class ChapterUnlockService
      * not queue behind each other for a housekeeping task; whoever misses it
      * simply serves the current link and the rotation happens on the next press.
      */
-    private function rotateIfDue(Chapter $chapter): void
+    private function rotateIfDue(Chapter $chapter, ShortlinkProvider $provider): void
     {
         if (! $this->rotationEnabled() || ! $chapter->unlock_token) {
             return;
@@ -452,7 +527,7 @@ class ChapterUnlockService
 
             $retiring = $fresh->unlock_token;
             $newToken = $this->freshToken();
-            $shortlink = $this->createShortlink($fresh, $newToken);
+            $shortlink = $this->createShortlink($fresh, $newToken, $provider);
 
             if (! $shortlink) {
                 return;   // Nothing touched. The current link keeps working.
@@ -464,7 +539,7 @@ class ChapterUnlockService
             );
 
             $fresh->unlock_token = $newToken;
-            $this->storeLink($fresh, $newToken, $shortlink);
+            $this->storeLink($fresh, $newToken, $shortlink, $provider);
             $fresh->unlock_claim_count = 0;
             $this->persist($fresh);
 
@@ -532,9 +607,11 @@ class ChapterUnlockService
         Chapter::withoutTimestamps(fn () => $chapter->saveQuietly());
     }
 
-    public function shortlinkFor(Chapter $chapter, bool $regenerate = false): ?string
+    public function shortlinkFor(Chapter $chapter, bool $regenerate = false, ?ShortlinkProvider $provider = null): ?string
     {
-        if (! $regenerate && $chapter->unlock_token && ($stored = $this->storedLink($chapter, $chapter->unlock_token))) {
+        $provider ??= $this->provider();
+
+        if (! $regenerate && $chapter->unlock_token && ($stored = $this->storedLink($chapter, $chapter->unlock_token, $provider))) {
             return $stored;
         }
 
@@ -542,7 +619,7 @@ class ChapterUnlockService
             $chapter->unlock_token = $this->freshToken();
         }
 
-        $shortlink = $this->createShortlink($chapter, $chapter->unlock_token);
+        $shortlink = $this->createShortlink($chapter, $chapter->unlock_token, $provider);
 
         if (! $shortlink) {
             // Persist the token anyway so a later retry reuses the same URL.
@@ -551,7 +628,7 @@ class ChapterUnlockService
             return null;
         }
 
-        $this->storeLink($chapter, $chapter->unlock_token, $shortlink);
+        $this->storeLink($chapter, $chapter->unlock_token, $shortlink, $provider);
         $this->persist($chapter);
 
         return $shortlink;
@@ -564,8 +641,10 @@ class ChapterUnlockService
      * rotation can mint a link for its replacement before anything is written —
      * the chapter still holds the old token while this runs.
      */
-    private function createShortlink(Chapter $chapter, string $token): ?string
+    private function createShortlink(Chapter $chapter, string $token, ShortlinkProvider $provider): ?string
     {
+        $this->lastProvider = $provider;
+
         $series = $chapter->series;
 
         // Pinned to APP_URL rather than the host serving this request. route()
@@ -575,7 +654,7 @@ class ChapterUnlockService
         $claimUrl = rtrim((string) config('app.url'), '/')
             .route('chapters.unlock.claim', $token, false);
 
-        return $this->provider()->createLink(
+        return $provider->createLink(
             $claimUrl,
             $series ? Str::limit($series->title.' — '.($chapter->title ?: 'Chapter '.$chapter->chapter_number), 250, '') : null
         );
@@ -605,9 +684,9 @@ class ChapterUnlockService
      * would either refuse every honest ShrinkEarn reader or wave Move2Link
      * skippers through.
      */
-    public function minChallengeSeconds(): int
+    public function minChallengeSeconds(?ShortlinkProvider $provider = null): int
     {
-        return max(0, (int) $this->providerConfig('min_seconds', self::MIN_CHALLENGE_SECONDS));
+        return max(0, (int) $this->providerConfig('min_seconds', self::MIN_CHALLENGE_SECONDS, $provider));
     }
 
     /**
@@ -623,13 +702,33 @@ class ChapterUnlockService
      * @return bool true when this press began a new run, false when one was
      *              already under way
      */
-    public function startChallenge(User $user, Chapter $chapter): bool
+    public function startChallenge(User $user, Chapter $chapter, ?ShortlinkProvider $provider = null): bool
     {
+        // The network is kept with the start time: the claim is checked
+        // against that network's timing floor and referers, whichever one
+        // the rotation would pick by the time the reader comes back.
         return Cache::add(
             $this->pendingKey($user->id, $chapter->id),
-            now()->timestamp,
+            ['at' => now()->timestamp, 'provider' => ($provider ?? $this->provider())->name()],
             now()->addMinutes(self::PENDING_TTL_MINUTES)
         );
+    }
+
+    /**
+     * The network of the run this reader has under way for this chapter, if
+     * any. Pressing the button again mid-run must send them back through the
+     * same gate, not the next one in rotation.
+     */
+    public function pendingProvider(User $user, Chapter $chapter): ?ShortlinkProvider
+    {
+        $pending = Cache::get($this->pendingKey($user->id, $chapter->id));
+
+        if ($pending === null) {
+            return null;
+        }
+
+        // Runs started before rotation hold a bare timestamp.
+        return is_array($pending) ? $this->providerNamed($pending['provider'] ?? null) : $this->provider();
     }
 
     /**
@@ -644,7 +743,9 @@ class ChapterUnlockService
     public function consumeChallenge(User $user, Chapter $chapter, ?string $referer, ?string $currentHost = null): array
     {
         $key = $this->pendingKey($user->id, $chapter->id);
-        $startedAt = Cache::get($key);
+        $pending = Cache::get($key);
+        $provider = is_array($pending) ? $this->providerNamed($pending['provider'] ?? null) : $this->provider();
+        $startedAt = is_array($pending) ? ($pending['at'] ?? null) : $pending;
 
         if ($startedAt === null) {
             return [false, 'not_started', null];
@@ -658,7 +759,7 @@ class ChapterUnlockService
         // sandbox to the live threshold would just mean waiting 45 seconds for
         // nothing. Everything else — the pending record, single use, the tie to
         // this reader — is enforced exactly as in live mode.
-        if (! $this->sandbox() && $elapsed < $this->minChallengeSeconds()) {
+        if (! $this->sandbox() && $elapsed < $this->minChallengeSeconds($provider)) {
             return [false, 'too_fast', $elapsed];
         }
 
@@ -685,7 +786,7 @@ class ChapterUnlockService
             $matchesOwnHost = in_array($host, $allowed, true)
                 || collect($allowed)->contains(fn ($own) => $own !== '' && str_ends_with($host, '.'.$own));
 
-            if (! $this->fromProvider($host) && ! $matchesOwnHost) {
+            if (! $this->fromProvider($host, $provider) && ! $matchesOwnHost) {
                 return [false, 'bad_referer', $elapsed];
             }
         }
@@ -694,9 +795,17 @@ class ChapterUnlockService
     }
 
     /** Whether a referer host belongs to the live provider (config/shortlink.php). */
-    private function fromProvider(string $host): bool
+    private function fromProvider(string $host, ShortlinkProvider $provider): bool
     {
-        foreach ((array) $this->providerConfig('referer_hosts', []) as $entry) {
+        $hosts = $this->providerConfig('referer_hosts', [], $provider);
+
+        // null: this network's gate hops through changing blog domains, so
+        // its referer says nothing; the other checks still apply.
+        if ($hosts === null) {
+            return true;
+        }
+
+        foreach ((array) $hosts as $entry) {
             $entry = strtolower(trim((string) $entry));
             if ($entry === '') {
                 continue;
