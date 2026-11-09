@@ -915,6 +915,17 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
 
     const selectedPkg = packages.find(p => p.id === selectedPackage);
     const finalCost = voucherData ? voucherData.final_amount : selectedPkg?.coin_price ?? 0;
+
+    // What a package costs once the applied voucher is taken off, so every
+    // card judges affordability on the price the reader would actually pay.
+    // A membership voucher fits every package; same rounding as
+    // Voucher::calculateDiscount() (a percentage off is rounded up).
+    const priceAfterVoucher = (price: number) => {
+        if (!voucherData || isRealCurrency) return price;
+        const value = Number(voucherData.discount_value) || 0;
+        const off = voucherData.discount_type === 'percent' ? Math.ceil((price * value) / 100) : Math.min(value, price);
+        return Math.max(0, price - off);
+    };
     const canAffordSelected = isRealCurrency ? true : (selectedPkg ? userCoins >= finalCost : true);
 
     const priceUsd = selectedPkg ? parseFloat(selectedPkg.price_usd) : 0;
@@ -1114,7 +1125,7 @@ function MembershipTab({ packages, flash, errors, paypalFee, tierSwitchCarryOver
                                 const pkgUsdSavePct = pkgGimmickUsd > pkgPriceUsd ? Math.round(((pkgGimmickUsd - pkgPriceUsd) / pkgGimmickUsd) * 100) : 0;
                                 const isSelected = selectedPackage === pkg.id;
                                 const isBestValue = pkg.duration_days === 365;
-                                const canAfford = isRealCurrency ? true : userCoins >= coinPrice;
+                                const canAfford = isRealCurrency ? true : userCoins >= priceAfterVoucher(coinPrice);
 
                                 // Exclusive gets its own card: full width across the grid
                                 if (pkg.tier === 'exclusive') {
