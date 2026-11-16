@@ -88,8 +88,11 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             // Whether this visitor sees third-party network ads. Paid members
             // and admins never do; ADS_ENABLED turns them off for everyone.
+            // Nor does anyone while buying or paying: the shop, membership
+            // checkout and every payment status page stay ad-free.
             'showAds' => (bool) config('ads.enabled', true)
-                && ! ($request->user() && ($request->user()->role === 'admin' || $request->user()->hasActiveMembership())),
+                && ! ($request->user() && ($request->user()->role === 'admin' || $request->user()->hasActiveMembership()))
+                && ! $request->routeIs('shop', 'buy-coins', 'membership.*', 'payment.*'),
             // Which networks may serve, see config/ads.php.
             'adNetworks' => array_keys(array_filter(config('ads.networks', []))),
             // This month's first-come voucher while it is still up for grabs,

@@ -19,7 +19,9 @@ return [
     'networks' => [
         'adsterra' => (bool) env('ADS_ADSTERRA', true),
         'hilltop' => (bool) env('ADS_HILLTOP', true),
-        'aads' => (bool) env('ADS_AADS', true),
+        // Replaced by Adcash in both banner slots; only serves if Adcash is
+        // switched off and this is switched back on.
+        'aads' => (bool) env('ADS_AADS', false),
         'adcash' => (bool) env('ADS_ADCASH', true),
     ],
 

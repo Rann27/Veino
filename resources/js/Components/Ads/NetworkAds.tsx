@@ -128,9 +128,19 @@ interface Aclib {
 /**
  * Runs `fn` once Adcash's library is ready. It loads async from <head>, so a
  * unit mounted early waits for it; if it never arrives (blocked, or the
- * network is down) the unit just stays empty.
+ * network is down) the unit just stays empty. A visit that began on an
+ * ad-free page (the shop) has no library in <head>, so it is added here.
  */
 function whenAclib(fn: (lib: Aclib) => void): () => void {
+    if (!document.getElementById('aclib')) {
+        const lib = document.createElement('script');
+        lib.id = 'aclib';
+        lib.type = 'text/javascript';
+        lib.async = true;
+        lib.src = ADCASH.lib;
+        document.head.appendChild(lib);
+    }
+
     let cancelled = false;
     let tries = 0;
     const tick = () => {
@@ -158,10 +168,26 @@ function whenAclib(fn: (lib: Aclib) => void): () => void {
 export function AdcashBanner({ zoneId, width, height, className = '' }: { zoneId: string; width: number; height: number; className?: string }) {
     const boxRef = useRef<HTMLDivElement>(null);
     const { url } = usePage();
+    const [near, setNear] = useState(false);
+
+    // Called only once the slot is close to the screen, so the bottom unit
+    // of a long chapter is not counted for a reader who never gets there.
+    useEffect(() => {
+        const box = boxRef.current;
+        if (!box || near) return;
+        if (!('IntersectionObserver' in window)) {
+            setNear(true);
+            return;
+        }
+        const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setNear(true), { rootMargin: '400px 0px' });
+        io.observe(box);
+
+        return () => io.disconnect();
+    }, [near]);
 
     useEffect(() => {
         const box = boxRef.current;
-        if (!box) return;
+        if (!box || !near) return;
 
         const stop = whenAclib(() => {
             const call = document.createElement('script');
@@ -174,7 +200,7 @@ export function AdcashBanner({ zoneId, width, height, className = '' }: { zoneId
             stop();
             box.replaceChildren();
         };
-    }, [zoneId, url]);
+    }, [zoneId, url, near]);
 
     return (
         <Labelled className={`w-full py-2 ${className}`}>
@@ -184,23 +210,22 @@ export function AdcashBanner({ zoneId, width, height, className = '' }: { zoneId
 }
 
 /**
- * The slim strip at the top of the page. Adcash's 728×90 on wide screens; on
- * phones Adcash's mobile zone once one is set, A-ADS until then. A-ADS also
- * takes the slot if Adcash is switched off.
+ * The slim banner strips at the top and bottom of the page: Adcash's 728×90
+ * on wide screens, its 300×100 on phones, each slot with zones of its own.
+ * A-ADS takes them back only if Adcash is switched off and A-ADS on.
  */
-export function TopBannerSlot({ className = '' }: { className?: string }) {
+export function BannerSlot({ position, className = '' }: { position: 'top' | 'bottom'; className?: string }) {
     const adcash = useNetworkAds('adcash');
     const wide = useMediaQuery('(min-width: 768px)');
 
-    if (adcash && wide) {
-        return <AdcashBanner zoneId={ADCASH.bannerDesktop} width={728} height={90} className={className} />;
-    }
-    if (adcash && !wide && ADCASH.bannerMobile) {
-        const m = ADCASH.bannerMobile;
-        return <AdcashBanner zoneId={m.zoneId} width={m.width} height={m.height} className={className} />;
+    if (adcash) {
+        const zones = ADCASH.banners[position];
+        return wide
+            ? <AdcashBanner key="desktop" zoneId={zones.desktop} width={728} height={90} className={className} />
+            : <AdcashBanner key="mobile" zoneId={zones.mobile} width={300} height={100} className={className} />;
     }
 
-    return <AAdsAd position="top" className={className} />;
+    return <AAdsAd position={position} className={className} />;
 }
 
 /**

@@ -114,10 +114,12 @@ export const AADS_UNITS = {
  * float over the page. One zone per placement, each used once per page.
  */
 export const ADCASH = {
-    /** Display 728×90: the top slot on wide screens. */
-    bannerDesktop: '12454118',
-    /** Display zone for the top slot on phones. Until one is set, A-ADS keeps that slot there. */
-    bannerMobile: null as { zoneId: string; width: number; height: number } | null,
+    lib: 'https://acscdn.com/script/aclib.js',
+    /** Display zones per slot: 728×90 on wide screens, 300×100 on phones. */
+    banners: {
+        top: { desktop: '12454118', mobile: '12454418' },
+        bottom: { desktop: '12454386', mobile: '12454442' },
+    },
     /** Video Slider: once per visit, like the other overlays. */
     videoSlider: '12454158',
     /** Interstitial: on every `interstitialEvery`-th page a reader opens. */
