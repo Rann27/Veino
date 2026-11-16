@@ -18,7 +18,9 @@ return [
      */
     'networks' => [
         'adsterra' => (bool) env('ADS_ADSTERRA', true),
-        'hilltop' => (bool) env('ADS_HILLTOP', true),
+        // Off unless switched on: HilltopAds classed the site non-mainstream
+        // and served adult creatives (its video slider among them).
+        'hilltop' => (bool) env('ADS_HILLTOP', false),
         // Replaced by Adcash in both banner slots; only serves if Adcash is
         // switched off and this is switched back on.
         'aads' => (bool) env('ADS_AADS', false),
