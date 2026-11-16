@@ -5,6 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        {{-- Adcash's library, as high in <head> as Adcash asks, and only for
+             visitors who are shown network ads. Async so the page never waits
+             on it; the units wait for it instead (NetworkAds whenAclib). --}}
+        @if (($page['props']['showAds'] ?? false) && in_array('adcash', $page['props']['adNetworks'] ?? [], true))
+            <script id="aclib" type="text/javascript" src="{{ config('ads.adcash_lib') }}" async></script>
+        @endif
+
         <title inertia>{{ config('app.name', 'Veinovel') }}</title>
 
         <link rel="icon" href="/favicon2.ico" sizes="any">

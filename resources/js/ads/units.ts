@@ -18,7 +18,7 @@
 export type Isolation = 'strict' | 'frame';
 
 /** Matches the keys of config/ads.php `networks`. */
-export type Network = 'adsterra' | 'hilltop' | 'aads';
+export type Network = 'adsterra' | 'hilltop' | 'aads' | 'adcash';
 
 export interface FrameUnit {
     /** Shown in the iframe title and in the console when debugging. */
@@ -106,6 +106,24 @@ export const AADS_UNITS = {
     top: 2461370,
     bottom: 2461372,
 } as const;
+
+/**
+ * Adcash zones. Its library (aclib) is printed into <head> by app.blade.php
+ * and every format runs in the page itself: a banner renders inside the
+ * element holding the script that calls it, and the slider and interstitial
+ * float over the page. One zone per placement, each used once per page.
+ */
+export const ADCASH = {
+    /** Display 728×90: the top slot on wide screens. */
+    bannerDesktop: '12454118',
+    /** Display zone for the top slot on phones. Until one is set, A-ADS keeps that slot there. */
+    bannerMobile: null as { zoneId: string; width: number; height: number } | null,
+    /** Video Slider: once per visit, like the other overlays. */
+    videoSlider: '12454158',
+    /** Interstitial: on every `interstitialEvery`-th page a reader opens. */
+    interstitial: '12454150',
+    interstitialEvery: 3,
+};
 
 /**
  * Page-level overlays. These have to live in the page itself (they float over

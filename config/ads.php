@@ -2,7 +2,7 @@
 
 return [
     /*
-     * Master switch for third-party ad networks (Adsterra, HilltopAds, A-ADS).
+     * Master switch for third-party ad networks (Adsterra, HilltopAds, A-ADS, Adcash).
      * Off hides every network unit and stops their scripts from loading, for
      * when a network misbehaves and needs pulling at once: set ADS_ENABLED=false
      * and re-cache config. Veinovel's own ad system (Admin > Ads) is separate.
@@ -20,7 +20,15 @@ return [
         'adsterra' => (bool) env('ADS_ADSTERRA', true),
         'hilltop' => (bool) env('ADS_HILLTOP', true),
         'aads' => (bool) env('ADS_AADS', true),
+        'adcash' => (bool) env('ADS_ADCASH', true),
     ],
+
+    /*
+     * Adcash's library. app.blade.php prints it into <head> for visitors who
+     * are shown ads, where Adcash looks for it; the zones themselves are in
+     * resources/js/ads/units.ts (ADCASH).
+     */
+    'adcash_lib' => 'https://acscdn.com/script/aclib.js',
 
     /*
      * A-ADS unit ids, mirrored in resources/js/ads/units.ts (AADS_UNITS).

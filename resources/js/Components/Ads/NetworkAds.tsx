@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { useTheme } from '@/Contexts/ThemeContext';
 import AdFrame from '@/Components/Ads/AdFrame';
-import { AADS_UNITS, NATIVE, OVERLAYS, type FrameUnit, type Network } from '@/ads/units';
+import { AADS_UNITS, ADCASH, NATIVE, OVERLAYS, type FrameUnit, type Network } from '@/ads/units';
 
 /**
  * Third-party network ads. Every component here renders nothing unless the
@@ -119,6 +119,90 @@ export function AAdsAd({ position, className = '' }: { position: keyof typeof AA
     );
 }
 
+interface Aclib {
+    runBanner(o: { zoneId: string }): void;
+    runInterstitial(o: { zoneId: string }): void;
+    runVideoSlider(o: { zoneId: string }): void;
+}
+
+/**
+ * Runs `fn` once Adcash's library is ready. It loads async from <head>, so a
+ * unit mounted early waits for it; if it never arrives (blocked, or the
+ * network is down) the unit just stays empty.
+ */
+function whenAclib(fn: (lib: Aclib) => void): () => void {
+    let cancelled = false;
+    let tries = 0;
+    const tick = () => {
+        if (cancelled) return;
+        const lib = (window as unknown as { aclib?: Aclib }).aclib;
+        if (lib) {
+            fn(lib);
+            return;
+        }
+        if (++tries < 60) timer = window.setTimeout(tick, 250); // up to 15 s
+    };
+    let timer = window.setTimeout(tick, 0);
+
+    return () => {
+        cancelled = true;
+        window.clearTimeout(timer);
+    };
+}
+
+/**
+ * Adcash display banner. Adcash draws it inside the parent of the script that
+ * calls runBanner, so that script is added to this unit's own box. Mounted
+ * per page, so each page view is its own impression.
+ */
+export function AdcashBanner({ zoneId, width, height, className = '' }: { zoneId: string; width: number; height: number; className?: string }) {
+    const boxRef = useRef<HTMLDivElement>(null);
+    const { url } = usePage();
+
+    useEffect(() => {
+        const box = boxRef.current;
+        if (!box) return;
+
+        const stop = whenAclib(() => {
+            const call = document.createElement('script');
+            call.type = 'text/javascript';
+            call.text = `aclib.runBanner({ zoneId: ${JSON.stringify(zoneId)} });`;
+            box.appendChild(call);
+        });
+
+        return () => {
+            stop();
+            box.replaceChildren();
+        };
+    }, [zoneId, url]);
+
+    return (
+        <Labelled className={`w-full py-2 ${className}`}>
+            <div ref={boxRef} style={{ width, maxWidth: '100%', minHeight: height, overflow: 'hidden' }} />
+        </Labelled>
+    );
+}
+
+/**
+ * The slim strip at the top of the page. Adcash's 728×90 on wide screens; on
+ * phones Adcash's mobile zone once one is set, A-ADS until then. A-ADS also
+ * takes the slot if Adcash is switched off.
+ */
+export function TopBannerSlot({ className = '' }: { className?: string }) {
+    const adcash = useNetworkAds('adcash');
+    const wide = useMediaQuery('(min-width: 768px)');
+
+    if (adcash && wide) {
+        return <AdcashBanner zoneId={ADCASH.bannerDesktop} width={728} height={90} className={className} />;
+    }
+    if (adcash && !wide && ADCASH.bannerMobile) {
+        const m = ADCASH.bannerMobile;
+        return <AdcashBanner zoneId={m.zoneId} width={m.width} height={m.height} className={className} />;
+    }
+
+    return <AAdsAd position="top" className={className} />;
+}
+
 /**
  * Adsterra Native Banner, placed among cards. The frame carries the reader's
  * theme colour and the site font in, which the widget picks up because its
@@ -153,6 +237,35 @@ declare global {
     }
 }
 
+/** The page last counted towards the interstitial, so a re-render never counts twice. */
+let countedPage: string | null = null;
+
+/**
+ * Adcash interstitial on every Nth page a reader opens in this tab (pages 3,
+ * 6, 9… with N = 3), never on the first. Counted per tab session, so a reader
+ * who leaves and comes back starts over.
+ */
+function useAdcashInterstitial(enabled: boolean) {
+    const { url } = usePage();
+
+    useEffect(() => {
+        if (!enabled || countedPage === url) return;
+        countedPage = url;
+
+        let views = 1;
+        try {
+            views = Number(sessionStorage.getItem('veino:adcash-pages') ?? '0') + 1;
+            sessionStorage.setItem('veino:adcash-pages', String(views));
+        } catch {
+            return; // storage blocked: no count, so no interstitial
+        }
+
+        if (views % ADCASH.interstitialEvery !== 0) return;
+
+        return whenAclib((lib) => lib.runInterstitial({ zoneId: ADCASH.interstitial }));
+    }, [enabled, url]);
+}
+
 /**
  * Social Bar and Video Slider. They float over the page, so they cannot sit in
  * a frame of ours; they load once per visit, after the page is up (on the
@@ -167,6 +280,9 @@ export function AdOverlays() {
     const show = useShowAds();
     const socialBar = useNetworkAds('adsterra');
     const videoSlider = useNetworkAds('hilltop');
+    const adcash = useNetworkAds('adcash');
+
+    useAdcashInterstitial(adcash);
 
     useEffect(() => {
         if (!show) {
@@ -197,6 +313,11 @@ export function AdOverlays() {
                 document.body.appendChild(slider);
             }
 
+            // Adcash's slider takes the place HilltopAds' had; one at a time.
+            if (adcash && !videoSlider) {
+                whenAclib((lib) => lib.runVideoSlider({ zoneId: ADCASH.videoSlider }));
+            }
+
             cleanup();
         };
 
@@ -209,7 +330,7 @@ export function AdOverlays() {
         };
 
         return cleanup;
-    }, [show, socialBar, videoSlider]);
+    }, [show, socialBar, videoSlider, adcash]);
 
     return null;
 }
