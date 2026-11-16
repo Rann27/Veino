@@ -130,6 +130,9 @@ interface Aclib {
  * unit mounted early waits for it; if it never arrives (blocked, or the
  * network is down) the unit just stays empty. A visit that began on an
  * ad-free page (the shop) has no library in <head>, so it is added here.
+ *
+ * Ready means its methods are there, not just the object: `window.aclib`
+ * appears some 80 ms before runBanner and the rest are attached to it.
  */
 function whenAclib(fn: (lib: Aclib) => void): () => void {
     if (!document.getElementById('aclib')) {
@@ -146,7 +149,7 @@ function whenAclib(fn: (lib: Aclib) => void): () => void {
     const tick = () => {
         if (cancelled) return;
         const lib = (window as unknown as { aclib?: Aclib }).aclib;
-        if (lib) {
+        if (lib && typeof lib.runBanner === 'function') {
             fn(lib);
             return;
         }
