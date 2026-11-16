@@ -98,7 +98,10 @@ export const NATIVE = {
 <div id="container-7f4f483de919cbdd11bb60fd3d07a1ec"></div>`,
 } as const;
 
-/** A-ADS adaptive units, shown on every page. Plain cross-origin iframes. */
+/**
+ * A-ADS adaptive units, shown on every page. Plain cross-origin iframes.
+ * Mirrored in config/ads.php `aads_units` for A-ADS's site check.
+ */
 export const AADS_UNITS = {
     top: 2461370,
     bottom: 2461372,

@@ -21,4 +21,13 @@ return [
         'hilltop' => (bool) env('ADS_HILLTOP', true),
         'aads' => (bool) env('ADS_AADS', true),
     ],
+
+    /*
+     * A-ADS unit ids, mirrored in resources/js/ads/units.ts (AADS_UNITS).
+     * app.blade.php prints their snippets into the HTML as well: the units
+     * themselves are drawn by React, and A-ADS's site check reads the HTML
+     * without running scripts, so without this every unit shows "Not found"
+     * and is never sent paid campaigns.
+     */
+    'aads_units' => [2461370, 2461372],
 ];

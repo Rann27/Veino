@@ -116,5 +116,17 @@
     </head>
     <body class="font-sans antialiased theme-loading" style="background-color: var(--theme-background); color: var(--theme-foreground);">
         @inertia
+
+        {{-- The A-ADS units on this page, as A-ADS issues them, for its site
+             check (see config/ads.php `aads_units`). Inside a <template> they
+             are never loaded or shown: the visible units are React's. Only
+             printed for visitors who are shown network ads at all. --}}
+        @if (($page['props']['showAds'] ?? false) && in_array('aads', $page['props']['adNetworks'] ?? [], true))
+            <template id="aads-units">
+                @foreach (config('ads.aads_units', []) as $aadsUnit)
+                    <div id="frame" style="width: 100%;margin: auto;position: relative; z-index: 99998;"><iframe data-aa="{{ (int) $aadsUnit }}" src="//acceptable.a-ads.com/{{ (int) $aadsUnit }}/?size=Adaptive" style="border:0; padding:0; width:70%; height:auto; overflow:hidden; display: block;margin: auto"></iframe></div>
+                @endforeach
+            </template>
+        @endif
     </body>
 </html>
