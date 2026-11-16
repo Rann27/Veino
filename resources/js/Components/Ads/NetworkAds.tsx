@@ -169,21 +169,28 @@ function whenAclib(fn: (lib: Aclib) => void): () => void {
  * per page, so each page view is its own impression.
  */
 export function AdcashBanner({ zoneId, width, height, className = '' }: { zoneId: string; width: number; height: number; className?: string }) {
+    const slotRef = useRef<HTMLDivElement>(null);
     const boxRef = useRef<HTMLDivElement>(null);
     const { url } = usePage();
     const [near, setNear] = useState(false);
+    // Collapsed, caption and all, until Adcash actually puts an ad in: no
+    // empty "Advertisement" strip when it has nothing to show (no fill for
+    // this reader, a blocker, or a site still under review).
+    const [filled, setFilled] = useState(false);
 
     // Called only once the slot is close to the screen, so the bottom unit
     // of a long chapter is not counted for a reader who never gets there.
+    // Watched on the outer slot: the box sits inside it, and while the slot is
+    // collapsed it clips the box away, which an observer reads as off-screen.
     useEffect(() => {
-        const box = boxRef.current;
-        if (!box || near) return;
+        const slot = slotRef.current;
+        if (!slot || near) return;
         if (!('IntersectionObserver' in window)) {
             setNear(true);
             return;
         }
         const io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && setNear(true), { rootMargin: '400px 0px' });
-        io.observe(box);
+        io.observe(slot);
 
         return () => io.disconnect();
     }, [near]);
@@ -191,6 +198,13 @@ export function AdcashBanner({ zoneId, width, height, className = '' }: { zoneId
     useEffect(() => {
         const box = boxRef.current;
         if (!box || !near) return;
+
+        setFilled(false);
+        // Anything Adcash adds besides our own calling script is the ad.
+        const watch = new MutationObserver(() => {
+            setFilled([...box.children].some((el) => el.tagName !== 'SCRIPT'));
+        });
+        watch.observe(box, { childList: true });
 
         const stop = whenAclib(() => {
             const call = document.createElement('script');
@@ -201,14 +215,17 @@ export function AdcashBanner({ zoneId, width, height, className = '' }: { zoneId
 
         return () => {
             stop();
+            watch.disconnect();
             box.replaceChildren();
         };
     }, [zoneId, url, near]);
 
     return (
-        <Labelled className={`w-full py-2 ${className}`}>
-            <div ref={boxRef} style={{ width, maxWidth: '100%', minHeight: height, overflow: 'hidden' }} />
-        </Labelled>
+        <div ref={slotRef} className={filled ? `w-full py-2 ${className}` : 'w-full'} style={filled ? undefined : { height: 0, overflow: 'hidden' }} aria-hidden={!filled}>
+            <Labelled>
+                <div ref={boxRef} style={{ width, maxWidth: '100%', minHeight: filled ? height : 0, overflow: 'hidden' }} />
+            </Labelled>
+        </div>
     );
 }
 
